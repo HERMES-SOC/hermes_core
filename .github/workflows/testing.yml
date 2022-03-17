@@ -29,7 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -e .[test]
     - name: Run tests
-      run: pytest --pyargs hermes-cre/tests --cov hermes_core
+      run: pytest --pyargs hermes-core/tests --cov hermes_core
       env:
         PLATFORM: ${{ matrix.platform }}
 
