@@ -8,7 +8,7 @@ Overview
     :stub-columns: 1
 
     * - docs
-      - |docs|
+      - |docs| |readthedocs|
     * - build status
       - |testing| |codestyle|
 
@@ -23,6 +23,10 @@ Overview
 .. |codestyle| image:: https://github.com/HERMES-SOC/hermes-core/actions/workflows/codestyle.yml/badge.svg
     :target: https://github.com/HERMES-SOC/hermes-core/actions/workflows/codestyle.yml
     :alt: Codestyle and linting using flake8
+
+.. |readthedocs| image:: https://readthedocs.org/projects/hermes-core/badge/?version=latest
+    :target: https://hermes-core.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 .. end-badges
 
