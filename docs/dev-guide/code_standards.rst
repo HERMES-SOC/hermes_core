@@ -107,6 +107,19 @@ We only suggest doing the install step if you are comfortable with git and the p
 If you are running inside of a Docker container but are managing git outside of it you will have to do this outside of the Docker.
 This also means that you will have to install all of the dependencies on your local system.
 
+By Hand
+-------
+
+Sometimes it is easier to run things by hand.
+First, let's talk about Black. 
+If you are using the docker container and VS Code it format be formatting your code automatically.
+If you want to check if all of your files are compatible with Black run the following
+
+    $ black --check folder_name
+
+If you want it to go ahead and format the files remote `--check`.
+
+
 Documentation and Testing
 =========================
 
