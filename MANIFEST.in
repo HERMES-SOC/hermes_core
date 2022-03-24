@@ -4,7 +4,7 @@ include setup.cfg
 include LICENSE.rst
 include pyproject.toml
 
-recursive-include hermes_instrument *.pyx *.c *.pxd
+recursive-include hermes_core *.pyx *.c *.pxd
 recursive-include docs *
 recursive-include licenses *
 recursive-include cextern *

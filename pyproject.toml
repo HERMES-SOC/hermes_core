@@ -10,7 +10,7 @@ build-backend = 'setuptools.build_meta'
     package = "hermes"
     filename = "CHANGELOG.rst"
     directory = "changelog/"
-    issue_format = "`#{issue} <https://github.com/HERMES-SOC/hermes-core/pull/{issue}>`__"
+    issue_format = "`#{issue} <https://github.com/HERMES-SOC/hermes_core/pull/{issue}>`__"
 
     [[tool.towncrier.type]]
         directory = "breaking"

@@ -12,20 +12,20 @@ Overview
     * - build status
       - |testing| |codestyle|
 
-.. |docs| image:: https://github.com/HERMES-SOC/hermes-core/actions/workflows/docs.yml/badge.svg
-    :target: https://github.com/HERMES-SOC/hermes-core/actions/workflows/docs.yml
+.. |docs| image:: https://github.com/HERMES-SOC/hermes_core/actions/workflows/docs.yml/badge.svg
+    :target: https://github.com/HERMES-SOC/hermes_core/actions/workflows/docs.yml
     :alt: Documentation Build Status
 
-.. |testing| image:: https://github.com/HERMES-SOC/hermes-core/actions/workflows/testing.yml/badge.svg
-    :target: https://github.com/HERMES-SOC/hermes-core/actions/workflows/testing.yml
+.. |testing| image:: https://github.com/HERMES-SOC/hermes_core/actions/workflows/testing.yml/badge.svg
+    :target: https://github.com/HERMES-SOC/hermes_core/actions/workflows/testing.yml
     :alt: Build Status
 
-.. |codestyle| image:: https://github.com/HERMES-SOC/hermes-core/actions/workflows/codestyle.yml/badge.svg
-    :target: https://github.com/HERMES-SOC/hermes-core/actions/workflows/codestyle.yml
+.. |codestyle| image:: https://github.com/HERMES-SOC/hermes_core/actions/workflows/codestyle.yml/badge.svg
+    :target: https://github.com/HERMES-SOC/hermes_core/actions/workflows/codestyle.yml
     :alt: Codestyle and linting using flake8
 
-.. |readthedocs| image:: https://readthedocs.org/projects/hermes-core/badge/?version=latest
-    :target: https://hermes-core.readthedocs.io/en/latest/?badge=latest
+.. |readthedocs| image:: https://readthedocs.org/projects/hermes_core/badge/?version=latest
+    :target: https://hermes_core.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. end-badges
@@ -40,7 +40,7 @@ See the license/LICENSE file for more information.
 Contributing
 ------------
 
-We love contributions! hermes-core is open source,
+We love contributions! This project is open source,
 built on open source, and we'd love to have you hang out in our community.
 
 **Imposter syndrome disclaimer**: We want your help. No, really.
@@ -66,7 +66,7 @@ the errors and assumptions that seasoned contributors have glossed over.
 Note: This disclaimer was originally written by
 `Adrienne Lowe <https://github.com/adriennefriend>`_ for a
 `PyCon talk <https://www.youtube.com/watch?v=6Uj746j9Heo>`_, and was adapted by
-hermes-core based on its use in the README file for the
+by this project based on its use in the README file for the
 `MetPy project <https://github.com/Unidata/MetPy>`_.
 
 Code of Conduct

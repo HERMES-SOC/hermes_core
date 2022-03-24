@@ -39,12 +39,12 @@ To make permanent changes to the logger configuration see the ``[logger]`` secti
 If you'd like to control the logger configuration for your current session
 first import the logger::
 
-    >>> from hermes_instrument import log
+    >>> from hermes_core import log
 
 or also by::
 
     >>> import logging
-    >>> log = logging.getLogger('hermes_instrument')
+    >>> log = logging.getLogger('hermes_core')
 
 The threshold level for messages can be set with::
 
@@ -61,7 +61,7 @@ Context managers
 If you'd like to
 capture messages as they are generated you can do that with a context manager::
 
-    >>> from hermes_instrument import log
+    >>> from hermes_core import log
     >>> with log.log_to_list() as log_list:  #doctest: +SKIP
     ...    # your code here  # doctest: +SKIP
 

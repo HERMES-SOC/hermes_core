@@ -30,8 +30,8 @@ jobs:
         python -m pip install -e .[dev]
     - name: Lint with Black
       run: |
-        black --check --diff hermes-core
+        black --check --diff hermes_core
     - name: flake8
       run: |
-        flake8 --count hermes-core
+        flake8 --count hermes_core
 

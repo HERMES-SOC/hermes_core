@@ -39,7 +39,7 @@ except Exception:
 setup(
     extras_require=extras,
     use_scm_version={
-        "write_to": os.path.join("hermes-core", "version.py"),
+        "write_to": os.path.join("hermes_core", "version.py"),
         "write_to_template": VERSION_TEMPLATE,
     },
 )

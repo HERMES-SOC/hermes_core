@@ -12,8 +12,8 @@ certain properties. You can control a number of key features of such as
 where your data will download to. sunpy looks for this configuration file
 in a platform specific directory, which you can see the path for by running::
 
-  >>> import hermes_instrument
-  >>> hermes_instrument.print_config()  # doctest: +SKIP
+  >>> import hermes_core
+  >>> hermes_core.print_config()  # doctest: +SKIP
 
 
 To maintain your own customizations place a copy of the default file into the *first* path printed above.
@@ -31,8 +31,8 @@ interactively from the python shell. All of the settings are stored in a
 Python ConfigParser instance called ``sunpy.config``, which is global to
 the package. Settings can be modified directly, for example::
 
-    import hermes_instrument
-    hermes_instrument.config.set('downloads', 'download_dir', '/home/user/Downloads')
+    import hermes_core
+    hermes_core.config.set('downloads', 'download_dir', '/home/user/Downloads')
 
 
 .. configrc-sample:

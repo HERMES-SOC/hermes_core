@@ -72,7 +72,7 @@ def _init_log(config=None):
     orig_logger_cls = logging.getLoggerClass()
     logging.setLoggerClass(MyLogger)
     try:
-        log = logging.getLogger("hermes_instrument")
+        log = logging.getLogger("hermes_core")
         if config is not None:
             _config_to_loggerConf(config)
         log._set_defaults()
