@@ -30,6 +30,9 @@ Overview
 
 .. end-badges
 
+Documentation
+-------------
+The documentation is hosted on readthedocs and is available `here <https://hermes-core.readthedocs.io/en/latest/>`_.
 
 License
 -------
