@@ -10,6 +10,7 @@ This guide borrows heavily from those developed by the SunPy Project and is gene
 .. toctree::
    :maxdepth: 2
 
+   dev_env
    code_standards
    tests
    docs
