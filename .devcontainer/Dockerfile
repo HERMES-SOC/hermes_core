@@ -7,6 +7,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-20.04
 # RUN bash -i -c 'pip3 install --user --no-use-pep517 -e .[all]'
 RUN apt-get update && \
     apt-get -y upgrade && \
+    apt-get install make && \
     apt-get install --no-install-recommends -y python3.8 python3-pip python3.8-dev pylint
 
 # [Optional] Uncomment this line to install global node packages.
