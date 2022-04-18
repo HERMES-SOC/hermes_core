@@ -1,7 +1,7 @@
 Acknowledging this Package
 ==========================
 
-If you use Package in your scientific work, we would appreciate citing it in your publications.
+If you use this package in your scientific work, we would appreciate citing it in your publications.
 Proper citations and acknowledgement is key to a healthy scientific community and enables scientific reproducibility.
 
 Citing in Publications
@@ -9,7 +9,7 @@ Citing in Publications
 
 Please add the following line within your methods, conclusion or acknowledgements sections:
 
-   *This research used version X.Y.Z (software citation) of the Hermes Instrument open source
+   *This research used version X.Y.Z (software citation) of the HERMES Core open source
    software package (paper citation).*
 
 The software citation should be the specific `Zenodo DOI`_ for the version used in your work.
