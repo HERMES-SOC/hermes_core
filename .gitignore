@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 hermes_core/version.py
+
+# Mac hidden files
+.DS_Store
