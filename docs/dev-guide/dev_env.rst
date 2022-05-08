@@ -33,7 +33,7 @@ Follow these steps to set up VS Code.
 #. The next time you open this folder with VS Code it should open in the built container. It should not have to rebuild the container unless the Dockerfile file has changed.
 
 Fork the Repository
-==================
+===================
 
 Follow these steps to fork the HERMES_core repository for development purposes. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
 
