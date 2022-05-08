@@ -37,17 +37,8 @@ Fork the HERMES_core Repository
 
 Follow these steps to fork the HERMES_core repository using GitHub Desktop. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
 
-On GitHub.com:
+Using GitHub.com and Terminal/Git Bash:
+* Follow the directions at `<https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_.
 
-#. Navigate to the repository: `<https://github.com/HERMES-SOC/hermes_core/>`_.
-#. Click Fork
-#. Choose your own <username> under Owner
-#. Click Create fork
-#. Navigate to your newly forked repository: `<https://github.com/<username>/hermes_core/>`.
-#. Click code -> HTTPS
-#. Copy the URL for the forked repository.
-
-On GitHub Desktop:
-
-#. Navigate to File -> Clone Repository -> URL tab
-#. Paste the URL for the forked repository, click Clone.
+Using GitHub.com and GitHub Desktop:
+* Follow the directions at `<https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop>`_.
