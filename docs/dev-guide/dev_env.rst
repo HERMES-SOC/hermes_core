@@ -16,7 +16,7 @@ All of the configuration required by VS Code are maintained in the `.devcontaine
 For more information see `Developing inside a Container <https://code.visualstudio.com/docs/remote/containers>`_.
 
 Setup
-
+^^^^^
 Follow these steps to set up VS Code.
 
 #. Download and install `VS Code <https://code.visualstudio.com/>`_.
