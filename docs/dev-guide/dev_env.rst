@@ -38,7 +38,9 @@ Fork the Repository
 Follow these steps to fork the HERMES_core repository for development purposes. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
 
 Using GitHub.com and Terminal/Git Bash:
+
 * Follow the directions at `<https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_.
 
 Using GitHub.com and GitHub Desktop:
+
 * Follow the directions at `<https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop>`_.
