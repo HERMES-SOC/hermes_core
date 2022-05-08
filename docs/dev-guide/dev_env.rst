@@ -16,7 +16,7 @@ All of the configuration required by VS Code are maintained in the `.devcontaine
 For more information see `Developing inside a Container <https://code.visualstudio.com/docs/remote/containers>`_.
 
 Setup
-^^^^^
+
 Follow these steps to set up VS Code.
 
 #. Download and install `VS Code <https://code.visualstudio.com/>`_.
@@ -32,11 +32,13 @@ Follow these steps to set up VS Code.
 #. Exiting VS Code will close the docker container.
 #. The next time you open this folder with VS Code it should open in the built container. It should not have to rebuild the container unless the Dockerfile file has changed.
 
-Forking the HERMES core Repository
-^^^^^
+Fork the HERMES_core Repository
+==================
+
 Follow these steps to fork the HERMES_core repository using GitHub Desktop. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
 
 On GitHub.com:
+
 #. Navigate to the repository: `<https://github.com/HERMES-SOC/hermes_core/>`_.
 #. Click Fork
 #. Choose your own <username> under Owner
@@ -46,5 +48,6 @@ On GitHub.com:
 #. Copy the URL for the forked repository.
 
 On GitHub Desktop:
+
 #. Navigate to File -> Clone Repository -> URL tab
 #. Paste the URL for the forked repository, click Clone.
