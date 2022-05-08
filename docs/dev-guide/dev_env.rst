@@ -32,10 +32,10 @@ Follow these steps to set up VS Code.
 #. Exiting VS Code will close the docker container.
 #. The next time you open this folder with VS Code it should open in the built container. It should not have to rebuild the container unless the Dockerfile file has changed.
 
-Fork the HERMES_core Repository
+Fork the Repository
 ==================
 
-Follow these steps to fork the HERMES_core repository using GitHub Desktop. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
+Follow these steps to fork the HERMES_core repository for development purposes. This will allow the developer to create branches and merge updates to their forked repository. The forked repository can be kept up to date with the original repository and the developer can use pull requests to ask for changes to be published in the HERMES_core repo.
 
 Using GitHub.com and Terminal/Git Bash:
 * Follow the directions at `<https://docs.github.com/en/get-started/quickstart/fork-a-repo>`_.
