@@ -1,17 +1,17 @@
 """
 This module provides general utility functions.
 """
-import datetime
-
 from astropy.time import Time
 
 __all__ = ["create_science_filename"]
 
 
 def create_science_filename(
-    instrument, time, mode="", level="l0", version="", descriptor="", test=False
+    instrument, time: str, mode="", level="l0", version="", descriptor="", test=False
 ):
-    """Return a compliant filename root (without extension)
+    """Return a compliant filename root (without extension). The format is defined as
+
+    hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}
 
     Parameters
     ----------
@@ -31,10 +31,13 @@ def create_science_filename(
     """
     time_format = "%Y%m%d_%H%M%S"
     test_str = ""
-    instrument_shortnames = {"nemesis": "nms", "eea": "eea", "merit": "mrt", "spani": "spn"}
+    instrument_shortnames = {"nemisis": "nms", "eea": "eea", "merit": "mrt", "spani": "spn"}
     valid_data_levels = ["l0", "l1", "ql", "l2", "l3", "l4"]
 
-    time_str = Time(time, format='isot').strftime(time_format)
+    if isinstance(time, str):
+        time_str = Time(time, format="isot").strftime(time_format)
+    else:
+        time_str = time.strftime(time_format)
 
     if not instrument in instrument_shortnames.keys():
         raise ValueError("Instrument, {inst}, is not recognized. Must be ".format(inst=instrument))
