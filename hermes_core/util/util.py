@@ -40,15 +40,31 @@ def create_science_filename(
         time_str = time.strftime(time_format)
 
     if not instrument in instrument_shortnames.keys():
-        raise ValueError("Instrument, {inst}, is not recognized. Must be ".format(inst=instrument))
+        raise ValueError(
+            "Instrument, {inst}, is not recognized. Must be one of {valid}.".format(
+                inst=instrument, valid=instrument_shortnames.keys()
+            )
+        )
     if level is valid_data_levels:
-        raise ValueError("Level, {level}, is not recognized. Must be".format(level=level))
+        raise ValueError(
+            "Level, {level}, is not recognized. Must be one of {valid}.".format(
+                level=level, valid=valid_data_levels
+            )
+        )
+    # check that version is in the right format with three parts
     if len(version.split(".")) != 3:
         raise ValueError(
             "Version, {version}, is not formatted correctly. Should be X.Y.Z".format(
                 version=version
             )
         )
+    # check that version has integers in each part
+    for item in version.split("."):
+        try:
+            int_value = int(item)
+        except ValueError:
+            raise ValueError("Version, {version}, is not all integers.")
+
     if test is True:
         test_str = "test"
 

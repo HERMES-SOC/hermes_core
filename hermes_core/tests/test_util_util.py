@@ -63,6 +63,11 @@ def test_science_filename_exceptions():
         # not enough depth to version number
         util.create_science_filename(good_instrument, good_time, level=good_level, version="1.3")
         util.create_science_filename(good_instrument, good_time, level=good_level, version="1")
+        util.create_science_filename(
+            good_instrument, good_time, level=good_level, version="1.5.6.7"
+        )
+        # a letter in version number
+        util.create_science_filename(good_instrument, good_time, level=good_level, version="a.5.6")
 
         # wrong level specification
         util.create_science_filename(good_instrument, good_time, level="la", version=good_version)
