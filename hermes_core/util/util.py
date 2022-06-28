@@ -3,11 +3,13 @@ This module provides general utility functions.
 """
 from astropy.time import Time
 
+import hermes_core
+
 __all__ = ["create_science_filename"]
 
 
 def create_science_filename(
-    instrument, time: str, mode="", level="l0", version="", descriptor="", test=False
+    instrument, time, mode="", level="l0", version="", descriptor="", test=False
 ):
     """Return a compliant filename root (without extension). The format is defined as
 
@@ -19,19 +21,19 @@ def create_science_filename(
         The instrument name. Must be one of the following "eea", "nemesis", "merit", "spani"
     time : `str` (in isot format) or ~astropy.time
         The time
-    level : str
-        The data level. Must be one of the following
-    version : str
+    level : `str`
+        The data level. Must be one of the following "l0", "l1", "l2", "l3", "l4", "ql"
+    version : `str`
         The file version which must be given as X.Y.Z
-    descriptor : str
+    descriptor : `str`
         An optional file descriptor.
+    mode : `str`
+        An optional instrument mode.
     test : bool
         Selects whether the file is a test file.
-
     """
     time_format = "%Y%m%d_%H%M%S"
     test_str = ""
-    instrument_shortnames = {"nemisis": "nms", "eea": "eea", "merit": "mrt", "spani": "spn"}
     valid_data_levels = ["l0", "l1", "ql", "l2", "l3", "l4"]
 
     if isinstance(time, str):
@@ -39,10 +41,10 @@ def create_science_filename(
     else:
         time_str = time.strftime(time_format)
 
-    if not instrument in instrument_shortnames.keys():
+    if not instrument in hermes_core.INST_NAMES:
         raise ValueError(
             "Instrument, {inst}, is not recognized. Must be one of {valid}.".format(
-                inst=instrument, valid=instrument_shortnames.keys()
+                inst=instrument, valid=hermes_core.INST_NAMES
             )
         )
     if level is valid_data_levels:
@@ -69,7 +71,7 @@ def create_science_filename(
         test_str = "test"
 
     filename = "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-        inst=instrument_shortnames[instrument],
+        inst=hermes_core.INST_TO_SHORTNAME[instrument],
         mode=mode,
         level=level,
         test=test_str,
@@ -80,3 +82,5 @@ def create_science_filename(
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
     return filename
+
+
