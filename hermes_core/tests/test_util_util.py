@@ -91,3 +91,15 @@ def test_science_filename_exceptions():
         )
         # not valid input for time
         util.create_science_filename("eeb", time=12345345, level=good_level, version=good_version)
+
+
+def test_parse_science_filename():
+    f = "hermes_spn_2s_l3test_burst_20240406_120621_v2.4.5"
+    result = util.parse_science_filename(f)
+    assert result["instrument"] == "spani"
+    assert result["mode"] == "2s"
+    assert result["level"] == "l3"
+    assert result["test"]
+    assert result["descriptor"] == "burst"
+    assert result["version"] == "2.4.5"
+    assert result["time"] == Time("2024-04-06T12:06:21")
