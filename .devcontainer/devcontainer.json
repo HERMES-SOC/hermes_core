@@ -2,6 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.183.0/containers/python-3
 {
 	"name": "Ubuntu 20.04 Python 3",
+	// Repo where this image's Dockerfile is maintained: https://github.com/HERMES-SOC/docker-lambda-base
 	"image": "public.ecr.aws/w5r9l1c8/swsoc-docker-lambda-base:latest",
 	"initializeCommand": "docker logout public.ecr.aws && docker pull public.ecr.aws/w5r9l1c8/swsoc-docker-lambda-base:latest",
 	// Set *default* container specific settings.json values on container create.
@@ -41,11 +42,11 @@
 		"ms-python.python",
 		"ms-python.vscode-pylance",
 		"marklarah.pre-commit-vscode"
-	]
+	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	//"postCreateCommand": "bash -i -c 'pip3 install --user .[all]'",
+	"postCreateCommand": "pip3 uninstall hermes_core -y"
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	// "remoteUser": "vscode"
 }
