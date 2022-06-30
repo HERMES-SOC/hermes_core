@@ -66,6 +66,7 @@ def test_science_filename_exceptions():
         util.create_science_filename(
             good_instrument, good_time, level=good_level, version="1.5.6.7"
         )
+        util.create_science_filename(good_instrument, good_time, level=good_level, version="1..")
         # a letter in version number
         util.create_science_filename(good_instrument, good_time, level=good_level, version="a.5.6")
 
@@ -91,15 +92,104 @@ def test_science_filename_exceptions():
         )
         # not valid input for time
         util.create_science_filename("eeb", time=12345345, level=good_level, version=good_version)
+        # _ character in mode
+        util.create_science_filename(
+            "eeb", time=12345345, level=good_level, version=good_version, mode="o_o"
+        )
+        # _ character in descriptor
+        util.create_science_filename(
+            "eeb", time=12345345, level=good_level, version=good_version, descriptor="blue_green"
+        )
 
 
-def test_parse_science_filename():
-    f = "hermes_spn_2s_l3test_burst_20240406_120621_v2.4.5"
-    result = util.parse_science_filename(f)
-    assert result["instrument"] == "spani"
-    assert result["mode"] == "2s"
-    assert result["level"] == "l3"
-    assert result["test"]
-    assert result["descriptor"] == "burst"
-    assert result["version"] == "2.4.5"
-    assert result["time"] == Time("2024-04-06T12:06:21")
+def test_parse_science_filename_ouput():
+
+    # all parameters
+    input = {
+        "instrument": "spani",
+        "mode": "2s",
+        "level": "l3",
+        "test": False,
+        "descriptor": "burst",
+        "version": "2.4.5",
+        "time": Time("2024-04-06T12:06:21"),
+    }
+
+    f = util.create_science_filename(
+        input["instrument"],
+        input["time"],
+        input["level"],
+        input["version"],
+        test=input["test"],
+        descriptor=input["descriptor"],
+        mode=input["mode"],
+    )
+    assert util.parse_science_filename(f) == input
+
+    # test only
+    input = {
+        "instrument": "nemisis",
+        "level": "l3",
+        "test": True,
+        "version": "2.4.5",
+        "time": Time("2024-04-06T12:06:21"),
+        "mode": None,
+        "descriptor": None,
+    }
+
+    f = util.create_science_filename(
+        input["instrument"],
+        input["time"],
+        input["level"],
+        input["version"],
+        test=input["test"],
+    )
+    assert util.parse_science_filename(f) == input
+
+    # descriptor only
+    input = {
+        "instrument": "spani",
+        "mode": None,
+        "level": "l3",
+        "test": False,
+        "descriptor": "burst",
+        "version": "2.4.5",
+        "time": Time("2024-04-06T12:06:21"),
+    }
+
+    f = util.create_science_filename(
+        input["instrument"],
+        input["time"],
+        input["level"],
+        input["version"],
+        descriptor=input["descriptor"],
+    )
+    assert util.parse_science_filename(f) == input
+
+    # mode only
+    input = {
+        "instrument": "nemisis",
+        "mode": "2s",
+        "level": "l2",
+        "test": False,
+        "descriptor": None,
+        "version": "2.7.9",
+        "time": Time("2024-04-06T12:06:21"),
+    }
+
+    f = util.create_science_filename(
+        input["instrument"], input["time"], input["level"], input["version"], mode=input["mode"]
+    )
+    assert util.parse_science_filename(f) == input
+
+
+def test_parse_science_filename_errors():
+
+    with pytest.raises(ValueError):
+        # wrong mission name
+        f = "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5"
+        util.parse_science_filename(f)
+
+        # wrong instrument name
+        f = "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5"
+        util.parse_science_filename(f)
