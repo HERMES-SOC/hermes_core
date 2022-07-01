@@ -10,7 +10,7 @@ Overview
     * - docs
       - |docs| |readthedocs|
     * - build status
-      - |testing| |codestyle|
+      - |testing| |codestyle| |coverage|
 
 .. |docs| image:: https://github.com/HERMES-SOC/hermes_core/actions/workflows/docs.yml/badge.svg
     :target: https://github.com/HERMES-SOC/hermes_core/actions/workflows/docs.yml
@@ -23,6 +23,10 @@ Overview
 .. |codestyle| image:: https://github.com/HERMES-SOC/hermes_core/actions/workflows/codestyle.yml/badge.svg
     :target: https://github.com/HERMES-SOC/hermes_core/actions/workflows/codestyle.yml
     :alt: Codestyle and linting using flake8
+
+.. |coverage| image:: https://codecov.io/gh/HERMES-SOC/hermes_core/branch/main/graph/badge.svg?token=C6JLIWZRBU 
+    :target: https://codecov.io/gh/HERMES-SOC/hermes_core
+    :alt: Testing coverage
 
 .. |readthedocs| image:: https://readthedocs.org/projects/hermes_core/badge/?version=latest
     :target: https://hermes_core.readthedocs.io/en/latest/?badge=latest
