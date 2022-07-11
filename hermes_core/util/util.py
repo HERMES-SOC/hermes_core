@@ -10,7 +10,9 @@ TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 
 
-def create_science_filename(instrument, time, level, version, mode="", descriptor="", test=False):
+def create_science_filename(
+    instrument, time, level, version, mode="", descriptor="", test=False
+):
     """Return a compliant filename root (without extension). The format is defined as
 
     hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}
@@ -70,16 +72,20 @@ def create_science_filename(instrument, time, level, version, mode="", descripto
 
     # the parse_science_filename function depends on _ not being present elsewhere
     if ("_" in mode) or ("_" in descriptor):
-        raise ValueError("The underscore symbol _ is not allowed in mode or descriptor.")
+        raise ValueError(
+            "The underscore symbol _ is not allowed in mode or descriptor."
+        )
 
-    filename = "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-        inst=hermes_core.INST_TO_SHORTNAME[instrument],
-        mode=mode,
-        level=level,
-        test=test_str,
-        descriptor=descriptor,
-        time=time_str,
-        version=version,
+    filename = (
+        "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
+            inst=hermes_core.INST_TO_SHORTNAME[instrument],
+            mode=mode,
+            level=level,
+            test=test_str,
+            descriptor=descriptor,
+            time=time_str,
+            version=version,
+        )
     )
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
