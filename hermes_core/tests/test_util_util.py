@@ -112,7 +112,10 @@ def test_science_filename_exceptions():
         # bad time string
         # non-existent time
         util.create_science_filename(
-            good_instrument, "2023-13-04T12:06:21", level=good_level, version=good_version
+            good_instrument,
+            "2023-13-04T12:06:21",
+            level=good_level,
+            version=good_version,
         )
         # not isot format
         util.create_science_filename(
