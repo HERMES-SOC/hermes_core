@@ -17,7 +17,7 @@ log = _init_log(config=config)
 # Then you can be explicit to control what ends up in the namespace,
 __all__ = ["config", "print_config"]
 
-MISSION_NAME = 'hermes'
+MISSION_NAME = "hermes"
 INST_NAMES = ["eea", "nemisis", "merit", "spani"]
 INST_SHORTNAMES = ["eea", "nms", "mrt", "spn"]
 INST_TO_SHORTNAME = dict(zip(INST_NAMES, INST_SHORTNAMES))

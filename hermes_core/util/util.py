@@ -10,7 +10,9 @@ TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 
 
-def create_science_filename(instrument, time, level, version, mode="", descriptor="", test=False):
+def create_science_filename(
+    instrument, time, level, version, mode="", descriptor="", test=False
+):
     """Return a compliant filename root (without extension). The format is defined as
 
     hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}
@@ -70,16 +72,20 @@ def create_science_filename(instrument, time, level, version, mode="", descripto
 
     # the parse_science_filename function depends on _ not being present elsewhere
     if ("_" in mode) or ("_" in descriptor):
-        raise ValueError("The underscore symbol _ is not allowed in mode or descriptor.")
+        raise ValueError(
+            "The underscore symbol _ is not allowed in mode or descriptor."
+        )
 
-    filename = "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-        inst=hermes_core.INST_TO_SHORTNAME[instrument],
-        mode=mode,
-        level=level,
-        test=test_str,
-        descriptor=descriptor,
-        time=time_str,
-        version=version,
+    filename = (
+        "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
+            inst=hermes_core.INST_TO_SHORTNAME[instrument],
+            mode=mode,
+            level=level,
+            test=test_str,
+            descriptor=descriptor,
+            time=time_str,
+            version=version,
+        )
     )
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
@@ -87,7 +93,7 @@ def create_science_filename(instrument, time, level, version, mode="", descripto
 
 
 def parse_science_filename(filename):
-    """"
+    """ "
     Parses a science filename into its consitutient properties (instrument, mode, test, time, level, version, descriptor).
 
     Parameters
@@ -101,11 +107,22 @@ def parse_science_filename(filename):
         A dictionary with each property.
     """
 
-    result = {"instrument": None, "mode": None, "test": False, "time": None, "level": None, "version": None, "descriptor": None}
+    result = {
+        "instrument": None,
+        "mode": None,
+        "test": False,
+        "time": None,
+        "level": None,
+        "version": None,
+        "descriptor": None,
+    }
 
     filename_components = filename.split("_")
 
-    if filename_components[0] != hermes_core.MISSION_NAME or filename_components[1] not in hermes_core.INST_SHORTNAMES:
+    if (
+        filename_components[0] != hermes_core.MISSION_NAME
+        or filename_components[1] not in hermes_core.INST_SHORTNAMES
+    ):
         raise ValueError("File {} not recognized.".format(filename))
 
     #  reverse the dictionary to look up instrument name from the short name
@@ -113,7 +130,9 @@ def parse_science_filename(filename):
 
     result["instrument"] = from_shortname[filename_components[1]]
     result["version"] = filename_components[-1][1:]  # remove the v
-    result["time"] = Time.strptime(filename_components[-3] + '_' + filename_components[-2], TIME_FORMAT)
+    result["time"] = Time.strptime(
+        filename_components[-3] + "_" + filename_components[-2], TIME_FORMAT
+    )
 
     # mode and descriptor are optional so need to figure out if one or both or none is included
     if filename_components[2][0:2] not in VALID_DATA_LEVELS:
