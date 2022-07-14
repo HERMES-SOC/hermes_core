@@ -1,6 +1,8 @@
 """
 This module provides general utility functions.
 """
+import hashlib
+
 from astropy.time import Time
 
 import hermes_core
@@ -93,7 +95,7 @@ def create_science_filename(
 
 
 def parse_science_filename(filename):
-    """ "
+    """
     Parses a science filename into its consitutient properties (instrument, mode, test, time, level, version, descriptor).
 
     Parameters
@@ -151,3 +153,31 @@ def parse_science_filename(filename):
             result["descriptor"] = filename_components[3]
 
     return result
+
+
+def hash_file(filename):
+    """Calculates the md5 hash for a given file.
+
+    Parameters
+    ----------
+    filename: `str`
+        The filename.
+
+    Returns
+    -------
+    result : `str`
+        The hash value in hex.
+    """
+    # read the file in 64kb chunks to accomodate large files
+    # so that the entire file does not need to be in memory at the same time
+    buffer_size = 65536
+
+    md5 = hashlib.md5()
+    with open(filename, 'rb') as f:
+        while True:
+            chunk = f.read(buffer_size)
+            if not chunk:
+                break
+            md5.update(chunk)
+    
+    return md5.hexdigest()

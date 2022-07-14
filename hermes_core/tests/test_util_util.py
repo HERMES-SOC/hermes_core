@@ -1,5 +1,6 @@
 """Tests for util.py"""
 import pytest
+import tempfile
 
 from astropy.time import Time
 from hermes_core.util import util
@@ -234,3 +235,18 @@ def test_parse_science_filename_errors():
         # wrong instrument name
         f = "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5"
         util.parse_science_filename(f)
+
+
+testdata = [
+    (b'Hello world', '3e25960a79dbc69b674cd4ec67a72c62'),
+    (b'Hermes is the best!', 'fc31437934081bf3c7f5552908e3a440'),
+    (b'to the moon!', 'fe83120ed5dbbf8ddc1ae0aef898efc7'),
+]
+
+@pytest.mark.parametrize("text,md5", testdata)
+def test_hash_file(text, md5):
+    """Test with known inputs and outputs"""
+    f = tempfile.NamedTemporaryFile(delete=False)
+    f.write(text)
+    f.close()
+    assert util.hash_file(f.name) == md5
