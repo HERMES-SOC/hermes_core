@@ -139,8 +139,8 @@ def test_science_filename_exceptions():
         )
 
 
-def test_parse_science_filename_ouput():
-
+def test_parse_science_filename_output():
+    """Test for known outputs"""
     # all parameters
     input = {
         "instrument": "spani",
@@ -225,7 +225,7 @@ def test_parse_science_filename_ouput():
 
 
 def test_parse_science_filename_errors():
-
+    """Test for errors"""
     with pytest.raises(ValueError):
         # wrong mission name
         f = "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5"
