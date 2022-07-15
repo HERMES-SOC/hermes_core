@@ -224,22 +224,26 @@ def test_parse_science_filename_output():
     )
     assert util.parse_science_filename(f) == input
 
+
 testdata = [
-    "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5", # wrong mission name
-    "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5"  # wrong instrument name
+    "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5",  # wrong mission name
+    "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5",  # wrong instrument name
 ]
+
+
 @pytest.mark.parametrize("filename", testdata)
 def test_parse_science_filename_errors(filename):
     """Test for errors"""
-    with pytest.raises(ValueError):        
+    with pytest.raises(ValueError):
         util.parse_science_filename(filename)
 
 
 testdata = [
-    (b'Hello world', '3e25960a79dbc69b674cd4ec67a72c62'),
-    (b'Hermes is the best!', 'fc31437934081bf3c7f5552908e3a440'),
-    (b'to the moon!', 'fe83120ed5dbbf8ddc1ae0aef898efc7'),
+    (b"Hello world", "3e25960a79dbc69b674cd4ec67a72c62"),
+    (b"Hermes is the best!", "fc31437934081bf3c7f5552908e3a440"),
+    (b"to the moon!", "fe83120ed5dbbf8ddc1ae0aef898efc7"),
 ]
+
 
 @pytest.mark.parametrize("text,md5", testdata)
 def test_hash_file(text, md5):

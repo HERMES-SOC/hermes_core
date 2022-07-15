@@ -173,11 +173,11 @@ def hash_file(filename):
     buffer_size = 65536
 
     md5 = hashlib.md5()
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         while True:
             chunk = f.read(buffer_size)
             if not chunk:
                 break
             md5.update(chunk)
-    
+
     return md5.hexdigest()
