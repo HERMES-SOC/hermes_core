@@ -224,17 +224,15 @@ def test_parse_science_filename_output():
     )
     assert util.parse_science_filename(f) == input
 
-
-def test_parse_science_filename_errors():
+testdata = [
+    "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5", # wrong mission name
+    "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5"  # wrong instrument name
+]
+@pytest.mark.parametrize("filename", testdata)
+def test_parse_science_filename_errors(filename):
     """Test for errors"""
-    with pytest.raises(ValueError):
-        # wrong mission name
-        f = "veeger_spn_2s_l3test_burst_20240406_120621_v2.4.5"
-        util.parse_science_filename(f)
-
-        # wrong instrument name
-        f = "hermes_www_2s_l3test_burst_20240406_120621_v2.4.5"
-        util.parse_science_filename(f)
+    with pytest.raises(ValueError):        
+        util.parse_science_filename(filename)
 
 
 testdata = [
