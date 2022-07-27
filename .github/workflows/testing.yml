@@ -32,4 +32,6 @@ jobs:
       run: pytest --pyargs hermes_core --cov hermes_core
       env:
         PLATFORM: ${{ matrix.platform }}
+    - name: Upload coverage reports to Codecov with GitHub Action
+      uses: codecov/codecov-action@v3
 
