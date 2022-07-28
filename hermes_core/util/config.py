@@ -10,17 +10,26 @@ import configparser
 from pathlib import Path
 
 import hermes_core
-from sunpy.extern.appdirs import AppDirs
 from hermes_core.util.exceptions import warn_user
+
+# This is to fix issue with AppDirs not writing to /tmp/ in AWS Lambda
+if not os.getenv("LAMBDA_ENVIRONMENT"):
+    from sunpy.extern.appdirs import AppDirs
 
 __all__ = ["load_config", "copy_default_config", "print_config", "CONFIG_DIR"]
 
-# This is to avoid creating a new config dir for each new dev version.
-# We use AppDirs to locate and create the config directory.
-dirs = AppDirs("hermes_core", "hermes_core")
-# Default one set by AppDirs
-CONFIG_DIR = dirs.user_config_dir
-CACHE_DIR = dirs.user_cache_dir
+# Default directories for Lambda Environment
+CONFIG_DIR = "/tmp/.config"
+CACHE_DIR = "/tmp/.cache"
+
+# This is to fix issue with AppDirs not writing to /tmp/ in AWS Lambda
+if not os.getenv("LAMBDA_ENVIRONMENT"):
+    # This is to avoid creating a new config dir for each new dev version.
+    # We use AppDirs to locate and create the config directory.
+    dirs = AppDirs("hermes_core", "hermes_core")
+    # Default one set by AppDirs
+    CONFIG_DIR = dirs.user_config_dir
+    CACHE_DIR = dirs.user_cache_dir
 
 
 def load_config():
