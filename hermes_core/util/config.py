@@ -46,6 +46,10 @@ def load_config():
     # Read in configuration files
     config.read(config_files)
 
+    # This is to fix issue with AppDirs not writing to /tmp/ in AWS Lambda
+    if os.getenv("LAMBDA_ENVIRONMENT"):
+        config.set("logger", "log_to_file", "False")
+
     # Specify the working directory as a default so that the user's home
     # directory can be located in an OS-independent manner
     if not config.has_option("general", "working_dir"):
