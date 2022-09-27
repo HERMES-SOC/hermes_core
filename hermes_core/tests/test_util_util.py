@@ -217,7 +217,7 @@ def test_science_filename_errors_l1_b():
 @pytest.mark.parametrize("filename,instrument,time,level,version", [
     ("hermes_MAG_l0_2024094-124603_v01.bin", "nemisis", "2024-04-03T12:46:03", "l0", "01"),
     ("hermes_EEA_l0_2026337-124603_v11.bin", "eea", "2026-12-03T12:46:03", "l0", "11"),
-    ("hermes_MRT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21"),
+    ("hermes_MERIT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21"),
     ("hermes_SPANI_l0_2026337-065422_v11.bin", "spani", "2026-12-03T06:54:22", "l0", "11"),
 ])
 def test_parse_l0_filenames(filename, instrument, time, level, version):
