@@ -1,11 +1,16 @@
 """
 This module provides general utility functions.
 """
+import os
+
 from astropy.time import Time
 
 import hermes_core
 
+
 __all__ = ["create_science_filename"]
+
+TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 
@@ -13,9 +18,11 @@ VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 def create_science_filename(
     instrument, time, level, version, mode="", descriptor="", test=False
 ):
-    """Return a compliant filename root (without extension). The format is defined as
+    """Return a compliant filename. The format is defined as
 
-    hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}
+    hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}.cdf
+
+    This format is only appropriate for data level >= 1.
 
     Parameters
     ----------
@@ -47,10 +54,10 @@ def create_science_filename(
                 inst=instrument, valid=hermes_core.INST_NAMES
             )
         )
-    if level is VALID_DATA_LEVELS:
+    if level not in VALID_DATA_LEVELS[1:]:
         raise ValueError(
             "Level, {level}, is not recognized. Must be one of {valid}.".format(
-                level=level, valid=VALID_DATA_LEVELS
+                level=level, valid=VALID_DATA_LEVELS[1:]
             )
         )
     # check that version is in the right format with three parts
@@ -76,20 +83,18 @@ def create_science_filename(
             "The underscore symbol _ is not allowed in mode or descriptor."
         )
 
-    filename = (
-        "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-            inst=hermes_core.INST_TO_SHORTNAME[instrument],
-            mode=mode,
-            level=level,
-            test=test_str,
-            descriptor=descriptor,
-            time=time_str,
-            version=version,
-        )
+    filename = "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
+        inst=hermes_core.INST_TO_SHORTNAME[instrument],
+        mode=mode,
+        level=level,
+        test=test_str,
+        descriptor=descriptor,
+        time=time_str,
+        version=version,
     )
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
-    return filename
+    return filename + ".cdf"
 
 
 def parse_science_filename(filename):
@@ -117,37 +122,65 @@ def parse_science_filename(filename):
         "descriptor": None,
     }
 
-    filename_components = filename.split("_")
+    file_name, file_ext = os.path.splitext(filename)
 
-    if (
-        filename_components[0] != hermes_core.MISSION_NAME
-        or filename_components[1] not in hermes_core.INST_SHORTNAMES
-    ):
-        raise ValueError("File {} not recognized.".format(filename))
+    filename_components = file_name.split("_")
 
-    #  reverse the dictionary to look up instrument name from the short name
-    from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
+    if filename_components[0] != hermes_core.MISSION_NAME:
+        raise ValueError(
+            "File {} not recognized. Not a valid mission name.".format(filename)
+        )
+
+    if file_ext == ".bin":
+        if filename_components[1] not in hermes_core.INST_TARGETNAMES:
+            raise ValueError(
+                "File {} not recognized. Not a valid target name.".format(filename)
+            )
+        if filename_components[2] != VALID_DATA_LEVELS[0]:
+            raise ValueError(
+                "Data level {} is not correct for this file extension.".format(
+                    filename_components[2]
+                )
+            )
+        else:
+            result["level"] = filename_components[2]
+        #  reverse the dictionary to look up instrument name from the short name
+        from_shortname = {v: k for k, v in hermes_core.INST_TO_TARGETNAME.items()}
+
+        result["time"] = Time.strptime(filename_components[3], TIME_FORMAT_L0)
+
+    elif file_ext == ".cdf":
+        if filename_components[1] not in hermes_core.INST_SHORTNAMES:
+            raise ValueError(
+                "File {} not recognized. Not a valid instrument name.".format(filename)
+            )
+
+        #  reverse the dictionary to look up instrument name from the short name
+        from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
+
+        result["time"] = Time.strptime(
+            filename_components[-3] + "_" + filename_components[-2], TIME_FORMAT
+        )
+
+        # mode and descriptor are optional so need to figure out if one or both or none is included
+        if filename_components[2][0:2] not in VALID_DATA_LEVELS:
+            # if the first component is not data level then it is mode and the following is data level
+            result["mode"] = filename_components[2]
+            result["level"] = filename_components[3].replace("test", "")
+            if "test" in filename_components[3]:
+                result["test"] = True
+            if len(filename_components) == 8:
+                result["descriptor"] = filename_components[4]
+        else:
+            result["level"] = filename_components[2].replace("test", "")
+            if "test" in filename_components[2]:
+                result["test"] = True
+            if len(filename_components) == 7:
+                result["descriptor"] = filename_components[3]
+    else:
+        raise ValueError("File extension {} not recognized.".format(file_ext))
 
     result["instrument"] = from_shortname[filename_components[1]]
     result["version"] = filename_components[-1][1:]  # remove the v
-    result["time"] = Time.strptime(
-        filename_components[-3] + "_" + filename_components[-2], TIME_FORMAT
-    )
-
-    # mode and descriptor are optional so need to figure out if one or both or none is included
-    if filename_components[2][0:2] not in VALID_DATA_LEVELS:
-        # if the first component is not data level then it is mode and the following is data level
-        result["mode"] = filename_components[2]
-        result["level"] = filename_components[3].replace("test", "")
-        if "test" in filename_components[3]:
-            result["test"] = True
-        if len(filename_components) == 8:
-            result["descriptor"] = filename_components[4]
-    else:
-        result["level"] = filename_components[2].replace("test", "")
-        if "test" in filename_components[2]:
-            result["test"] = True
-        if len(filename_components) == 7:
-            result["descriptor"] = filename_components[3]
 
     return result
