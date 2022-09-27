@@ -83,14 +83,16 @@ def create_science_filename(
             "The underscore symbol _ is not allowed in mode or descriptor."
         )
 
-    filename = "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-        inst=hermes_core.INST_TO_SHORTNAME[instrument],
-        mode=mode,
-        level=level,
-        test=test_str,
-        descriptor=descriptor,
-        time=time_str,
-        version=version,
+    filename = (
+        "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
+            inst=hermes_core.INST_TO_SHORTNAME[instrument],
+            mode=mode,
+            level=level,
+            test=test_str,
+            descriptor=descriptor,
+            time=time_str,
+            version=version,
+        )
     )
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
