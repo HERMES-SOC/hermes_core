@@ -7,8 +7,11 @@ from hermes_core.util import util
 time = "2024-04-06T12:06:21"
 time_formatted = "20240406_120621"
 
+
 # fmt: off
-@pytest.mark.parametrize("instrument,time,level,version,result", [
+@pytest.mark.parametrize(
+    "instrument, time, level, version, result",
+    [
         ("eea", time, "l1", "1.2.3", "hermes_eea_l1_{}_v1.2.3.cdf".format(time_formatted)),
         ("merit", time, "l2", "2.4.5", "hermes_mrt_l2_{}_v2.4.5.cdf".format(time_formatted)),
         ("nemisis", time, "l2", "1.3.5", "hermes_nms_l2_{}_v1.3.5.cdf".format(time_formatted)),
@@ -168,23 +171,27 @@ good_time = "2025-06-02T12:04:01"
 good_instrument = "eea"
 good_level = "l1"
 good_version = "1.3.4"
+
+
 # fmt: off
-@pytest.mark.parametrize("instrument,time,level,version", [
-    (good_instrument, good_time, good_level, "1.3"), # bad version specifications
-    (good_instrument, good_time, good_level, "1"),
-    (good_instrument, good_time, good_level, "1.5.6.7"),
-    (good_instrument, good_time, good_level, "1.."),
-    (good_instrument, good_time, good_level, "a.5.6"),
-    (good_instrument, good_time, "la", good_version),  # wrong level specifications
-    (good_instrument, good_time, "squirrel", good_version),
-    (good_instrument, good_time, "l0", good_version),
-    ("potato", good_time, good_level, good_version),  # wrong instrument names
-    ("eeb", good_time, good_level, good_version),
-    ("fpi", good_time, good_level, good_version),
-    (good_instrument, "2023-13-04T12:06:21", good_level, good_version),  # non-existent time
-    (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
-    (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
-    (good_instrument, "12345345", good_level, good_version),  # not valid input for time
+@pytest.mark.parametrize(
+    "instrument,time,level,version",
+    [
+        (good_instrument, good_time, good_level, "1.3"),  # bad version specifications
+        (good_instrument, good_time, good_level, "1"),
+        (good_instrument, good_time, good_level, "1.5.6.7"),
+        (good_instrument, good_time, good_level, "1.."),
+        (good_instrument, good_time, good_level, "a.5.6"),
+        (good_instrument, good_time, "la", good_version),  # wrong level specifications
+        (good_instrument, good_time, "squirrel", good_version),
+        (good_instrument, good_time, "l0", good_version),
+        ("potato", good_time, good_level, good_version),  # wrong instrument names
+        ("eeb", good_time, good_level, good_version),
+        ("fpi", good_time, good_level, good_version),
+        (good_instrument, "2023-13-04T12:06:21", good_level, good_version),  # non-existent time
+        (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
+        (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
+        (good_instrument, "12345345", good_level, good_version),  # not valid input for time
     ]
 )
 def test_science_filename_errors_l1_a(instrument, time, level, version):
