@@ -24,4 +24,4 @@ INST_TARGETNAMES = ["EEA", "MAG", "MRT", "SPANI"]
 INST_TO_SHORTNAME = dict(zip(INST_NAMES, INST_SHORTNAMES))
 INST_TO_TARGETNAME = dict(zip(INST_NAMES, INST_TARGETNAMES))
 
-log.info("hermes_core version: {}".format(__version__))
+log.info(f"hermes_core version: {__version__}")
