@@ -13,7 +13,6 @@ __all__ = ["create_science_filename"]
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
-FILENAME_EXTENSION = ".cdf"
 
 
 def create_science_filename(

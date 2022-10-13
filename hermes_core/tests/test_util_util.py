@@ -168,23 +168,27 @@ good_time = "2025-06-02T12:04:01"
 good_instrument = "eea"
 good_level = "l1"
 good_version = "1.3.4"
+
+
 # fmt: off
-@pytest.mark.parametrize("instrument,time,level,version", [
-    (good_instrument, good_time, good_level, "1.3"), # bad version specifications
-    (good_instrument, good_time, good_level, "1"),
-    (good_instrument, good_time, good_level, "1.5.6.7"),
-    (good_instrument, good_time, good_level, "1.."),
-    (good_instrument, good_time, good_level, "a.5.6"),
-    (good_instrument, good_time, "la", good_version),  # wrong level specifications
-    (good_instrument, good_time, "squirrel", good_version),
-    (good_instrument, good_time, "l0", good_version),
-    ("potato", good_time, good_level, good_version),  # wrong instrument names
-    ("eeb", good_time, good_level, good_version),
-    ("fpi", good_time, good_level, good_version),
-    (good_instrument, "2023-13-04T12:06:21", good_level, good_version),  # non-existent time
-    (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
-    (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
-    (good_instrument, "12345345", good_level, good_version),  # not valid input for time
+@pytest.mark.parametrize(
+    "instrument,time,level,version",
+    [
+        (good_instrument, good_time, good_level, "1.3"),  # bad version specifications
+        (good_instrument, good_time, good_level, "1"),
+        (good_instrument, good_time, good_level, "1.5.6.7"),
+        (good_instrument, good_time, good_level, "1.."),
+        (good_instrument, good_time, good_level, "a.5.6"),
+        (good_instrument, good_time, "la", good_version),  # wrong level specifications
+        (good_instrument, good_time, "squirrel", good_version),
+        (good_instrument, good_time, "l0", good_version),
+        ("potato", good_time, good_level, good_version),  # wrong instrument names
+        ("eeb", good_time, good_level, good_version),
+        ("fpi", good_time, good_level, good_version),
+        (good_instrument, "2023-13-04T12:06:21", good_level, good_version),  # non-existent time
+        (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
+        (good_instrument, "2023/13/04 12:06:21", good_level, good_version),  # not isot format
+        (good_instrument, "12345345", good_level, good_version),  # not valid input for time
     ]
 )
 def test_science_filename_errors_l1_a(instrument, time, level, version):
@@ -217,7 +221,7 @@ def test_science_filename_errors_l1_b():
 @pytest.mark.parametrize("filename,instrument,time,level,version", [
     ("hermes_MAG_l0_2024094-124603_v01.bin", "nemisis", "2024-04-03T12:46:03", "l0", "01"),
     ("hermes_EEA_l0_2026337-124603_v11.bin", "eea", "2026-12-03T12:46:03", "l0", "11"),
-    ("hermes_MRT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21"),
+    ("hermes_MERIT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21"),
     ("hermes_SPANI_l0_2026337-065422_v11.bin", "spani", "2026-12-03T06:54:22", "l0", "11"),
 ])
 def test_parse_l0_filenames(filename, instrument, time, level, version):
