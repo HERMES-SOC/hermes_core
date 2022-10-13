@@ -13,6 +13,7 @@ __all__ = ["create_science_filename"]
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
+FILENAME_EXTENSION = ".cdf"
 
 
 def create_science_filename(
@@ -50,29 +51,23 @@ def create_science_filename(
 
     if instrument not in hermes_core.INST_NAMES:
         raise ValueError(
-            "Instrument, {inst}, is not recognized. Must be one of {valid}.".format(
-                inst=instrument, valid=hermes_core.INST_NAMES
-            )
+            f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
         )
     if level not in VALID_DATA_LEVELS[1:]:
         raise ValueError(
-            "Level, {level}, is not recognized. Must be one of {valid}.".format(
-                level=level, valid=VALID_DATA_LEVELS[1:]
-            )
+            f"Level, {level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
         )
     # check that version is in the right format with three parts
     if len(version.split(".")) != 3:
         raise ValueError(
-            "Version, {version}, is not formatted correctly. Should be X.Y.Z".format(
-                version=version
-            )
+            f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
         )
     # check that version has integers in each part
     for item in version.split("."):
         try:
             int_value = int(item)
         except ValueError:
-            raise ValueError("Version, {version}, is not all integers.")
+            raise ValueError(f"Version, {version}, is not all integers.")
 
     if test is True:
         test_str = "test"
@@ -83,20 +78,10 @@ def create_science_filename(
             "The underscore symbol _ is not allowed in mode or descriptor."
         )
 
-    filename = (
-        "hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}".format(
-            inst=hermes_core.INST_TO_SHORTNAME[instrument],
-            mode=mode,
-            level=level,
-            test=test_str,
-            descriptor=descriptor,
-            time=time_str,
-            version=version,
-        )
-    )
+    filename = f"hermes_{hermes_core.INST_TO_SHORTNAME[instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
-    return filename + ".cdf"
+    return filename + FILENAME_EXTENSION
 
 
 def parse_science_filename(filename):
@@ -129,20 +114,16 @@ def parse_science_filename(filename):
     filename_components = file_name.split("_")
 
     if filename_components[0] != hermes_core.MISSION_NAME:
-        raise ValueError(
-            "File {} not recognized. Not a valid mission name.".format(filename)
-        )
+        raise ValueError(f"File {filename} not recognized. Not a valid mission name.")
 
     if file_ext == ".bin":
         if filename_components[1] not in hermes_core.INST_TARGETNAMES:
             raise ValueError(
-                "File {} not recognized. Not a valid target name.".format(filename)
+                f"File {filename} not recognized. Not a valid target name."
             )
         if filename_components[2] != VALID_DATA_LEVELS[0]:
             raise ValueError(
-                "Data level {} is not correct for this file extension.".format(
-                    filename_components[2]
-                )
+                f"Data level {filename_components[2]} is not correct for this file extension."
             )
         else:
             result["level"] = filename_components[2]
@@ -154,7 +135,7 @@ def parse_science_filename(filename):
     elif file_ext == ".cdf":
         if filename_components[1] not in hermes_core.INST_SHORTNAMES:
             raise ValueError(
-                "File {} not recognized. Not a valid instrument name.".format(filename)
+                "File {filename} not recognized. Not a valid instrument name."
             )
 
         #  reverse the dictionary to look up instrument name from the short name
@@ -180,7 +161,7 @@ def parse_science_filename(filename):
             if len(filename_components) == 7:
                 result["descriptor"] = filename_components[3]
     else:
-        raise ValueError("File extension {} not recognized.".format(file_ext))
+        raise ValueError(f"File extension {file_ext} not recognized.")
 
     result["instrument"] = from_shortname[filename_components[1]]
     result["version"] = filename_components[-1][1:]  # remove the v
