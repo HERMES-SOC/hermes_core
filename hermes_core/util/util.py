@@ -13,6 +13,7 @@ __all__ = ["create_science_filename"]
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
+FILENAME_EXTENSION = ".cdf"
 
 
 def create_science_filename(
@@ -79,7 +80,7 @@ def create_science_filename(
     filename = f"hermes_{hermes_core.INST_TO_SHORTNAME[instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
-    return filename + ".cdf"
+    return filename + FILENAME_EXTENSION
 
 
 def parse_science_filename(filename):
