@@ -13,6 +13,7 @@ __all__ = ["create_science_filename"]
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
+FILENAME_EXTENSION = ".cdf"
 
 
 def create_science_filename(
@@ -50,7 +51,8 @@ def create_science_filename(
 
     if instrument not in hermes_core.INST_NAMES:
         raise ValueError(
-            f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.INST_NAMES}.")
+            f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
+        )
     if level not in VALID_DATA_LEVELS[1:]:
         raise ValueError(
             f"Level, {level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
@@ -112,9 +114,7 @@ def parse_science_filename(filename):
     filename_components = file_name.split("_")
 
     if filename_components[0] != hermes_core.MISSION_NAME:
-        raise ValueError(
-            f"File {filename} not recognized. Not a valid mission name."
-        )
+        raise ValueError(f"File {filename} not recognized. Not a valid mission name.")
 
     if file_ext == ".bin":
         if filename_components[1] not in hermes_core.INST_TARGETNAMES:

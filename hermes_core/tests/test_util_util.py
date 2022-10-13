@@ -7,13 +7,14 @@ from hermes_core.util import util
 time = "2024-04-06T12:06:21"
 time_formatted = "20240406_120621"
 
+
 # fmt: off
 @pytest.mark.parametrize("instrument,time,level,version,result", [
-        ("eea", time, "l1", "1.2.3", f"hermes_eea_l1_{time_formatted}_v1.2.3.cdf"),
-        ("merit", time, "l2", "2.4.5", f"hermes_mrt_l2_{time_formatted}_v2.4.5.cdf"),
-        ("nemisis", time, "l2", "1.3.5", f"hermes_nms_l2_{time_formatted}_v1.3.5.cdf"),
-        ("spani", time, "l3", "2.4.5", f"hermes_spn_l3_{time_formatted}_v2.4.5.cdf"),
-    ],
+    ("eea", time, "l1", "1.2.3", f"hermes_eea_l1_{time_formatted}_v1.2.3.cdf"),
+    ("merit", time, "l2", "2.4.5", f"hermes_mrt_l2_{time_formatted}_v2.4.5.cdf"),
+    ("nemisis", time, "l2", "1.3.5", f"hermes_nms_l2_{time_formatted}_v1.3.5.cdf"),
+    ("spani", time, "l3", "2.4.5", f"hermes_spn_l3_{time_formatted}_v2.4.5.cdf"),
+]
 )
 def test_science_filename_output_a(instrument, time, level, version, result):
     """Test simple cases with expected output"""
@@ -28,43 +29,58 @@ def test_science_filename_output_b():
     """Test more complex cases of expected output"""
 
     # mode
-    assert util.create_science_filename(
-        "spani", time, level="l3", mode="2s", version="2.4.5"
-    ) == f"hermes_spn_2s_l3_{time_formatted}_v2.4.5.cdf"
+    assert (
+        util.create_science_filename(
+            "spani", time, level="l3", mode="2s", version="2.4.5"
+        )
+        == f"hermes_spn_2s_l3_{time_formatted}_v2.4.5.cdf"
+    )
     # test
-    assert util.create_science_filename(
-        "spani", time, level="l1", version="2.4.5", test=True
-    ) == f"hermes_spn_l1test_{time_formatted}_v2.4.5.cdf"
+    assert (
+        util.create_science_filename(
+            "spani", time, level="l1", version="2.4.5", test=True
+        )
+        == f"hermes_spn_l1test_{time_formatted}_v2.4.5.cdf"
+    )
     # all options
-    assert util.create_science_filename(
-        "spani",
-        time,
-        level="l3",
-        mode="2s",
-        descriptor="burst",
-        version="2.4.5",
-        test=True,
-    ) == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    assert (
+        util.create_science_filename(
+            "spani",
+            time,
+            level="l3",
+            mode="2s",
+            descriptor="burst",
+            version="2.4.5",
+            test=True,
+        )
+        == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    )
     # Time object instead of str
-    assert util.create_science_filename(
-        "spani",
-        Time(time),
-        level="l3",
-        mode="2s",
-        descriptor="burst",
-        version="2.4.5",
-        test=True,
-    ) == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    assert (
+        util.create_science_filename(
+            "spani",
+            Time(time),
+            level="l3",
+            mode="2s",
+            descriptor="burst",
+            version="2.4.5",
+            test=True,
+        )
+        == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    )
     # Time object but created differently
-    assert util.create_science_filename(
-        "spani",
-        Time(2460407.004409722, format="jd"),
-        level="l3",
-        mode="2s",
-        descriptor="burst",
-        version="2.4.5",
-        test=True,
-    ) == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    assert (
+        util.create_science_filename(
+            "spani",
+            Time(2460407.004409722, format="jd"),
+            level="l3",
+            mode="2s",
+            descriptor="burst",
+            version="2.4.5",
+            test=True,
+        )
+        == f"hermes_spn_2s_l3test_burst_{time_formatted}_v2.4.5.cdf"
+    )
 
 
 def test_parse_science_filename_output():
