@@ -134,7 +134,7 @@ def print_config():
     for section in hermes_core.config.sections():
         print(f"  [{section}]")
         for option in hermes_core.config.options(section):
-            print("  {} = {}".format(option, hermes_core.config.get(section, option)))
+            print(f"  {option} = {hermes_core.config.get(section, option)}")
         print("")
 
 

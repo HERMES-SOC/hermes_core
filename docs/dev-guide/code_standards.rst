@@ -16,7 +16,7 @@ Language Standard
 * All code must be compatible with Python 3.7 and later.
 
 * The new Python 3 formatting style should be used (i.e.
-  ``"{0:s}".format("spam")`` instead of ``"%s" % "spam"``).
+  ``f"{spam:s}"`` instead of ``"%s" % "spam"``).
 
 Coding Style/Conventions
 ========================

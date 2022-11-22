@@ -131,3 +131,6 @@ hermes_core/version.py
 
 # Mac hidden files
 .DS_Store
+
+# docs/api
+docs/api
