@@ -15,11 +15,30 @@ in a platform specific directory, which you can see the path for by running::
   >>> import hermes_core
   >>> hermes_core.print_config()  # doctest: +SKIP
 
+Using your own :file:`configrc` file
+=====================================
+To maintain your own customizations place a your customized :file:`configrc` in the directory of your project. The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out what file to be used. 
 
-To maintain your own customizations place a copy of the default file into the *first* path printed above.
+If you work in our devcontainer environment you can place your configuration file in this directory:
+
+.. exec_code::
+
+   # Location to place configuration file:
+
+   # --- hide: start ---
+   from hermes_core import util
+   print(util.config._get_user_configdir())
+   #hide:toggle
+
+.. Note:: 
+
+    The above directory is provided by the :code:`_get_user_configdir` function in the hermes-core util module within the :file:`config.py` file. You can find this file `here <https://github.com/HERMES-SOC/hermes_core/blob/main/hermes_core/util/config.py>`_.
+  
 Do not edit the default file directly as every time you install or update, this file will be overwritten.
 
-See below for the example config file.
+To learn more about how to set-up your development environment to be able to use your own configuation file see :ref:`dev_env`.
+
+See below (:ref:`configrc-sample`) for the example config file.
 
 .. _customizing-with-dynamic-settings:
 
@@ -35,7 +54,7 @@ the package. Settings can be modified directly, for example::
     hermes_core.config.set('downloads', 'download_dir', '/home/user/Downloads')
 
 
-.. configrc-sample:
+.. _configrc-sample:
 
 A sample sunpyrc file
 --------------------------------------------------------------------
