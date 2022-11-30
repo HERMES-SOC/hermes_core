@@ -21,3 +21,4 @@ python:
       extra_requirements:
         - docs
         - all
+        - sphinx-exec-code
