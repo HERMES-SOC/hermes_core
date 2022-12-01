@@ -30,7 +30,7 @@ If you work in our developer environment you can place your configuration file i
 
   /home/vscode/.config/hermes_core/
 
-You can also run the following code-block to see where to place it on your specific machine as well:
+If you do not use our developer environment, you can run the following code to see where to place it on your specific machine as well:
 
 .. doctest::
 
