@@ -22,7 +22,7 @@ To maintain your own customizations, you must place your customized :file:`confi
 .. warning::
     Do not edit the configrc file directly in the Python package as it will get overwritten  every time you re-install or update the package.
 
-For example, on a Linux system, the configuration folder is :file:`~/.config/hermes_core/`. You can then place your customized :file:`configrc` file inside this folder.
+You can copy the file below, customize it, and then place your customized :file:`configrc` file inside your config folder.
 
 If you work in our developer environment you can place your configuration file in this directory:
 
