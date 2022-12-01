@@ -53,10 +53,7 @@ See below (:ref:`configrc-sample`) for an example configuration file.
 Dynamic settings
 ================
 
-You can also dynamically change the default settings in a Python script or
-interactively from the python shell. All of the settings are stored in a
-Python ConfigParser instance called ``sunpy.config``, which is global to
-the package. Settings can be modified directly, for example::
+You can also dynamically change most of the default settings. One setting that cannot be changed is the location of the log file which is set on import. All settings are stored in a Python ConfigParser instance called ``hermes_core.config``, which is global to the package. Settings can be modified directly, for example::
 
     import hermes_core
     hermes_core.config.set('downloads', 'download_dir', '/home/user/Downloads')
