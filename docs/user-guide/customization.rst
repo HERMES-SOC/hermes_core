@@ -24,7 +24,7 @@ To maintain your own customizations, you must place your customized :file:`confi
 
 For example, on a Linux system, the configuration folder is :file:`~/.config/hermes_core/`. You can then place your customized :file:`configrc` file inside this folder.
 
-More specifically if you work in our devcontainer environment you can place your configuration file in this directory:
+If you work in our developer environment you can place your configuration file in this directory:
 
 .. code-block:: bash
 
