@@ -20,7 +20,7 @@ Using your own :file:`configrc` file
 To maintain your own customizations, you must place your customized :file:`configrc` inside the appropriate configuration folder (Which is based off the operating system you are working from). The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out where to look for your configuration file. 
 
 .. warning::
-    Do not just edit the default file directly as every time you install or update, this file will be overwritten.
+    Do not edit the configrc file directly in the Python package as it will get overwritten  every time you re-install or update the package.
 
 For example, on a Linux system, the configuration folder is :file:`~/.config/hermes_core/`. You can then place your customized :file:`configrc` file inside this folder.
 
