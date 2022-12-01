@@ -17,7 +17,7 @@ in a platform specific directory, which you can see the path for by running::
 
 Using your own :file:`configrc` file
 =====================================
-To maintain your own customizations, you must place your customized :file:`configrc` inside the appropriate configuration folder (Which is based off the operating system you are working from). The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out where to look for your configuration file. 
+To maintain your own customizations, you must place your customized :file:`configrc` inside the appropriate configuration folder (which is based off the operating system you are working on). The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out where to look for your configuration file. 
 
 .. warning::
     Do not edit the configrc file directly in the Python package as it will get overwritten  every time you re-install or update the package.
