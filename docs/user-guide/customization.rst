@@ -17,28 +17,36 @@ in a platform specific directory, which you can see the path for by running::
 
 Using your own :file:`configrc` file
 =====================================
-To maintain your own customizations place a your customized :file:`configrc` in the directory of your project. The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out what file to be used. 
+To maintain your own customizations, you must place your customized :file:`configrc` inside the appropriate configuration folder (Which is based off the operating system you are working from). The `AppDirs module <https://github.com/sunpy/sunpy/blob/main/sunpy/extern/appdirs.py>`_  provided by the `sunpy` package is used to figure out where to look for your configuration file. 
 
-If you work in our devcontainer environment you can place your configuration file in this directory:
+.. warning::
+    Do not just edit the default file directly as every time you install or update, this file will be overwritten.
 
-.. exec_code::
+For example, on a Linux system, the configuration folder is :file:`~/.config/hermes_core/`. You can then place your customized :file:`configrc` file inside this folder.
 
-   # Location to place configuration file:
+More specifically if you work in our devcontainer environment you can place your configuration file in this directory:
 
-   # --- hide: start ---
-   from hermes_core import util
-   print(util.config._get_user_configdir())
-   #hide:toggle
+.. code-block:: bash
 
-.. Note:: 
+  /home/vscode/.config/hermes_core/
 
-    The above directory is provided by the :code:`_get_user_configdir` function in the hermes-core util module within the :file:`config.py` file. You can find this file `here <https://github.com/HERMES-SOC/hermes_core/blob/main/hermes_core/util/config.py>`_.
-  
-Do not edit the default file directly as every time you install or update, this file will be overwritten.
+You can also run the following code-block to see where to place it on your specific machine as well:
 
-To learn more about how to set-up your development environment to be able to use your own configuation file see :ref:`dev_env`.
+.. doctest::
 
-See below (:ref:`configrc-sample`) for the example config file.
+  >>> from hermes_core import util
+  >>> print(util.config._get_user_configdir())
+
+  /home/vscode/.config/hermes_core/
+
+
+.. note:: 
+  To get more information on where to place your configuration file depending on your operating system, you can refer to the `AppDirs module docstrings <https://github.com/sunpy/sunpy/blob/1459206e11dc0c7bfeeeec6aede701ca60a8630c/sunpy/extern/appdirs.py#L165>`_. 
+
+
+To learn more about how to set-up your development environment see :ref:`dev_env`.
+
+See below (:ref:`configrc-sample`) for an example configuration file.
 
 .. _customizing-with-dynamic-settings:
 
@@ -56,7 +64,7 @@ the package. Settings can be modified directly, for example::
 
 .. _configrc-sample:
 
-A sample sunpyrc file
+A sample configrc file
 --------------------------------------------------------------------
 
 .. only:: html
