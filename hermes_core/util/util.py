@@ -28,7 +28,7 @@ def create_science_filename(
     Parameters
     ----------
     instrument : `str`
-        The instrument name. Must be one of the following "eea", "nemesis", "merit", "spani"
+        The instrument name. Must be one of the following "eea", "nemesis", "merit", "spani", "sunsensor"
     time : `str` (in isot format) or ~astropy.time
         The time
     level : `str`
@@ -85,7 +85,7 @@ def create_science_filename(
 
 
 def parse_science_filename(filename):
-    """ "
+    """
     Parses a science filename into its consitutient properties (instrument, mode, test, time, level, version, descriptor).
 
     Parameters
@@ -114,16 +114,16 @@ def parse_science_filename(filename):
     filename_components = file_name.split("_")
 
     if filename_components[0] != hermes_core.MISSION_NAME:
-        raise ValueError(f"File {filename} not recognized. Not a valid mission name.")
+        raise ValueError(f"File {filename} not recognized.")
 
     if file_ext == ".bin":
         if filename_components[1] not in hermes_core.INST_TARGETNAMES:
             raise ValueError(
-                f"File {filename} not recognized. Not a valid target name."
+                f"File {filename} not recognized. '{filename_components[1]}' is not one of the following valid targets {hermes_core.INST_TARGETNAMES}."
             )
         if filename_components[2] != VALID_DATA_LEVELS[0]:
             raise ValueError(
-                f"Data level {filename_components[2]} is not correct for this file extension."
+                f"Data level {filename_components[2]} is not correct for this file extension. Should be 'l0'."
             )
         else:
             result["level"] = filename_components[2]

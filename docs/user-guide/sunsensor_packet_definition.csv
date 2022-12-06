@@ -1,0 +1,16 @@
+name, bit_length, data_type, note
+SECONDS, 32, UINT,
+SUBSECONDS, 16, UINT, milliseconds
+NUMVECTORSCONTAINED, 16, INT, should be 20
+VECTORPOLLINTERVAL, 16, INT
+TEMPERATURE, 16, UINT
+PROCESSINGTIME, 32, UINT
+the following fields are repeated 20 times,,,{XX} is a zero-padded integer of the measurement number (e.g. 00 or 01 or 02)
+X_INT_{XX}, 16, INT
+Y_INT_{XX}, 16, INT
+Z_INT_{XX}, 16, INT
+FIT_QUALITY_{XX}, 8, INT
+GEOMETRY_QUALITY_{XX}, 8, INT
+VALIDITY_{XX}, 8, UINT, 0xFC if good quality and 0xF8 for bad quality
+BYTEFILLER_{XX}, 8, UINT
+
