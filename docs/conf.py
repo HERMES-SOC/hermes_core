@@ -97,7 +97,7 @@ html_theme = "bizstyle"
 html_static_path = ['_static']
 
 html_logo = 'logo/hermes_logo.png'
-html_favicon = 'logo/favicon-32x32.png'
+html_favicon = 'logo/favicon.ico'
 html_css_files = [
     'css/custom.css',
 ]
