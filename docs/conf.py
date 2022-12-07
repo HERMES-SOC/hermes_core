@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "hermes_core"
-copyright = ""
-author = ""
+copyright = "No rights reserved"
+author = "HERMES SOC Team"
 
 # The full version, including alpha/beta/rc tags
 from hermes_core import __version__
@@ -94,6 +94,13 @@ intersphinx_mapping = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "bizstyle"
+html_static_path = ['_static']
+
+html_logo = 'logo/hermes_logo.png'
+html_favicon = 'logo/favicon-32x32.png'
+html_css_files = [
+    'css/custom.css',
+]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
