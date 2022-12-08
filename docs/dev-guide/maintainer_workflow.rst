@@ -125,15 +125,6 @@ Updating and Maintaining the Changelog
 The changelog will be read by users, so this description should be aimed at sunpy users instead of describing internal changes which are only relevant to the developers.
 
 The current changelog is kept in the file "CHANGELOG.rst" at the root of the repository.
-You do not need to update this file as we use `towncrier`_ to update our changelog.
-This is built and embedded into our documentation.
-
-Towncrier will automatically reflow your text, so it will work best if you stick to a single paragraph, but multiple sentences and links are OK and encouraged.
-You can install towncrier and then run ``towncrier --draft`` if you want to get a preview of how your change will look in the final release notes.
-
-`Instructions on how to write a changelog. <https://github.com/sunpy/sunpy/blob/main/changelog/README.rst>`__.
-
-.. _towncrier: https://pypi.org/project/towncrier/
 
 Releases
 ========
