@@ -54,6 +54,11 @@ test = [
   'coverage[toml]'
 ]
 
+style = [
+  'black',
+  'flake8'
+]
+
 [tool.setuptools.package-data]
 hermes_core = ["data/*"]
 
