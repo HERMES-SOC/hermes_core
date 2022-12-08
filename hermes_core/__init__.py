@@ -1,10 +1,10 @@
 # see license/LICENSE.rst
-
 try:
-    from .version import __version__
+    from ._version import version as __version__
+    from ._version import version_tuple
 except ImportError:
-    __version__ = "unknown"
-
+    __version__ = "unknown version"
+    version_tuple = (0, 0, "unknown version")
 
 from hermes_core.util.config import load_config, print_config
 from hermes_core.util.logger import _init_log
@@ -24,4 +24,4 @@ INST_TARGETNAMES = ["EEA", "MAG", "MERIT", "SPANI"]
 INST_TO_SHORTNAME = dict(zip(INST_NAMES, INST_SHORTNAMES))
 INST_TO_TARGETNAME = dict(zip(INST_NAMES, INST_TARGETNAMES))
 
-log.info(f"hermes_core version: {__version__}")
+# log.info(f"hermes_core version: {__version__}")
