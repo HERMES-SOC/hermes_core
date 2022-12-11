@@ -7,23 +7,46 @@ import ccsdspy
 from ccsdspy import PacketField
 
 from hermes_core.util.util import create_science_filename, parse_science_filename
+from hermes_core.io import read_file
 
-__all__ = ["calibrate_file", "get_calibration_file", "read_calibration_file"]
+__all__ = ["calibrate_file", "get_calibration_file", "read_calibration_file", "process_file", "plot_file"]
 
 # the number of sun sensor vector readings in a vector packet
 SUNSENSOR_NUM_VECTORS = 20
 
 
-def calibrate_file(data_filename, output_level=2):
+def process_file(data_filename: str) -> list:
     """
-    Given an input file, calibrate it and return a new file.
+    This is the entry point for the pipeline processing. It runs all of the various processing steps required.
+
+    Parameters
+    ----------
+    data_filename: str
+        Fully specificied filename of an input file
+    
+    Returns
+    -------
+    output_filenames: list
+        Fully specificied filenames the output filenames
+    """
+    output_files = []
+
+    calibrated_file = calibrate_file(data_filename)
+    #data_plot_files = plot_file(data_filename)
+    #calib_plot_files = plot_file(calibrated_file)
+
+    # add other tasks below
+    return output_files
+
+
+def calibrate_file(data_filename):
+    """
+    Given an input data file, raise it to the next level (e.g. level 0 to level 1, level 1 to quicklook) it and return a new file.
 
     Parameters
     ----------
     data_filename: str
         Fully specificied filename of the non-calibrated file (data level < 2)
-    output_level: int
-        The requested data level of the output file.
 
     Returns
     -------
@@ -32,6 +55,8 @@ def calibrate_file(data_filename, output_level=2):
 
     Examples
     --------
+    >>> from hermes_core.calibration import calibrate_file
+    >>> level1_file = calibrate_file('hermes_SS_l0_2022239-000000_v0.bin')
     """
     # this function currently assumes that binary files have a single APID
 
@@ -41,7 +66,10 @@ def calibrate_file(data_filename, output_level=2):
         data = parse_sunsensor_vector_packets(data_filename)
         output_filename = sunsensor_vector_data_to_cdf(data, filedata)
 
-    if output_level >= 2:
+    if filedata["instrument"] == "sunsensor" and filedata["level"] == "l1":
+        data = read_file(data_filename)
+
+    if filedata["level"] == "l2":
         calib_file = get_calibration_file(data_filename)
         if calib_file is None:
             raise ValueError("Calibration file for {} not found.".format(data_filename))
@@ -166,7 +194,7 @@ def sunsensor_vector_data_to_cdf(data, metadata):
     return cdf_filename
 
 
-def get_calibration_file(data_filename, time=None):
+def get_calibration_file(data_filename: str, time=None) -> str:
     """
     Given a time, return the appropriate calibration file.
 
@@ -184,10 +212,10 @@ def get_calibration_file(data_filename, time=None):
     Examples
     --------
     """
-    return None
+    return ''
 
 
-def read_calibration_file(calib_filename):
+def read_calibration_file(calib_filename: str) -> :
     """
     Given a calibration, return the calibration structure.
 
