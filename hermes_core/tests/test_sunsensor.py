@@ -8,7 +8,9 @@ import hermes_core
 import hermes_core.calibration as calib
 from hermes_core.util.util import create_science_filename, parse_science_filename
 
-SUNSENSOR_VECT_TEST_FILE = os.path.join(hermes_core.__path__[0], 'tests/data/hermes_SS_l0_2022339-000000_v0.bin')
+SUNSENSOR_VECT_TEST_FILE = os.path.join(
+    hermes_core.__path__[0], "tests/data/hermes_SS_l0_2022339-000000_v0.bin"
+)
 # check that the test file exists
 os.path.exists(SUNSENSOR_VECT_TEST_FILE)
 
@@ -16,7 +18,7 @@ SUNSENSOR_NUM_VECTORS = 20
 
 
 def test_sunsensor_filename():
-    """"Test that the test file has the correct format."""
+    """ "Test that the test file has the correct format."""
     file_metadata = parse_science_filename(SUNSENSOR_VECT_TEST_FILE)
     assert isinstance(file_metadata, dict)
 
@@ -27,17 +29,19 @@ def test_parse_sensor_vector_packets():
 
     expected_num_packets = 10
     # should have 10 packets
-    assert len(data['SECONDS']) == expected_num_packets
+    assert len(data["SECONDS"]) == expected_num_packets
 
     # test the contents of the file
-    assert (data['SECONDS'] == np.arange(expected_num_packets)).all()
-    assert (data['SUBSECONDS'] == np.zeros(expected_num_packets)).all()
-    assert (data['NUMVECTORSCONTAINED'] == 20 * np.ones(expected_num_packets)).all()
-    assert (data['VECTORPOLLINTERVAL'] == np.zeros(expected_num_packets)).all()
-    assert (data['TEMPERATURE'] == 25 * np.ones(expected_num_packets)).all()
-    assert (data['PROCESSINGTIME'] == 1000 * np.ones(expected_num_packets)).all()
+    assert (data["SECONDS"] == np.arange(expected_num_packets)).all()
+    assert (data["SUBSECONDS"] == np.zeros(expected_num_packets)).all()
+    assert (data["NUMVECTORSCONTAINED"] == 20 * np.ones(expected_num_packets)).all()
+    assert (data["VECTORPOLLINTERVAL"] == np.zeros(expected_num_packets)).all()
+    assert (data["TEMPERATURE"] == 25 * np.ones(expected_num_packets)).all()
+    assert (data["PROCESSINGTIME"] == 1000 * np.ones(expected_num_packets)).all()
 
-    vector_data = np.zeros((3, SUNSENSOR_NUM_VECTORS, expected_num_packets), dtype="uint16")
+    vector_data = np.zeros(
+        (3, SUNSENSOR_NUM_VECTORS, expected_num_packets), dtype="uint16"
+    )
 
     for i in range(expected_num_packets):
         vector_data[0, :, i] = [

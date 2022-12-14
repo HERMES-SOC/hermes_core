@@ -14,7 +14,7 @@ __all__ = [
     "get_calibration_file",
     "read_calibration_file",
     "process_file",
-    "parse_sunsensor_vector_packets"
+    "parse_sunsensor_vector_packets",
 ]
 
 # the number of sun sensor vector readings in a vector packet
