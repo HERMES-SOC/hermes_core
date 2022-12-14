@@ -84,14 +84,14 @@ def create_science_filename(
     return filename + FILENAME_EXTENSION
 
 
-def parse_science_filename(filename):
+def parse_science_filename(filepath):
     """
     Parses a science filename into its consitutient properties (instrument, mode, test, time, level, version, descriptor).
 
     Parameters
     ----------
-    filename: `str`
-        The filename.
+    filepath: `str`
+        Fully specificied filepath of an input file
 
     Returns
     -------
@@ -109,6 +109,7 @@ def parse_science_filename(filename):
         "descriptor": None,
     }
 
+    filename = os.path.basename(filepath)
     file_name, file_ext = os.path.splitext(filename)
 
     filename_components = file_name.split("_")
