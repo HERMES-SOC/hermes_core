@@ -18,9 +18,9 @@ log = _init_log(config=config)
 __all__ = ["config", "print_config"]
 
 MISSION_NAME = "hermes"
-INST_NAMES = ["eea", "nemisis", "merit", "spani"]
-INST_SHORTNAMES = ["eea", "nms", "mrt", "spn"]
-INST_TARGETNAMES = ["EEA", "MAG", "MERIT", "SPANI"]
+INST_NAMES = ["eea", "nemisis", "merit", "spani", "sunsensor"]
+INST_SHORTNAMES = ["eea", "nms", "mrt", "spn", "ss"]
+INST_TARGETNAMES = ["EEA", "MAG", "MERIT", "SPANI", "SS"]
 INST_TO_SHORTNAME = dict(zip(INST_NAMES, INST_SHORTNAMES))
 INST_TO_TARGETNAME = dict(zip(INST_NAMES, INST_TARGETNAMES))
 
