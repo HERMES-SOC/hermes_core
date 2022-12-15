@@ -131,4 +131,4 @@ Releases
 
 We have a `step by step checklist`_ on the Wiki on how to make a release.
 
-.. _step by step checklist: https://github.com/sunpy/sunpy/wiki/Home%3A-Release-Checklist
+.. _step by step checklist: https://github.com/HERMES-SOC/hermes_core/wiki/Release-Process
