@@ -39,20 +39,12 @@ def test_parse_sensor_vector_packets():
     assert (data["TEMPERATURE"] == 25 * np.ones(expected_num_packets)).all()
     assert (data["PROCESSINGTIME"] == 1000 * np.ones(expected_num_packets)).all()
 
-    vector_data = np.zeros(
-        (3, SUNSENSOR_NUM_VECTORS, expected_num_packets), dtype="uint16"
-    )
+    vector_data = np.zeros((3, SUNSENSOR_NUM_VECTORS, expected_num_packets), dtype="uint16")
 
     for i in range(expected_num_packets):
-        vector_data[0, :, i] = [
-            data[f"X_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
-        vector_data[1, :, i] = [
-            data[f"Y_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
-        vector_data[2, :, i] = [
-            data[f"Z_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
+        vector_data[0, :, i] = [data[f"X_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
+        vector_data[1, :, i] = [data[f"Y_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
+        vector_data[2, :, i] = [data[f"Z_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
 
     for i in range(expected_num_packets):
         assert (vector_data[0, :, 0] == np.arange(SUNSENSOR_NUM_VECTORS)).all()

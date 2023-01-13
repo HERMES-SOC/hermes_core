@@ -1,6 +1,10 @@
 """
 A module for all things calibration.
 """
+from spacepy import pycdf
+from astropy.time import Time, TimeDelta
+import datetime
+
 import numpy as np
 
 import ccsdspy
@@ -15,6 +19,7 @@ __all__ = [
     "read_calibration_file",
     "process_file",
     "parse_sunsensor_vector_packets",
+    "sunsensor_vector_data_to_cdf",
 ]
 
 # the number of sun sensor vector readings in a vector packet
@@ -134,13 +139,13 @@ def parse_sunsensor_vector_packets(data_filename):
     ]
 
     pkt = ccsdspy.FixedLength(packet_fields)
-    data = pkt.load(data_filename, include_primary_header=True)
+    data = pkt.load(data_filename)
     return data
 
 
 def sunsensor_vector_data_to_cdf(data: dict, file_metadata: dict):
     """
-    Write level 0 sunsensor vector data to a cdf file.
+    Write level 0 sunsensor vector data to a level 0 cdf file.
 
     Parameters
     ----------
@@ -166,41 +171,53 @@ def sunsensor_vector_data_to_cdf(data: dict, file_metadata: dict):
     """
 
     num_packets = len(data["SECONDS"])
-    time = (
-        data["SECONDS"] + data["SUBSECONDS"] / 1000.0
-    )  # assume that subseconds are milliseconds
+    epoch_start = Time("2000-01-01T12:00:00")
+    time = data["SECONDS"] + data["SUBSECONDS"] / 1000.0  # assume that subseconds are milliseconds
+
+    epoch_time = epoch_start + TimeDelta(time, format="sec")
+    # cdf library may take care of the time conversion. just give it datetimes.
+    # epoch_time.format = "jd"  # J2000 time format
 
     vector_data = np.zeros((3, SUNSENSOR_NUM_VECTORS, num_packets), dtype="uint16")
     metadata_int = np.zeros((2, SUNSENSOR_NUM_VECTORS, num_packets), dtype="int8")
     metadata_uint = np.zeros((2, SUNSENSOR_NUM_VECTORS, num_packets), dtype="uint8")
 
     for i in range(num_packets):
-        vector_data[0, :, i] = [
-            data[f"X_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
-        vector_data[1, :, i] = [
-            data[f"Y_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
-        vector_data[2, :, i] = [
-            data[f"Z_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
+        vector_data[0, :, i] = [data[f"X_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
+        vector_data[1, :, i] = [data[f"Y_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
+        vector_data[2, :, i] = [data[f"Z_INT_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
         metadata_int[0, :, i] = [
             data[f"FIT_QUALITY_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
         ]
         metadata_int[1, :, i] = [
             data[f"GEOMETRY_QUALITY_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
         ]
-        metadata_uint[0, :, i] = [
-            data[f"VALIDITY_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
-        ]
+        metadata_uint[0, :, i] = [data[f"VALIDITY_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)]
         metadata_uint[1, :, i] = [
             data[f"BYTEFILLER_{j:02}"][i] for j in range(SUNSENSOR_NUM_VECTORS)
         ]
 
     # now open a cdf file and write these data into it
-    cdf_filename = ""  # cdf_filename = create_science_filename()
 
-    return cdf_filename
+    # create the output cdf filename
+    output_directory = "/workspaces/hermes_core/hermes_core/tests/data/"
+    cdf_filename = create_science_filename(
+        "sunsensor", Time("2022-12-05T00:00:00"), "l0", "0.0.0", test=False
+    )
+
+    # create a new cdf file using the skeleton cdf file as reference
+    SUNSENSOR_CDFSKT_L0_INPUT = (
+        "/workspaces/hermes_core/hermes_core/data/hermes_sunsensor_tbs_l0_00000000_v0.0.0.cdf"
+    )
+    with pycdf.CDF(str(output_directory + cdf_filename), SUNSENSOR_CDFSKT_L0_INPUT) as cdf:
+        cdf.readonly(False)
+        print(epoch_time[0:3])
+        # cdf["Epoch"] = [datetime.datetime(2010, 10, 1, 1, 0)]
+        # cdf["Epoch"][...] = [epoch_time[0].value]
+        cdf["Epoch"][...] = [datetime.datetime(2010, 10, 1, 1, val) for val in range(60)]
+        # see astropy method to datetime to get a list
+
+    return str(output_directory + cdf_filename)
 
 
 def get_calibration_file(data_filename: str) -> str:

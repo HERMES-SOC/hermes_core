@@ -16,9 +16,7 @@ VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 FILENAME_EXTENSION = ".cdf"
 
 
-def create_science_filename(
-    instrument, time, level, version, mode="", descriptor="", test=False
-):
+def create_science_filename(instrument, time, level, version, mode="", descriptor="", test=False):
     """Return a compliant filename. The format is defined as
 
     hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}.cdf
@@ -53,15 +51,11 @@ def create_science_filename(
         raise ValueError(
             f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
         )
-    if level not in VALID_DATA_LEVELS[1:]:
-        raise ValueError(
-            f"Level, {level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
-        )
+    if level not in VALID_DATA_LEVELS:
+        raise ValueError(f"Level, {level}, is not recognized. Must be one of {VALID_DATA_LEVELS}.")
     # check that version is in the right format with three parts
     if len(version.split(".")) != 3:
-        raise ValueError(
-            f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
-        )
+        raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
     # check that version has integers in each part
     for item in version.split("."):
         try:
@@ -74,9 +68,7 @@ def create_science_filename(
 
     # the parse_science_filename function depends on _ not being present elsewhere
     if ("_" in mode) or ("_" in descriptor):
-        raise ValueError(
-            "The underscore symbol _ is not allowed in mode or descriptor."
-        )
+        raise ValueError("The underscore symbol _ is not allowed in mode or descriptor.")
 
     filename = f"hermes_{hermes_core.INST_TO_SHORTNAME[instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
@@ -135,9 +127,7 @@ def parse_science_filename(filepath):
 
     elif file_ext == ".cdf":
         if filename_components[1] not in hermes_core.INST_SHORTNAMES:
-            raise ValueError(
-                "File {filename} not recognized. Not a valid instrument name."
-            )
+            raise ValueError("File {filename} not recognized. Not a valid instrument name.")
 
         #  reverse the dictionary to look up instrument name from the short name
         from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
@@ -167,4 +157,26 @@ def parse_science_filename(filepath):
     result["instrument"] = from_shortname[filename_components[1]]
     result["version"] = filename_components[-1][1:]  # remove the v
 
+    return result
+
+
+def create_skeleton_cdf(skeleton_table):
+    """
+    Creates a CDF skeleton file from an existing Skeleton Table in the
+    same directory as the skeleton file.
+
+    Parameters
+    ----------
+    skeleton_table: `str`
+        Fully specificied filepath of the skeleton table file.
+
+    Returns
+    -------
+    result : `str`
+        Fully specificied filepath of the skeleton CDF file.
+    """
+    directory = os.path.dirname(skeleton_table)
+    generatefile = os.path.splitext(os.path.basename(skeleton_table))[0]
+
+    result = os.system(f"skeletoncdf -cdf {str(directory + generatefile)} {skeleton_table}")
     return result
