@@ -18,8 +18,7 @@ author = "HERMES SOC Team"
 # The full version, including alpha/beta/rc tags
 from hermes_core import __version__
 
-release = __version__
-is_development = ".dev" in __version__
+version = __version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -94,12 +93,12 @@ intersphinx_mapping = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "bizstyle"
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
-html_logo = 'logo/hermes_logo.png'
-html_favicon = 'logo/favicon.ico'
+html_logo = "logo/hermes_logo.png"
+html_favicon = "logo/favicon.ico"
 html_css_files = [
-    'css/custom.css',
+    "css/custom.css",
 ]
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -118,18 +117,3 @@ graphviz_dot_args = [
     "-Gfontsize=10",
     "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
 ]
-
-
-"""
-Write the latest changelog into the documentation.
-"""
-target_file = os.path.abspath("./whatsnew/latest_changelog.txt")
-try:
-    from sunpy.util.towncrier import generate_changelog_for_docs
-
-    if is_development:
-        generate_changelog_for_docs("../", target_file)
-except Exception as e:
-    print(f"Failed to add changelog to docs with error {e}.")
-# Make sure the file exists or else sphinx will complain.
-open(target_file, "a").close()

@@ -134,3 +134,5 @@ hermes_core/version.py
 
 # docs/api
 docs/api
+
+_version.py

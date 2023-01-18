@@ -1,48 +1,99 @@
 [build-system]
-
-requires = ["setuptools",
-            "setuptools_scm",
+requires = ["setuptools>=45",
+            "setuptools_scm[toml]>=6.2",
             "wheel"]
-
 build-backend = 'setuptools.build_meta'
 
-[tool.towncrier]
-    package = "hermes"
-    filename = "CHANGELOG.rst"
-    directory = "changelog/"
-    issue_format = "`#{issue} <https://github.com/HERMES-SOC/hermes_core/pull/{issue}>`__"
+[project]
+name = "hermes_core"
+description = "A Python package to support the HERMES instrument packages."
+readme = "README.rst"
+dynamic = ["version"]
+authors = [{name = "Steven Christe", email="steven.d.christe@nasa.gov"},
+           {name = "Damian Barrous Dumme", email="damianbarrous@gmail.com"}]
+license = {file = "LICENSE.rst"}
+requires-python = ">=3.7"
+keywords = ["hermes", "nasa mission", "space weather"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache 2.0",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+  'astropy>=4.1.0',
+  'numpy>=1.16.0',
+  'sunpy>=3.1.4',
+]
 
-    [[tool.towncrier.type]]
-        directory = "breaking"
-        name = "Backwards Incompatible Changes"
-        showcontent = true
+[project.optional-dependencies]
+dev = [
+  'coverage>=5.0.3',
+  'pytest',
+  'pytest-astropy',
+  'pytest-cov',
+  'black',
+  'flake8',
+  'coverage[toml]'
+]
 
-    [[tool.towncrier.type]]
-        directory = "api"
-        name = "API Changes"
-        showcontent = true
+docs = [
+  'sphinx',
+  'sphinx-automodapi'
+]
 
-    [[tool.towncrier.type]]
-      directory = "removal"
-      name = "Deprecations and Removals"
-      showcontent = true
+test = [
+  'pytest',
+  'pytest-astropy',
+  'pytest-cov',
+  'coverage[toml]'
+]
 
-    [[tool.towncrier.type]]
-      directory = "feature"
-      name = "Features"
-      showcontent = true
+style = [
+  'black',
+  'flake8'
+]
 
-    [[tool.towncrier.type]]
-      directory = "bugfix"
-      name = "Bug Fixes"
-      showcontent = true
+[tool.setuptools.package-data]
+hermes_core = ["data/*"]
 
-    [[tool.towncrier.type]]
-      directory = "doc"
-      name = "Improved Documentation"
-      showcontent = true
+[tool.setuptools]
+packages = ["hermes_core"]
 
-    [[tool.towncrier.type]]
-      directory = "trivial"
-      name = "Trivial/Internal Changes"
-      showcontent = true
+[tool.setuptools_scm]
+write_to = "hermes_core/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = [
+   "hermes_core/tests",
+   "docs"
+]
+doctest_plus = "enabled"
+text_file_format = "rst"
+addopts = "--doctest-rst"
+
+[tool.coverage.run]
+omit = [
+  'hermes_core/__init*',
+  'hermes_core/conftest.py',
+  'hermes_core/*setup_package*',
+  'hermes_core/tests/*',
+  'hermes_core/*/tests/*',
+  'hermes_core/extern/*',
+  'hermes_core/version*',
+  '*/hermes_core/__init*',
+  '*/hermes_core/conftest.py',
+  '*/hermes_core/*setup_package*',
+  '*/hermes_core/tests/*',
+  '*/hermes_core/*/tests/*',
+  '*/hermes_core/extern/*',
+  '*/hermes_core/version*',
+]
+
