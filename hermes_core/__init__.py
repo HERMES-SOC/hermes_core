@@ -1,4 +1,6 @@
 # see license/LICENSE.rst
+import os.path
+
 try:
     from ._version import version as __version__
     from ._version import version_tuple
@@ -23,5 +25,8 @@ INST_SHORTNAMES = ["eea", "nms", "mrt", "spn", "ss"]
 INST_TARGETNAMES = ["EEA", "MAG", "MERIT", "SPANI", "SS"]
 INST_TO_SHORTNAME = dict(zip(INST_NAMES, INST_SHORTNAMES))
 INST_TO_TARGETNAME = dict(zip(INST_NAMES, INST_TARGETNAMES))
+
+_package_directory = os.path.dirname(os.path.abspath(__file__))
+_data_directory = os.path.abspath(os.path.join(_package_directory, "data"))
 
 # log.info(f"hermes_core version: {__version__}")

@@ -1,15 +1,18 @@
 """
 A module for all things calibration.
 """
-from spacepy import pycdf
-from astropy.time import Time, TimeDelta
+import os.path
 import datetime
 
 import numpy as np
+from astropy.time import Time, TimeDelta
+
+from spacepy import pycdf
 
 import ccsdspy
 from ccsdspy import PacketField
 
+import hermes_core
 from hermes_core.util.util import create_science_filename, parse_science_filename
 from hermes_core.io import read_file
 
@@ -145,7 +148,7 @@ def parse_sunsensor_vector_packets(data_filename):
 
 def sunsensor_vector_data_to_cdf(data: dict, file_metadata: dict):
     """
-    Write level 0 sunsensor vector data to a level 0 cdf file.
+    Write level 0 sunsensor vector data to a level 1 cdf file.
 
     Parameters
     ----------
@@ -169,12 +172,14 @@ def sunsensor_vector_data_to_cdf(data: dict, file_metadata: dict):
     >>> data_packets = calib.parse_sunsensor_vector_packets(data_filename)  # doctest: +SKIP
     >>> cdf_filename = calib.sunsensor_vector_data_to_cdf(data_packets, metadata)  # doctest: +SKIP
     """
-
+    epoch_start = file_metadata["time"]
     num_packets = len(data["SECONDS"])
-    epoch_start = Time("2000-01-01T12:00:00")
-    time = data["SECONDS"] + data["SUBSECONDS"] / 1000.0  # assume that subseconds are milliseconds
 
-    epoch_time = epoch_start + TimeDelta(time, format="sec")
+    seconds = (
+        data["SECONDS"] + data["SUBSECONDS"] / 1000.0
+    )  # assume that subseconds are milliseconds
+
+    epoch_time = epoch_start + TimeDelta(seconds, format="sec")
     # cdf library may take care of the time conversion. just give it datetimes.
     # epoch_time.format = "jd"  # J2000 time format
 
@@ -200,24 +205,54 @@ def sunsensor_vector_data_to_cdf(data: dict, file_metadata: dict):
     # now open a cdf file and write these data into it
 
     # create the output cdf filename
-    output_directory = "/workspaces/hermes_core/hermes_core/tests/data/"
+
     cdf_filename = create_science_filename(
-        "sunsensor", Time("2022-12-05T00:00:00"), "l0", "0.0.0", test=False
+        "sunsensor", file_metadata["time"], "l1", "1.0.0", test=False
     )
 
     # create a new cdf file using the skeleton cdf file as reference
-    SUNSENSOR_CDFSKT_L0_INPUT = (
-        "/workspaces/hermes_core/hermes_core/data/hermes_sunsensor_tbs_l0_00000000_v0.0.0.cdf"
+    SUNSENSOR_CDFSKT_L0_INPUT = os.path.join(
+        hermes_core._data_directory, "hermes_sunsensor_tbs_l0_00000000_v0.0.0.cdf"
     )
-    with pycdf.CDF(str(output_directory + cdf_filename), SUNSENSOR_CDFSKT_L0_INPUT) as cdf:
+    with pycdf.CDF(str(cdf_filename), SUNSENSOR_CDFSKT_L0_INPUT) as cdf:
         cdf.readonly(False)
-        print(epoch_time[0:3])
-        # cdf["Epoch"] = [datetime.datetime(2010, 10, 1, 1, 0)]
-        # cdf["Epoch"][...] = [epoch_time[0].value]
-        cdf["Epoch"][...] = [datetime.datetime(2010, 10, 1, 1, val) for val in range(60)]
-        # see astropy method to datetime to get a list
+        cdf["Epoch"] = [this_time.to_datetime() for this_time in epoch_time]
 
-    return str(output_directory + cdf_filename)
+        for i, this_val in enumerate(["X", "Y", "Z"]):
+            var_attrs = {
+                "UNITS": "adu",
+                # "LABLAXIS": f"Sunsensor {this_val} (payload coords.)",
+                "FIELDNAM": f"Sunsensor diode brightness in {this_val} direction, payload coordinates",
+                "CATDESC": f"Sunsensor diode brightness in {this_val} direction, payload coordinates",
+                "VAR_TYPE": "data",
+                "FORMAT": "i4",
+                "VALIDMIN": 0,
+                "VALIDMAX": 2**16 - 1,
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "LABL_PTR_1": f"label_{this_val}_INT",
+                "FILLVAL": 65535,
+            }
+            print(var_attrs["FIELDNAM"])
+            cdf[f"{this_val}_INT"] = vector_data[i, :, :]
+            for key, val in var_attrs.items():
+                cdf[f"{this_val}_INT"].attrs[key] = val
+
+            cdf[f"label_{this_val}_INT"] = [f"X_INT {num}" for num in range(SUNSENSOR_NUM_VECTORS)]
+            cdf[f"label_{this_val}_INT"].attrs["CATDESC"] = "Label X_INT"
+            cdf[f"label_{this_val}_INT"].attrs["FIELDNAM"] = "Label X_INT"
+            cdf[f"label_{this_val}_INT"].attrs["VAR_TYPE"] = "metadata"
+
+        cdf["FIT_QUALITY"] = metadata_int[0, :, :]
+        cdf["GEOMETRY_QUALITY"] = metadata_int[1, :, :]
+        cdf["VALIDITY"] = metadata_uint[0, :, :]
+
+        # add some metadata
+        for this_meta in ["FIT_QUALITY", "GEOMETRY_QUALITY", "VALIDITY"]:
+            cdf[this_meta].attrs["DEPEND_0"] = "Epoch"
+            cdf[this_meta].attrs["VAR_TYPE"] = "support data"
+
+    return cdf_filename
 
 
 def get_calibration_file(data_filename: str) -> str:
