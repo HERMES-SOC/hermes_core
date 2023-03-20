@@ -6,7 +6,7 @@ gAttrList:
     value: null
   Data_type:
     derived:
-      method: by_name
+      method: get_data_type
     required: true
     valid_check: null
     value: null
@@ -53,19 +53,19 @@ gAttrList:
     value: ''
   Logical_file_id:
     derived:
-      method: by_name
+      method: get_logical_file_id
     required: true
     valid_check: null
-    value: None
+    value: null
   Logical_source:
     derived:
-      method: by_name
+      method: get_logical_source
     required: true
     valid_check: null
     value: null
   Logical_source_description:
     derived:
-      method: by_name
+      method: get_logical_source_description
     required: true
     valid_check: null
     value: null
