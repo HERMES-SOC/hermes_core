@@ -26,8 +26,8 @@ class CDFWriter:
     interface to manipulate CDF-like data structures in memory before the generation and saving
     of a local `.cdf` file.
 
-    This class usses an internal native python `dict` data structure to provide a CDF-like
-    data structure that can be maniputed in memory. The internal `dict` used `self.target_dict`
+    This class uses an internal native python `dict` data structure to provide a CDF-like
+    data structure that can be manipulated in memory. The internal `dict` used `self.target_dict`
     is formatted in the following way.
 
     ```py
@@ -47,8 +47,8 @@ class CDFWriter:
 
     Where:
     - `gAttrList` is a python `dict` object used to represent global attributes embedded in a
-        CDF file. The global attributes list is keyed by names of global attributes that shoule
-        be added to the CDF. Each attribute contains another python `dict` object that is used
+        CDF file. The global attributes list is keyed by names of global attributes that are
+        added to the CDF. Each attribute contains another python `dict` object that is used
         to configure options and metadata about that attribute.
 
         NOTE: This is intended to behave like the `pyCDF` `gAttrList` data structure.
