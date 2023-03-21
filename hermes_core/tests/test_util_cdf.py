@@ -10,20 +10,22 @@ DEFAULT_NUM_GLOBAL_ATTRS = 20
 
 def test_cdf_writer_default_attrs():
 
-    seed_data = {
-        "gAttrList": {},
-        "zAttrList": {},
-    }
-
+    # fmt: off
     input_data = {
         "gAttrList": {},
         "zAttrList": {
-            "variable": {"value": None, "required": True, "valid_check": None, "derived": False},
+            "variable": {
+                "value": None,
+                "required": True,
+                "valid_check": None,
+                "derived": False
+            },
         },
     }
+    # fmt: on
 
     # Initialize a CDF File Wrapper
-    test_writer = CDFWriter(template_data_file="cdf_template.yaml", seed_data=seed_data)
+    test_writer = CDFWriter()
 
     # Add Custom Data to the Wrapper
     test_writer.add_data_from_dict(data=input_data)
@@ -34,7 +36,7 @@ def test_cdf_writer_default_attrs():
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     with pytest.raises(ValueError) as e:
-        test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+        test_writer.to_cdf(output_path=test_cache)
 
 
 def test_cdf_writer_valid_attrs():
@@ -52,7 +54,7 @@ def test_cdf_writer_valid_attrs():
     # fmt: on
 
     # Initialize a CDF File Wrapper
-    test_writer = CDFWriter(template_data_file="cdf_template.yaml")
+    test_writer = CDFWriter()
 
     # Add Custom Data to the Wrapper
     test_writer.add_data_from_dict(data=input_data)

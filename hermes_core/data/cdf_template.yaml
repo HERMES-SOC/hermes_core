@@ -14,7 +14,7 @@ gAttrList:
     derived: false
     required: true
     valid_check: null
-    value: v0.0.0
+    value: '0.0.1'
   Descriptor:
     derived: false
     required: true
@@ -27,7 +27,7 @@ gAttrList:
     value: Space Physics>Magnetospheric Science
   Generation_date:
     derived:
-      method: get_current_time
+      method: get_generation_date
     required: true
     valid_check: null
     value: null

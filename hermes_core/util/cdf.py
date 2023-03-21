@@ -19,9 +19,63 @@ class CDFWriter:
     Python Class to Convert abstract Data Structures to CDF file
     formats compliant with SpacePy's pyCDF Module. These CDF Files
     can then be indexed and shared through SPDF.
+
+    The purpose of this class is to provide an intermediate interafce to generate CDF Files.
+    One limitation of the pyCDF library is that you can not create CDF-like data structures
+    in memory without generating and saving a local `.cdf` File. This class provides an
+    interface to manipulate CDF-like data structures in memory before the generation and saving
+    of a local `.cdf` file.
+
+    This class usses an internal native python `dict` data structure to provide a CDF-like
+    data structure that can be maniputed in memory. The internal `dict` used `self.target_dict`
+    is formatted in the following way.
+
+    ```py
+    self.target_dict = {
+        'gAttrList`: {
+            'global_attribute_name': {
+                'derived' False,
+                'required': False,
+                'value': 'global_attribute_value'
+            }
+        }
+        'zAttrList`: {
+
+        }
+    }
+    ```
+
+    Where:
+    - `gAttrList` is a python `dict` object used to represent global attributes embedded in a
+        CDF file. The global attributes list is keyed by names of global attributes that shoule
+        be added to the CDF. Each attribute contains another python `dict` object that is used
+        to configure options and metadata about that attribute.
+
+        NOTE: This is intended to behave like the `pyCDF` `gAttrList` data structure.
+    - `zAttrList` is a python `dict` object used to represent variable attributes that contain all
+        telemetry or science data within the CDF file. the variable attributes list is keyed by the
+        names of variable attributes where each attribute contains another python `dict` object that
+        configures options and metadata about the variable attribute, as well as contain the actual
+        telemetry or science data associated with the given variable.
+
+        NOTE: This intended to behave like the `pyCDF` `zAttrList` data structure.
+
+    `CDFWriter` objects are instantiated using:
+        - `seed_data`: a python `dict` object of the format above, containing global and variable
+            attributes to be added to a CDF file.
+        - `template_data_file`: the path to a template dictionary-like, CDF-like data structure
+            that is loaded from a `template.yaml` file. The file represents the nested dctionary
+            data structures that are contained in the `self.target_dict` member.
+            NOTE: Defaults to `cdf_template.yml` found in the module's `data` directory.
     """
 
-    def __init__(self, template_data_file="cdf_template.yaml", seed_data={}):
+    def __init__(self, seed_data=None, template_data_file="cdf_template.yaml"):
+
+        # Current Working CDF File
+        self.target_cdf_file = None
+
+        # Inter Data Structure before Creating CDF File
+        self.target_dict = {}
 
         # Load Default Template Data
         template_file = Path(hermes_core.__file__).parent / "data" / template_data_file
@@ -31,17 +85,15 @@ class CDFWriter:
                 default_template_data = yaml.safe_load(f)
             except yaml.YAMLError as exc:
                 logging.critical(exc)
-
-        # Current Working CDF File
-        self.target_cdf_file = None
-
-        # Temp Conversion to CDF
-        self.target_dict = {}
-        # Add TEMPLATES to Target_Dict
+        # Add TEMPLATE to target_dict
         self.add_data_from_dict(default_template_data)
-        self.add_data_from_dict(seed_data)
 
-    def add_data_from_dict(self, data={}):
+        # If Present, add seed_data to target_dict
+        if seed_data:
+            assert type(seed_data) is dict
+            self.add_data_from_dict(seed_data)
+
+    def add_data_from_dict(self, data):
         """
         Function to add data to the CDFWriter's internal Dict
         state by passing a native Dict type Object.
@@ -76,6 +128,26 @@ class CDFWriter:
         # Reset the Target Dict
         self.target_dict = unflatten(compiled)
 
+    def derive_attributes(self):
+        """Function to derive global attributes in `gAttrList` member"""
+        # Loop through Global Attributes
+        for attr_name, info in self.target_dict["gAttrList"].items():
+            # Only Derive Global Attributes if they have not been manually derived/overridden
+            if info["derived"]:
+                derived_value = self._derive_attribute(attr_name=attr_name, info=info)
+                if not info["value"]:
+                    info["value"] = derived_value
+                else:
+                    logging.debug(
+                        (
+                            "Attribute: %s was marked for derivation (to be %s)"
+                            "but was already overridden to %s"
+                        ),
+                        attr_name,
+                        derived_value,
+                        info["value"],
+                    )
+
     def _derive_attribute(self, attr_name, info):
         """
         Function to Derive Attributes based on other attribues in the CDF
@@ -85,8 +157,8 @@ class CDFWriter:
         method = info["derived"]["method"]
 
         # SWITCH on the Derivation Method
-        if method == "get_current_time":
-            return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        if method == "get_generation_date":
+            return datetime.datetime.now().strftime("%Y%m%d")
         elif method == "get_data_type":
             return self.get_data_type()
         elif method == "get_logical_file_id":
@@ -106,9 +178,7 @@ class CDFWriter:
         assert self.target_cdf_file is None
 
         # Derive any Global Attributes
-        for attr_name, info in self.target_dict["gAttrList"].items():
-            if info["derived"]:
-                info["value"] = self._derive_attribute(attr_name=attr_name, info=info)
+        self.derive_attributes()
 
         # Initialize a new CDF
         cdf_filename = f"{self.target_dict['gAttrList']['Logical_file_id']['value']}.cdf"
@@ -118,39 +188,47 @@ class CDFWriter:
 
         # Add Global Attriubtes to the CDF File
         if "gAttrList" in self.target_dict:
-            for attr_name, info in self.target_dict["gAttrList"].items():
-                # Make sure the Value is not None
-                # We cannot add None Values to the CDF Global Attrs
-                if not info["value"]:
-                    logging.warning(
-                        (
-                            f"Cannot Add gAttr: {attr_name:30}. Value was {str(info['value']):5}. "
-                            f"Required: {str(info['required']):5}. Derived: {str(info['derived']):5}"
-                        )
-                    )
-                    # Set to a intentionally invalid value
-                    info["value"] = "TEST"
-                # Add the Attribute to the CDF File
-                self.target_cdf_file.attrs[attr_name] = info["value"]
+            self._convert_global_attributes_to_cdf()
 
         # Add zAttributes
         if "zAttrList" in self.target_dict:
-            for attr_name, info in self.target_dict["zAttrList"].items():
-                # Make sure the Value is not None
-                # We cannot add None Values to the CDF Vars
-                if not info["value"]:
-                    logging.warning(
-                        (
-                            f"Cannot Add zAttr: {attr_name:30}. Value was {str(info['value']):5}. "
-                            f"Required: {str(info['required']):5}. Derived: {str(info['derived']):5}"
-                        )
-                    )
-                    # Set to a intentionally invalid value
-                    info["value"] = "TEST"
-                # Add the Attribute to the CDF File
-                self.target_cdf_file[attr_name] = [info["value"]]
+            self._convert_variable_attributes_to_cdf()
 
         return output_cdf_filepath
+
+    def _convert_global_attributes_to_cdf(self):
+        # Loop though Global Attributes in target_dict
+        for attr_name, info in self.target_dict["gAttrList"].items():
+            # Make sure the Value is not None
+            # We cannot add None Values to the CDF Global Attrs
+            if not info["value"]:
+                logging.warning(
+                    (
+                        f"Cannot Add gAttr: {attr_name:30}. Value was {str(info['value']):5}. "
+                        f"Required: {str(info['required']):5}. Derived: {str(info['derived']):5}"
+                    )
+                )
+                # Set to a intentionally invalid value
+                info["value"] = f"{attr_name}-Not-Provided"
+            # Add the Attribute to the CDF File
+            self.target_cdf_file.attrs[attr_name] = info["value"]
+
+    def _convert_variable_attributes_to_cdf(self):
+        # Loop through Variable Attributes in target_dict
+        for attr_name, info in self.target_dict["zAttrList"].items():
+            # Make sure the Value is not None
+            # We cannot add None Values to the CDF Vars
+            if not info["value"]:
+                logging.warning(
+                    (
+                        f"Cannot Add zAttr: {attr_name:30}. Value was {str(info['value']):5}. "
+                        f"Required: {str(info['required']):5}. Derived: {str(info['derived']):5}"
+                    )
+                )
+                # Set to a intentionally invalid value
+                info["value"] = f"{attr_name}-Not-Provided"
+            # Add the Attribute to the CDF File
+            self.target_cdf_file[attr_name] = [info["value"]]
 
     def save_cdf(self):
         """Function to save and close CDF File"""
@@ -183,6 +261,7 @@ class CDFWriter:
             science_filename = util.create_science_filename(
                 instrument=instrumentId, time=startTime, level=dataLevel, version=version, mode=mode
             )
+            science_filename = science_filename.rstrip(util.FILENAME_EXTENSION)
         else:
             science_filename = self.target_dict["gAttrList"]["Logical_file_id"]["value"]
         return science_filename
@@ -197,9 +276,11 @@ class CDFWriter:
         if not self.target_dict["gAttrList"]["Logical_source"]["value"]:
             # Get Parts
             spacecraft_id = self.get_spacecraft_id()
-            instrumentId = self.get_instrument_id()
+            instrument_id = self.get_instrument_id()
             data_type = self.get_data_type()
-            logical_source = f"{spacecraft_id}_{instrumentId}_{data_type}"
+            data_type_short_name, _ = data_type.split(">")
+            # Build Derivation
+            logical_source = f"{spacecraft_id}_{instrument_id}_{data_type_short_name}"
         else:
             logical_source = self.target_dict["gAttrList"]["Logical_source"]["value"]
         return logical_source
@@ -217,7 +298,7 @@ class CDFWriter:
             instrument_long_name = self.get_instrument_long_name()
             data_level_long_name = self.get_data_level_long_name()
             logical_source_description = (
-                f"{spacecraft_long_name}_{instrument_long_name}_{data_level_long_name}"
+                f"{data_level_long_name} {spacecraft_long_name} {instrument_long_name}"
             )
         else:
             logical_source_description = self.target_dict["gAttrList"][
@@ -236,12 +317,23 @@ class CDFWriter:
             - optional_data_product_descriptor
         """
         if not self.target_dict["gAttrList"]["Data_type"]["value"]:
-            # Get Parts
+            # Get Short Parts
             mode = self.get_mode()
-            dataLevel = self.get_data_level()
+            data_level = self.get_data_level()
             odpd = self.get_optional_data_product_descriptor()
+
+            # Get Long Parts
+            mode_long_name = self.get_mode().upper()  # NOTE Seems to be Upper case?
+            data_level_long_name = self.get_data_level_long_name()
+            odpd_long_name = (
+                self.get_optional_data_product_descriptor().upper()
+            )  # NOTE Seems to be Uppar case?
+
             # Build Derivation
-            data_type = f"{mode}_{dataLevel}_{odpd}"
+            data_type = (
+                f"{mode}_{data_level}_{odpd}>"
+                f"{mode_long_name} {data_level_long_name} {odpd_long_name}"
+            )
         else:
             data_type = self.target_dict["gAttrList"]["Data_type"]["value"]
         return data_type
@@ -349,7 +441,11 @@ class CDFWriter:
         Function to get the 3-part version number of the data product.
         """
         version_str = self.target_dict["gAttrList"]["Data_version"]["value"].lower()
-        _, version = version_str.split("v")
+        assert version_str is not None
+        if "v" in version_str:
+            _, version = version_str.split("v")
+        else:
+            version = version_str
         return version
 
     def get_mode(self):
