@@ -1,0 +1,81 @@
+DOI:
+  derived: false
+  required: true
+  valid_ check: null
+Data_type:
+  derived: get_data_type
+  required: true
+  valid_check: null
+Data_version:
+  derived: false
+  required: true
+  valid_check: null
+Descriptor:
+  derived: false
+  required: true
+  valid_check: null
+Discipline:
+  derived: false
+  required: true
+  valid_check: null
+Generation_date:
+  derived: get_generation_date
+  required: true
+  valid_check: null
+HTTP_LINK:
+  derived: false
+  required: true
+  valid_check: null
+Instrument_type:
+  derived: false
+  required: true
+  valid_check: null
+LINK_TEXT:
+  derived: false
+  required: true
+  valid_check: null
+LINK_TITLE:
+  derived: false
+  required: true
+  valid_check: null
+Logical_file_id:
+  derived: get_logical_file_id
+  required: true
+  valid_check: null
+Logical_source:
+  derived: get_logical_source
+  required: true
+  valid_check: null
+  value: null
+Logical_source_description:
+  derived: get_logical_source_description
+  required: true
+  valid_check: null
+MODS:
+  derived: false
+  required: true
+  valid_check: null
+Mission_group:
+  derived: false
+  required: true
+  valid_check: null
+PI_affiliation:
+  derived: false
+  required: true
+  valid_check: null
+PI_name:
+  derived: false
+  required: true
+  valid_check: null
+Project:
+  derived: false
+  required: true
+  valid_check: null
+Source_name:
+  derived: false
+  required: true
+  valid_check: null
+TEXT:
+  derived: false
+  required: true
+  valid_check: null
