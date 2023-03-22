@@ -5,7 +5,7 @@ from pathlib import Path
 import hermes_core
 from hermes_core.util.cdf import CDFWriter
 
-DEFAULT_NUM_GLOBAL_ATTRS = 20
+DEFAULT_NUM_GLOBAL_ATTRS = 23
 
 
 def test_cdf_writer_default_attrs():

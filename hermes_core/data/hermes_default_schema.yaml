@@ -2,6 +2,14 @@ DOI:
   derived: false
   required: true
   valid_ check: null
+Data_level:
+  derived: false
+  required: true
+  valid_check: null
+Data_product_descriptor:
+  derived: false
+  required: false
+  valid_check: null
 Data_type:
   derived: get_data_type
   required: true
@@ -23,6 +31,10 @@ Generation_date:
   required: true
   valid_check: null
 HTTP_LINK:
+  derived: false
+  required: true
+  valid_check: null
+Instrument_mode:
   derived: false
   required: true
   valid_check: null
@@ -73,6 +85,10 @@ Project:
   valid_check: null
 Source_name:
   derived: false
+  required: true
+  valid_check: null
+Start_time:
+  derived: get_start_time
   required: true
   valid_check: null
 TEXT:

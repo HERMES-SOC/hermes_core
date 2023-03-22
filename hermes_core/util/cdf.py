@@ -10,6 +10,7 @@ from spacepy import pycdf
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util
+from hermes_core.util.exceptions import warn_user
 
 DEFAULT_SCHEMA_FILE = "hermes_default_schema.yaml"
 DEFAULT_ATTRIBUTES_FILE = "hermes_default_attributes.yaml"
@@ -38,7 +39,6 @@ class CDFWriter:
     }
 
     ```
-
     """
 
     def __init__(self):
@@ -124,7 +124,7 @@ class CDFWriter:
             if attr_key in self.global_attrs.keys():
                 # Log Debug that we're overriding
                 log.debug(
-                    "In `add_attributes_from_list()` Overriding value for attribute %s from %s to %s",
+                    "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
                     attr_key,
                     self.global_attrs[attr_key],
                     attr_value,
@@ -161,7 +161,7 @@ class CDFWriter:
             if attr_key in self.global_attrs.keys():
                 # Log Debug that we're overriding
                 log.debug(
-                    "In `add_attributes_from_list()` Overriding value for attribute %s from %s to %s",
+                    "In `add_attributes_from_list()` Overriding value for attri %s from %s to %s",
                     attr_key,
                     self.global_attrs[attr_key],
                     attr_value,
@@ -180,9 +180,12 @@ class CDFWriter:
         # Derive any Global Attributes
         self.derive_attributes()
 
+        # Verify that all `required` attributes in the schema are present
+        self.verify_global_attr_schema()
+
         # Initialize a new CDF
         cdf_filename = f"{self.global_attrs['Logical_file_id']}.cdf"
-        log.info(f"Generating CDF: {cdf_filename}")
+        log.info("Generating CDF: %s", cdf_filename)
         output_cdf_filepath = str(Path(output_path) / cdf_filename)
         self.target_cdf_file = pycdf.CDF(output_cdf_filepath, masterpath="")
 
@@ -225,7 +228,9 @@ class CDFWriter:
 
         # SWITCH on the Derivation Method
         if method == "get_generation_date":
-            return datetime.datetime.now().strftime("%Y%m%d")
+            return self._get_generation_date()
+        elif method == "get_start_time":
+            return self._get_start_time()
         elif method == "get_data_type":
             return self._get_data_type()
         elif method == "get_logical_file_id":
@@ -237,17 +242,33 @@ class CDFWriter:
         else:
             raise ValueError(f"Derivation Method ({method}) Not Recognized")
 
+    def verify_global_attr_schema(self):
+        """
+        Function to ensure all required attributes in the schema are present
+        in the `self.global_attr` member.
+
+        Raises `ValueError` if there are required attributes in the schema that
+        are not in the global attributes.
+        """
+        # Loop for each attribute in the schema
+        for attr_name, attr_schema in self.schema.items():
+            # If it is a required attribute and not present
+            if attr_schema["required"] and (attr_name not in self.global_attrs):
+                raise ValueError(
+                    (
+                        f"Required attribute ({attr_name}) not present in global attributes.",
+                        "Make sure to add all required attributes to the gloabl attributes",
+                        "before genereating a CDF file.",
+                    )
+                )
+
     def _convert_global_attributes_to_cdf(self):
         # Loop though Global Attributes in target_dict
         for attr_name, attr_value in self.global_attrs.items():
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if not attr_value:
-                log.warning(
-                    (  # TODO Instead of log, issue a HERMESWarning
-                        f"Cannot Add gAttr: {attr_name:30}. Value was {str(attr_value):5}. "
-                    )
-                )
+                warn_user((f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)}. "))
                 # Set to a intentionally invalid value
                 attr_value = f"{attr_name}-Not-Provided"
             # Add the Attribute to the CDF File
@@ -259,7 +280,7 @@ class CDFWriter:
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Vars
             if not attr_value:
-                log.warning((f"Cannot Add zAttr: {attr_name:30}. Value was {str(attr_value):5}. "))
+                warn_user((f"Cannot Add zAttr: {attr_name}. Value was {str(attr_value)}. "))
                 # Set to a intentionally invalid value
                 attr_value = f"{attr_name}-Not-Provided"
             # Add the Attribute to the CDF File
@@ -290,7 +311,7 @@ class CDFWriter:
             start_time = self._get_start_time()
             data_level = self._get_data_level()
             version = self._get_version()
-            mode = self._get_mode()
+            mode = self._get_instrument_mode()
 
             # Build Derivation
             science_filename = util.create_science_filename(
@@ -355,22 +376,25 @@ class CDFWriter:
         """
         if not self.global_attrs["Data_type"]:
             # Get Short Parts
-            mode = self._get_mode()
+            mode = self._get_instrument_mode()
             data_level = self._get_data_level()
-            odpd = self._get_optional_data_product_descriptor()
+            odpd = self._get_data_product_descriptor()
 
             # Get Long Parts
-            mode_long_name = self._get_mode().upper()  # NOTE Seems to be Upper case?
+            mode_long_name = self._get_instrument_mode().upper()  # NOTE Seems to be Upper case?
             data_level_long_name = self._get_data_level_long_name()
             odpd_long_name = (
-                self._get_optional_data_product_descriptor().upper()
+                self._get_data_product_descriptor().upper()
             )  # NOTE Seems to be Uppar case?
 
-            # Build Derivation
-            data_type = (
-                f"{mode}_{data_level}_{odpd}>"
-                f"{mode_long_name} {data_level_long_name} {odpd_long_name}"
-            )
+            # Build Derivation (With ODPD)
+            if odpd:
+                data_type = (
+                    f"{mode}_{data_level}_{odpd}>"
+                    f"{mode_long_name} {data_level_long_name} {odpd_long_name}"
+                )
+            else:
+                data_type = f"{mode}_{data_level}>{mode_long_name} {data_level_long_name}"
         else:
             data_type = self.global_attrs["Data_type"]
         return data_type
@@ -431,8 +455,7 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        # TODO
-        data_level = "l1>Level 1"
+        data_level = self.global_attrs["Data_level"]
         # Formatting
         if ">" in data_level:
             short_name, _ = data_level.split(">")
@@ -445,15 +468,14 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        # TODO
-        data_level = "l1>Level 1"
+        data_level = self.global_attrs["Data_level"]
         # Formatting
         if ">" in data_level:
             _, long_name = data_level.split(">")
             data_level = long_name
         return data_level
 
-    def _get_optional_data_product_descriptor(self):
+    def _get_data_product_descriptor(self):
         """
         Function to get the (Optional) Data Product Descriptor.
 
@@ -462,15 +484,24 @@ class CDFWriter:
         If a descriptor contains multiple components, underscores are used top separate
         hose components.
         """
-        # TODO
-        return "odpd"
+        if "Data_product_descriptor" in self.global_attrs:
+            odpd = self.global_attrs["Data_product_descriptor"]
+        else:
+            odpd = ""
+        return odpd
+
+    def _get_generation_date(self):
+        """
+        Function to get the date that the CDF was generated.
+        """
+        return datetime.datetime.now()
 
     def _get_start_time(self):
         """
         Function to get the start time of the data contained in the CDF
         given in format `YYYYMMDD_hhmmss`
         """
-        # TODO
+        # TODO derrive from epoch
         return datetime.datetime.now()
 
     def _get_version(self):
@@ -485,7 +516,8 @@ class CDFWriter:
             version = version_str
         return version
 
-    def _get_mode(self):
+    def _get_instrument_mode(self):
         """Function to get the mode attribute (TBS)"""
-        # TODO
-        return "mode"
+        instr_mode = self.global_attrs["Instrument_mode"]
+        assert instr_mode is not None
+        return instr_mode.lower()  # Makse sure its all lowercase

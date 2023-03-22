@@ -1,10 +1,12 @@
 DOI: null
+Data_level: L1>Level 1
 Data_type: null
 Data_version: '0.0.1'
 Descriptor: INSTR>Instrument Needs Substitution To Real (instrument)
 Discipline: Space Physics>Magnetospheric Science
 Generation_date: null
 HTTP_LINK: ''
+Instrument_mode: default
 Instrument_type: null
 LINK_TEXT: ''
 LINK_TITLE: ''
@@ -17,4 +19,5 @@ PI_affiliation: null
 PI_name: null
 Project: STP>Solar-Terrestrial Physics
 Source_name: HERMES>Heliophysics Environmental an Radiation Measurement Experiment Suite
+Start_time: null
 TEXT: null
