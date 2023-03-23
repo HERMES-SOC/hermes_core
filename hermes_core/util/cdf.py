@@ -6,7 +6,7 @@ import datetime
 from pathlib import Path
 import yaml
 from spacepy import pycdf
-
+import numpy as np
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util
@@ -56,8 +56,87 @@ class CDFWriter:
         # Load Default Global Attributes
         self._load_default_attributes()
 
-        # Intermediate Data Structure for Variable Data
+        # Intermedaite Data Structure for Variable Data
+        self.variable_data = {}
+
+        # Intermediate Data Structure for Variable Attributes
         self.variable_attrs = {}
+
+    def __del__(self):
+        """
+        Deconstructor for CDFWriter class.
+        """
+        if self.target_cdf_file:
+            self.target_cdf_file.close()
+
+    def __len__(self):
+        """
+        Function to get the number of variable data members in the CDFWriter class.
+        """
+        return len(self.variable_data.keys())
+
+    def __repr__(self):
+        """
+        Returns a representation of the CDFWriter class.
+        """
+        return self.__str__()
+
+    def __str__(self):
+        """
+        Returns a string representation of the CDFWriter class.
+        """
+        str_repr = (
+            f"CDFWriter: Converted: {self.target_cdf_file is not None}"
+            f"\nGlobal Attrs: {self.global_attrs}"
+            f"\nVariable Data: {self.variable_data}"
+            f"\nVariable Attributes: {self.variable_attrs}"
+        )
+        return str_repr
+
+    def __getitem__(self, name):
+        """
+        Function to get a data variable contained in the CDFWriter class.
+        """
+        if name not in self.variable_data:
+            raise KeyError(f"CDFWriter does not contain data variable {name}")
+        # Get the Data and Attrs for the named variable
+        var_data = self.variable_data[name]
+        var_attrs = self.variable_attrs[name] if name in self.variable_attrs else {}
+        return (var_data, var_attrs)
+
+    def __setitem__(self, name, data):
+        """
+        Function to set a data variable conained in the CDFWriter class.
+        """
+        # Set the Data for the named variable
+        self.variable_data[name] = data
+        # Set the Attrs for the named variable
+        if name not in self.variable_attrs:
+            self.variable_attrs[name] = {}
+
+    def __contains__(self, name):
+        """
+        Function to see whether a data variable is in the CDFWriter class.
+        """
+        return name in self.variable_data
+
+    def __delitem__(self, name):
+        """
+        Function to remove a data variable and attrs from the CDFWriter class.
+        """
+        # Remove from variable data
+        self.variable_data.pop(name, None)
+        # Remove from variable attributes
+        self.variable_attrs.pop(name, None)
+
+    def __iter__(self):
+        """
+        Function to iterate over data variables and attributes in the CDFWriter class.
+        """
+        for var_name in self.variable_data.keys():
+            var_data = self.variable_data[var_name]
+            var_attrs = self.variable_attrs[var_name]
+            yield (var_name, var_data, var_attrs)
 
     def _load_default_schema_data(self):
         # The Default Schema file is contained in the `hermes_core/data` directory
@@ -169,6 +248,18 @@ class CDFWriter:
             # Override or set the vale of the attribute in state
             self.global_attrs[attr_key] = attr_value
 
+    def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
+        """
+        start with set of numbers dimension 'NxM' where N=len(epoch)
+
+        N time series of M fields
+
+        also make `a.varname` a class variable that points the var
+
+        """
+        self.variable_data[var_name] = var_data
+        self.variable_attrs[var_name] = var_attrs
+
     def to_cdf(self, output_path="./"):
         """
         Function to convert members of the CDFWriter's internal dict
@@ -193,8 +284,7 @@ class CDFWriter:
         self._convert_global_attributes_to_cdf()
 
         # Add zAttributes
-        if "zAttrList" in self.global_attrs:
-            self._convert_variable_attributes_to_cdf()
+        self._convert_variable_attributes_to_cdf()
 
         return output_cdf_filepath
 
@@ -276,15 +366,12 @@ class CDFWriter:
 
     def _convert_variable_attributes_to_cdf(self):
         # Loop through Variable Attributes in target_dict
-        for attr_name, attr_value in self.variable_attrs.items():
-            # Make sure the Value is not None
-            # We cannot add None Values to the CDF Vars
-            if not attr_value:
-                warn_user((f"Cannot Add zAttr: {attr_name}. Value was {str(attr_value)}. "))
-                # Set to a intentionally invalid value
-                attr_value = f"{attr_name}-Not-Provided"
-            # Add the Attribute to the CDF File
-            self.target_cdf_file[attr_name] = attr_value
+        for var_name, var_data, var_attrs in self.__iter__():
+            # Add the Variable to the CDF File
+            self.target_cdf_file[var_name] = var_data
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_attrs.items():
+                self.target_cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
     def save_cdf(self):
         """Function to save and close CDF File"""
@@ -292,6 +379,8 @@ class CDFWriter:
         # Save the CDF
         self.target_cdf_file.save()
         self.target_cdf_file.close()
+        # Reset the Local Member
+        self.target_cdf_file = None
 
     # ==============================================================================================
     #                               ATTRIBUTE DERIVATION FUNCTIONS
