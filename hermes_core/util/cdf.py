@@ -191,11 +191,48 @@ class CDFWriter:
         ]
         example_writer = CDFWriter()
         # Add the Example Data
-        example_writer.add_data_from_dict(attributes=example_data)
+        example_writer.add_data_from_list(attributes=example_data)
         ```
         """
         # Loop through attributes to add
         for attr_key, attr_value in attributes:
+            # Check to see if the attribute is already present
+            if attr_key in self.global_attrs.keys():
+                # Log Debug that we're overriding
+                log.debug(
+                    "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
+                    attr_key,
+                    self.global_attrs[attr_key],
+                    attr_value,
+                )
+            # Override or set the vale of the attribute in state
+            self.global_attrs[attr_key] = attr_value
+
+    def add_attributes_from_dict(self, attributes: dict):
+        """
+        Function to add data to the CDFWriter's internal Dict
+        state by passing a native list type Object.
+
+        Parameters
+        ----------
+        attributes: `dict`
+            A native python `dict` object containing `(key, value)`
+            attributes.
+
+        Examples
+        -------
+        ```
+        example_data = {
+            "attribute_example_1": "attribute_value_1",
+            "attribute_example_2": "attribute_value_2"
+        }
+        example_writer = CDFWriter()
+        # Add the Example Data
+        example_writer.add_data_from_dict(attributes=example_data)
+        ```
+        """
+        # Loop through attributes to add
+        for attr_key, attr_value in attributes.items():
             # Check to see if the attribute is already present
             if attr_key in self.global_attrs.keys():
                 # Log Debug that we're overriding
@@ -224,19 +261,8 @@ class CDFWriter:
         # Load the Yaml file to Dict
         attribute_data = self.load_yaml_data(attributes_path)
 
-        # Loop through attributes to add
-        for attr_key, attr_value in attribute_data.items():
-            # Check to see if the attribute is already present
-            if attr_key in self.global_attrs.keys():
-                # Log Debug that we're overriding
-                log.debug(
-                    "In `add_attributes_from_list()` Overriding value for attri %s from %s to %s",
-                    attr_key,
-                    self.global_attrs[attr_key],
-                    attr_value,
-                )
-            # Override or set the vale of the attribute in state
-            self.global_attrs[attr_key] = attr_value
+        # Add the Attributes through the Dict
+        self.add_attributes_from_dict(attributes=attribute_data)
 
     def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
         """

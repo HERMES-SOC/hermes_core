@@ -170,18 +170,18 @@ def test_cdf_writer_single_variable():
 def test_cdf_writer_random_variable():
 
     # fmt: off
-    input_attrs = [
-        ("Descriptor", "EEA>Electron Electrostatic Analyzer"),
-        ("Data_type", "test>data_type"),
-        ("Logical_file_id", "invalid_cdf.cdf")
-    ]
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_type": "test>data_type",
+        "Logical_file_id": "invalid_cdf.cdf"
+    }
     # fmt: on
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
 
     # Add Custom Data to the Wrapper
-    test_writer.add_attributes_from_list(attributes=input_attrs)
+    test_writer.add_attributes_from_dict(attributes=input_attrs)
 
     num_random_vars = 10
     N = 200
