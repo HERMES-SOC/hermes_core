@@ -12,8 +12,8 @@ from hermes_core import log
 from hermes_core.util import util
 from hermes_core.util.exceptions import warn_user
 
-DEFAULT_SCHEMA_FILE = "hermes_default_schema.yaml"
-DEFAULT_ATTRIBUTES_FILE = "hermes_default_attributes.yaml"
+DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
+DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
 
 
 class CDFWriter:
@@ -47,18 +47,15 @@ class CDFWriter:
         self.target_cdf_file = None
 
         # Data Validation, Complaiance, Derived Attributes
-        self.schema = {}
-        # Load Default schema Data
-        self._load_default_schema_data()
-
+        self.global_attr_schema = self._load_default_global_attr_schema()
         # Intermediate Data Structure for Global / Metadata Attributes
         self.global_attrs = {}
-        # Load Default Global Attributes
         self._load_default_attributes()
 
+        # Data Validation and Compliance for Variable Data
+        self.variable_attr_schema = {}
         # Intermedaite Data Structure for Variable Data
         self.variable_data = {}
-
         # Intermediate Data Structure for Variable Attributes
         self.variable_attrs = {}
 
@@ -138,41 +135,41 @@ class CDFWriter:
             var_attrs = self.variable_attrs[var_name]
             yield (var_name, var_data, var_attrs)
 
-    def _load_default_schema_data(self):
+    def _load_default_global_attr_schema(self) -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
-        default_schema_path = str(Path(hermes_core.__file__).parent / "data" / DEFAULT_SCHEMA_FILE)
-        # Load the Schema
-        self.load_schema_data(schema_data_path=default_schema_path)
-
-    def _load_default_attributes(self):
-        # The Default Attributes file is contained in the `hermes_core/data` directory
-        default_attributes_path = str(
-            Path(hermes_core.__file__).parent / "data" / DEFAULT_ATTRIBUTES_FILE
+        default_schema_path = str(
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
+        return self.load_yaml_data(yaml_file_path=default_schema_path)
+
+    def _load_default_attributes(self) -> dict:
+        # The Default Attributes file is contained in the `hermes_core/data` directory
+        default_attributes_path = str(
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_FILE
+        )
         self.add_attributes_from_yaml(attributes_path=default_attributes_path)
 
-    def load_schema_data(self, schema_data_path):
+    def load_yaml_data(self, yaml_file_path):
         """
-        Function to load schema for CDF formatting data from a Yaml file.
+        Function to load data from a Yaml file.
 
         Parameters
         ----------
-        schema_data_file: `str`
+        yaml_file_path: `str`
             Path to schem file to be used for CDF formatting.
 
         """
-        assert isinstance(schema_data_path, str)
-        assert Path(schema_data_path).exists()
+        assert isinstance(yaml_file_path, str)
+        assert Path(yaml_file_path).exists()
         # Load the Yaml file to Dict
-        schema_data = {}
-        with open(schema_data_path, "r") as f:
+        yaml_data = {}
+        with open(yaml_file_path, "r") as f:
             try:
-                schema_data = yaml.safe_load(f)
+                yaml_data = yaml.safe_load(f)
             except yaml.YAMLError as exc:
                 log.critical(exc)
-        # Set the Current Schema
-        self.schema = schema_data
+        return yaml_data
 
     def add_attributes_from_list(self, attributes: list):
         """
@@ -224,15 +221,8 @@ class CDFWriter:
             added as attributes.
 
         """
-        assert isinstance(attributes_path, str)
-        assert Path(attributes_path).exists()
         # Load the Yaml file to Dict
-        attribute_data = {}
-        with open(attributes_path, "r") as f:
-            try:
-                attribute_data = yaml.safe_load(f)
-            except yaml.YAMLError as exc:
-                log.critical(exc)
+        attribute_data = self.load_yaml_data(attributes_path)
 
         # Loop through attributes to add
         for attr_key, attr_value in attribute_data.items():
@@ -250,15 +240,33 @@ class CDFWriter:
 
     def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
         """
-        start with set of numbers dimension 'NxM' where N=len(epoch)
+        Function to add variable data to the CDFWriter class. Variable data here is assumed
+        to be array-like or matrix-like to be stored in the CDF. Additionally, varaible
+        attributes can be added though a native python `dict` of `(key, value)` pairs that
+        are added to the CDF variable.
 
-        N time series of M fields
+        Parameters
+        ----------
+        var_name: `str`
+            Name of the variable to add to the CDFWriter.
 
-        also make `a.varname` a class variable that points the var
+        var_data: `np.ndarray`
+            Array-like or matrix-like data to add to the CDFWriter.
+
+        var_attrs: `dict`
+            A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
 
         """
         self.variable_data[var_name] = var_data
         self.variable_attrs[var_name] = var_attrs
+
+    def add_epoch(self, epoch_data: np.ndarray, epoch_attrs: dict):
+        """
+        Function to add epoch data to the CDFWriter class. This is a unique variable
+        in CDF Files representing the time frame of the other variables contained in the CDF File.
+        """
+        # Add the Epoch Variable
+        self.add_variable(var_name="Epoch", var_data=epoch_data, var_attrs=epoch_attrs)
 
     def to_cdf(self, output_path="./"):
         """
@@ -291,9 +299,9 @@ class CDFWriter:
     def derive_attributes(self):
         """Function to derive global attributes in `gAttrList` member"""
         # Loop through Global Attributes
-        for attr_name, attr_schema in self.schema.items():
+        for attr_name, attr_schema in self.global_attr_schema.items():
             if attr_schema["derived"]:
-                derived_value = self._derive_attribute(attr_name=attr_name, attr_schema=attr_schema)
+                derived_value = self._derive_attribute(attr_name=attr_name)
                 # Only Derive Global Attributes if they have not been manually derived/overridden
                 if not self.global_attrs[attr_name]:
                     self.global_attrs[attr_name] = derived_value
@@ -308,29 +316,26 @@ class CDFWriter:
                         self.global_attrs[attr_name],
                     )
 
-    def _derive_attribute(self, attr_name, attr_schema):
+    def _derive_attribute(self, attr_name):
         """
         Function to Derive Attributes based on other attribues in the CDF
         writer's internal dict state.
         """
-        # Cache for easier access
-        method = attr_schema["derived"]
-
-        # SWITCH on the Derivation Method
-        if method == "get_generation_date":
+        # SWITCH on the Derivation attr_name
+        if attr_name == "Generation_date":
             return self._get_generation_date()
-        elif method == "get_start_time":
+        elif attr_name == "Start_time":
             return self._get_start_time()
-        elif method == "get_data_type":
+        elif attr_name == "Data_type":
             return self._get_data_type()
-        elif method == "get_logical_file_id":
+        elif attr_name == "Logical_file_id":
             return self._get_logical_file_id()
-        elif method == "get_logical_source":
+        elif attr_name == "Logical_source":
             return self._get_logical_source()
-        elif method == "get_logical_source_description":
+        elif attr_name == "Logical_source_description":
             return self._get_logical_source_description()
         else:
-            raise ValueError(f"Derivation Method ({method}) Not Recognized")
+            raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
 
     def verify_global_attr_schema(self):
         """
@@ -341,7 +346,7 @@ class CDFWriter:
         are not in the global attributes.
         """
         # Loop for each attribute in the schema
-        for attr_name, attr_schema in self.schema.items():
+        for attr_name, attr_schema in self.global_attr_schema.items():
             # If it is a required attribute and not present
             if attr_schema["required"] and (attr_name not in self.global_attrs):
                 raise ValueError(

@@ -11,7 +11,7 @@ Data_product_descriptor:
   required: false
   valid_check: null
 Data_type:
-  derived: get_data_type
+  derived: true
   required: true
   valid_check: null
 Data_version:
@@ -27,7 +27,7 @@ Discipline:
   required: true
   valid_check: null
 Generation_date:
-  derived: get_generation_date
+  derived: true
   required: true
   valid_check: null
 HTTP_LINK:
@@ -51,16 +51,16 @@ LINK_TITLE:
   required: true
   valid_check: null
 Logical_file_id:
-  derived: get_logical_file_id
+  derived: true
   required: true
   valid_check: null
 Logical_source:
-  derived: get_logical_source
+  derived: true
   required: true
   valid_check: null
   value: null
 Logical_source_description:
-  derived: get_logical_source_description
+  derived: true
   required: true
   valid_check: null
 MODS:
@@ -88,7 +88,7 @@ Source_name:
   required: true
   valid_check: null
 Start_time:
-  derived: get_start_time
+  derived: true
   required: true
   valid_check: null
 TEXT:
