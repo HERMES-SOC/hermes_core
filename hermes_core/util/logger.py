@@ -23,7 +23,6 @@ class MyLogger(AstropyLogger):
 
     # Override the existing _showwarning() to capture SunpyWarning instead of AstropyWarning
     def _showwarning(self, *args, **kwargs):
-
         # Bail out if we are not catching a warning from SunPy
         if not isinstance(args[0], HERMESWarning):
             return self._showwarning_orig(*args, **kwargs)
