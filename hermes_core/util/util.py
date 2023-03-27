@@ -8,7 +8,7 @@ from astropy.time import Time
 import hermes_core
 
 
-__all__ = ["create_science_filename"]
+__all__ = ["create_science_filename", "parse_science_filename", "VALID_DATA_LEVELS"]
 
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
 TIME_FORMAT = "%Y%m%d_%H%M%S"
