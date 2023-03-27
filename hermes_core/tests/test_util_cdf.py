@@ -4,7 +4,11 @@ from pathlib import Path
 import pytest
 import numpy as np
 from numpy.random import random
+
 from spacepy.pycdf import CDF, Var, gAttrList, zAttrList
+
+from astropy.time import Time
+
 import hermes_core
 from hermes_core.util.cdf import CDFWriter
 
@@ -19,7 +23,7 @@ def test_cdf_writer_default_attrs():
     required_attrs = dict(filter(lambda item: item[-1]["required"], default_attrs.items()))
 
     # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.global_attrs.keys()) == len(required_attrs.keys())
+    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -46,7 +50,7 @@ def test_cdf_writer_valid_attrs():
     test_writer.add_attributes_from_list(attributes=input_attrs)
 
     # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.global_attrs.keys()) == len(required_attrs.keys())
+    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -89,7 +93,7 @@ def test_cdf_writer_overide_derived_attr():
     test_writer.add_attributes_from_list(attributes=input_attrs)
 
     # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.global_attrs.keys()) == len(required_attrs.keys())
+    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -115,6 +119,33 @@ def test_cdf_writer_overide_derived_attr():
     assert not test_file_cache_path.exists()
 
 
+def test_cdf_writer_bad_variable():
+
+    # Initialize a CDF File Wrapper
+    test_writer = CDFWriter()
+
+    with pytest.raises(ValueError) as e:
+        # Add Variable
+        test_writer.add_variable(
+            var_name="test_var1",
+            var_data=np.array(["test_data1"]),
+            var_attrs={"test_attr1": "test_value1"},
+        )
+
+
+def test_cdf_writer_add_time():
+
+    # Initialize a CDF File Wrapper
+    test_writer = CDFWriter()
+
+    # Create an astropy.Time object
+    time = np.arange(50)
+    time_col = Time(time, format="unix")
+
+    # Add the Time column
+    test_writer.add_time(time_column=time_col)
+
+
 def test_cdf_writer_single_variable():
 
     # fmt: off
@@ -129,6 +160,13 @@ def test_cdf_writer_single_variable():
 
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_list(attributes=input_attrs)
+
+    # Create an astropy.Time object
+    time = np.arange(50)
+    time_col = Time(time, format="unix")
+
+    # Add the Time column
+    test_writer.add_time(time_column=time_col)
 
     # Add Variable
     test_writer.add_variable(
@@ -173,7 +211,6 @@ def test_cdf_writer_random_variable():
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_type": "test>data_type",
-        "Logical_file_id": "invalid_cdf.cdf"
     }
     # fmt: on
 
@@ -183,9 +220,18 @@ def test_cdf_writer_random_variable():
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_dict(attributes=input_attrs)
 
+    # Add Variable Data
+    N = 200  # Num Timesteps
+    M = 20  # Num Columns
+
+    # Create an astropy.Time object
+    time = np.arange(N)
+    time_col = Time(time, format="unix")
+
+    # Add the Time column
+    test_writer.add_time(time_column=time_col)
+
     num_random_vars = 10
-    N = 200
-    M = 20
     for i in range(num_random_vars):
         data = random(size=(N, M))
         # Add Variable

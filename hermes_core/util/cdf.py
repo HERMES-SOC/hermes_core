@@ -5,8 +5,14 @@ This module provides CDF file functionality.
 import datetime
 from pathlib import Path
 import yaml
-from spacepy import pycdf
 import numpy as np
+from spacepy import pycdf
+
+from astropy.timeseries import TimeSeries
+from astropy.time import Time
+from astropy.table import Column
+
+
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util
@@ -28,17 +34,6 @@ class CDFWriter:
     interface to manipulate CDF-like data structures in memory before the generation and saving
     of a local `.cdf` file.
 
-    This class uses an internal native python `dict` data structure to provide a CDF-like
-    data structure that can be manipulated in memory. The internal `dict` used `self.global_attrs`
-    is formatted in the following way.
-
-    ```py
-    self.global_attrs = {
-        'global_attribute_name1': 'global_attribute_value1',
-        'global_attribute_name2': 'global_attribute_value2',
-    }
-
-    ```
     """
 
     def __init__(self):
@@ -46,18 +41,17 @@ class CDFWriter:
         # Current Working CDF File
         self.target_cdf_file = None
 
+        # Intermediate Data Structure
+        self.data = TimeSeries()
+
+        # Load Default Global Attributes
+        self._load_default_attributes()
+
         # Data Validation, Complaiance, Derived Attributes
         self.global_attr_schema = self._load_default_global_attr_schema()
-        # Intermediate Data Structure for Global / Metadata Attributes
-        self.global_attrs = {}
-        self._load_default_attributes()
 
         # Data Validation and Compliance for Variable Data
         self.variable_attr_schema = {}
-        # Intermedaite Data Structure for Variable Data
-        self.variable_data = {}
-        # Intermediate Data Structure for Variable Attributes
-        self.variable_attrs = {}
 
     def __del__(self):
         """
@@ -70,7 +64,7 @@ class CDFWriter:
         """
         Function to get the number of variable data members in the CDFWriter class.
         """
-        return len(self.variable_data.keys())
+        return len(self.data.keys())
 
     def __repr__(self):
         """
@@ -84,9 +78,9 @@ class CDFWriter:
         """
         str_repr = (
             f"CDFWriter: Converted: {self.target_cdf_file is not None}"
-            f"\nGlobal Attrs: {self.global_attrs}"
-            f"\nVariable Data: {self.variable_data}"
-            f"\nVariable Attributes: {self.variable_attrs}"
+            f"\nGlobal Attrs: {self.data.meta}"
+            f"\nVariable Data: {self.data}"
+            # f"\nVariable Attributes: {self.variable_attrs}"
         )
         return str_repr
 
@@ -94,46 +88,39 @@ class CDFWriter:
         """
         Function to get a data variable contained in the CDFWriter class.
         """
-        if name not in self.variable_data:
+        if name not in self.data:
             raise KeyError(f"CDFWriter does not contain data variable {name}")
         # Get the Data and Attrs for the named variable
-        var_data = self.variable_data[name]
-        var_attrs = self.variable_attrs[name] if name in self.variable_attrs else {}
-        return (var_data, var_attrs)
+        var_data = self.data[name]
+        return var_data
 
     def __setitem__(self, name, data):
         """
         Function to set a data variable conained in the CDFWriter class.
         """
         # Set the Data for the named variable
-        self.variable_data[name] = data
-        # Set the Attrs for the named variable
-        if name not in self.variable_attrs:
-            self.variable_attrs[name] = {}
+        self.data[name] = data
 
     def __contains__(self, name):
         """
         Function to see whether a data variable is in the CDFWriter class.
         """
-        return name in self.variable_data
+        return name in self.data
 
     def __delitem__(self, name):
         """
         Function to remove a data variable and attrs from the CDFWriter class.
         """
         # Remove from variable data
-        self.variable_data.pop(name, None)
-        # Remove from variable attributes
-        self.variable_attrs.pop(name, None)
+        self.data.pop(name, None)
 
     def __iter__(self):
-        """
+        """s
         Function to iterate over data variables and attributes in the CDFWriter class.
         """
-        for var_name in self.variable_data.keys():
-            var_data = self.variable_data[var_name]
-            var_attrs = self.variable_attrs[var_name]
-            yield (var_name, var_data, var_attrs)
+        for var_name in self.data.keys():
+            var_data = self.data[var_name]
+            yield (var_name, var_data)
 
     def _load_default_global_attr_schema(self) -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
@@ -141,16 +128,16 @@ class CDFWriter:
             Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return self.load_yaml_data(yaml_file_path=default_schema_path)
+        return self._load_yaml_data(yaml_file_path=default_schema_path)
 
-    def _load_default_attributes(self) -> dict:
+    def _load_default_attributes(self):
         # The Default Attributes file is contained in the `hermes_core/data` directory
         default_attributes_path = str(
             Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_FILE
         )
         self.add_attributes_from_yaml(attributes_path=default_attributes_path)
 
-    def load_yaml_data(self, yaml_file_path):
+    def _load_yaml_data(self, yaml_file_path):
         """
         Function to load data from a Yaml file.
 
@@ -197,16 +184,16 @@ class CDFWriter:
         # Loop through attributes to add
         for attr_key, attr_value in attributes:
             # Check to see if the attribute is already present
-            if attr_key in self.global_attrs.keys():
+            if attr_key in self.data.meta.keys():
                 # Log Debug that we're overriding
                 log.debug(
                     "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
                     attr_key,
-                    self.global_attrs[attr_key],
+                    self.data.meta[attr_key],
                     attr_value,
                 )
             # Override or set the vale of the attribute in state
-            self.global_attrs[attr_key] = attr_value
+            self.data.meta[attr_key] = attr_value
 
     def add_attributes_from_dict(self, attributes: dict):
         """
@@ -234,16 +221,16 @@ class CDFWriter:
         # Loop through attributes to add
         for attr_key, attr_value in attributes.items():
             # Check to see if the attribute is already present
-            if attr_key in self.global_attrs.keys():
+            if attr_key in self.data.meta.keys():
                 # Log Debug that we're overriding
                 log.debug(
                     "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
                     attr_key,
-                    self.global_attrs[attr_key],
+                    self.data.meta[attr_key],
                     attr_value,
                 )
             # Override or set the vale of the attribute in state
-            self.global_attrs[attr_key] = attr_value
+            self.data.meta[attr_key] = attr_value
 
     def add_attributes_from_yaml(self, attributes_path: str):
         """
@@ -259,10 +246,17 @@ class CDFWriter:
 
         """
         # Load the Yaml file to Dict
-        attribute_data = self.load_yaml_data(attributes_path)
+        attribute_data = self._load_yaml_data(attributes_path)
 
         # Add the Attributes through the Dict
         self.add_attributes_from_dict(attributes=attribute_data)
+
+    def add_time(self, time_column: Time):
+        """
+        Function to add required `time` column to the CDFWriter class.
+        """
+        # Add the Time Coumn
+        self.data.add_column(col=time_column, name="time")
 
     def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
         """
@@ -283,16 +277,9 @@ class CDFWriter:
             A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
 
         """
-        self.variable_data[var_name] = var_data
-        self.variable_attrs[var_name] = var_attrs
-
-    def add_epoch(self, epoch_data: np.ndarray, epoch_attrs: dict):
-        """
-        Function to add epoch data to the CDFWriter class. This is a unique variable
-        in CDF Files representing the time frame of the other variables contained in the CDF File.
-        """
-        # Add the Epoch Variable
-        self.add_variable(var_name="Epoch", var_data=epoch_data, var_attrs=epoch_attrs)
+        # Add the Variable as a new Column
+        var_column = Column(data=var_data, name=var_name, meta=var_attrs)
+        self.data.add_column(col=var_column)
 
     def to_cdf(self, output_path="./"):
         """
@@ -309,7 +296,7 @@ class CDFWriter:
         self.verify_global_attr_schema()
 
         # Initialize a new CDF
-        cdf_filename = f"{self.global_attrs['Logical_file_id']}.cdf"
+        cdf_filename = f"{self.data.meta['Logical_file_id']}.cdf"
         log.info("Generating CDF: %s", cdf_filename)
         output_cdf_filepath = str(Path(output_path) / cdf_filename)
         self.target_cdf_file = pycdf.CDF(output_cdf_filepath, masterpath="")
@@ -329,8 +316,8 @@ class CDFWriter:
             if attr_schema["derived"]:
                 derived_value = self._derive_attribute(attr_name=attr_name)
                 # Only Derive Global Attributes if they have not been manually derived/overridden
-                if not self.global_attrs[attr_name]:
-                    self.global_attrs[attr_name] = derived_value
+                if not self.data.meta[attr_name]:
+                    self.data.meta[attr_name] = derived_value
                 else:
                     log.debug(
                         (
@@ -339,7 +326,7 @@ class CDFWriter:
                         ),
                         attr_name,
                         derived_value,
-                        self.global_attrs[attr_name],
+                        self.data.meta[attr_name],
                     )
 
     def _derive_attribute(self, attr_name):
@@ -374,7 +361,7 @@ class CDFWriter:
         # Loop for each attribute in the schema
         for attr_name, attr_schema in self.global_attr_schema.items():
             # If it is a required attribute and not present
-            if attr_schema["required"] and (attr_name not in self.global_attrs):
+            if attr_schema["required"] and (attr_name not in self.data.meta):
                 raise ValueError(
                     (
                         f"Required attribute ({attr_name}) not present in global attributes.",
@@ -385,7 +372,7 @@ class CDFWriter:
 
     def _convert_global_attributes_to_cdf(self):
         # Loop though Global Attributes in target_dict
-        for attr_name, attr_value in self.global_attrs.items():
+        for attr_name, attr_value in self.data.meta.items():
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if not attr_value:
@@ -397,12 +384,16 @@ class CDFWriter:
 
     def _convert_variable_attributes_to_cdf(self):
         # Loop through Variable Attributes in target_dict
-        for var_name, var_data, var_attrs in self.__iter__():
-            # Add the Variable to the CDF File
-            self.target_cdf_file[var_name] = var_data
-            # Add the Variable Attributes
-            for var_attr_name, var_attr_val in var_attrs.items():
-                self.target_cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+        for var_name, var_data in self.__iter__():
+            if var_name is "time":
+                # Add 'time' in the TimeSeries as 'Epoch' within the CDF
+                self.target_cdf_file["Epoch"] = var_data.value
+            else:
+                # Add the Variable to the CDF File
+                self.target_cdf_file[var_name] = var_data.data
+                # Add the Variable Attributes
+                for var_attr_name, var_attr_val in var_data.meta.items():
+                    self.target_cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
     def save_cdf(self):
         """Function to save and close CDF File"""
@@ -425,7 +416,7 @@ class CDFWriter:
         extension (e.g. '.cdf'). This attribute is requires to avoid
         loss of the originial source in case of renaming.
         """
-        if not self.global_attrs["Logical_file_id"]:
+        if not self.data.meta["Logical_file_id"]:
             # Get Parts
             instrument_id = self._get_instrument_id()
             start_time = self._get_start_time()
@@ -443,7 +434,7 @@ class CDFWriter:
             )
             science_filename = science_filename.rstrip(util.FILENAME_EXTENSION)
         else:
-            science_filename = self.global_attrs["Logical_file_id"]
+            science_filename = self.data.meta["Logical_file_id"]
         return science_filename
 
     def _get_logical_source(self):
@@ -453,7 +444,7 @@ class CDFWriter:
         This attribute determines the file naming convention in the SKT Editor
         and is used by CDA Web.
         """
-        if not self.global_attrs["Logical_source"]:
+        if not self.data.meta["Logical_source"]:
             # Get Parts
             spacecraft_id = self._get_spacecraft_id()
             instrument_id = self._get_instrument_id()
@@ -462,7 +453,7 @@ class CDFWriter:
             # Build Derivation
             logical_source = f"{spacecraft_id}_{instrument_id}_{data_type_short_name}"
         else:
-            logical_source = self.global_attrs["Logical_source"]
+            logical_source = self.data.meta["Logical_source"]
         return logical_source
 
     def _get_logical_source_description(self):
@@ -472,7 +463,7 @@ class CDFWriter:
         This attribute writes out the full words associated with the encryped
         `Logical_source`  attribute.
         """
-        if not self.global_attrs["Logical_source_description"]:
+        if not self.data.meta["Logical_source_description"]:
             # Get Parts
             spacecraft_long_name = self._get_spacecraft_long_name()
             instrument_long_name = self._get_instrument_long_name()
@@ -481,7 +472,7 @@ class CDFWriter:
                 f"{data_level_long_name} {spacecraft_long_name} {instrument_long_name}"
             )
         else:
-            logical_source_description = self.global_attrs["Logical_source_description"]
+            logical_source_description = self.data.meta["Logical_source_description"]
         return logical_source_description
 
     def _get_data_type(self):
@@ -494,7 +485,7 @@ class CDFWriter:
             - data_level
             - optional_data_product_descriptor
         """
-        if not self.global_attrs["Data_type"]:
+        if not self.data.meta["Data_type"]:
             # Get Short Parts
             mode = self._get_instrument_mode()
             data_level = self._get_data_level()
@@ -516,12 +507,12 @@ class CDFWriter:
             else:
                 data_type = f"{mode}_{data_level}>{mode_long_name} {data_level_long_name}"
         else:
-            data_type = self.global_attrs["Data_type"]
+            data_type = self.data.meta["Data_type"]
         return data_type
 
     def _get_spacecraft_id(self):
         """Function to get Spacecraft ID from Source_name Global Attribute"""
-        sc_id = self.global_attrs["Source_name"]
+        sc_id = self.data.meta["Source_name"]
         assert sc_id is not None
         # Formatting
         if ">" in sc_id:
@@ -531,7 +522,7 @@ class CDFWriter:
 
     def _get_spacecraft_long_name(self):
         """Function to get Spacecraft ID from Source_name Global Attribute"""
-        sc_id = self.global_attrs["Source_name"]
+        sc_id = self.data.meta["Source_name"]
         assert sc_id is not None
         # Formatting
         if ">" in sc_id:
@@ -546,7 +537,7 @@ class CDFWriter:
         Instrument of investigation identifier shortened to three
         letter acronym.
         """
-        instr_id = self.global_attrs["Descriptor"]
+        instr_id = self.data.meta["Descriptor"]
         assert instr_id is not None
         # Formatting
         if ">" in instr_id:
@@ -561,7 +552,7 @@ class CDFWriter:
         Instrument of investigation identifier shortened to three
         letter acronym.
         """
-        instr_id = self.global_attrs["Descriptor"]
+        instr_id = self.data.meta["Descriptor"]
         assert instr_id is not None
         # Formatting
         if ">" in instr_id:
@@ -575,7 +566,7 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        data_level = self.global_attrs["Data_level"]
+        data_level = self.data.meta["Data_level"]
         # Formatting
         if ">" in data_level:
             short_name, _ = data_level.split(">")
@@ -588,7 +579,7 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        data_level = self.global_attrs["Data_level"]
+        data_level = self.data.meta["Data_level"]
         # Formatting
         if ">" in data_level:
             _, long_name = data_level.split(">")
@@ -604,8 +595,8 @@ class CDFWriter:
         If a descriptor contains multiple components, underscores are used top separate
         hose components.
         """
-        if "Data_product_descriptor" in self.global_attrs:
-            odpd = self.global_attrs["Data_product_descriptor"]
+        if "Data_product_descriptor" in self.data.meta:
+            odpd = self.data.meta["Data_product_descriptor"]
         else:
             odpd = ""
         return odpd
@@ -628,7 +619,7 @@ class CDFWriter:
         """
         Function to get the 3-part version number of the data product.
         """
-        version_str = self.global_attrs["Data_version"].lower()
+        version_str = self.data.meta["Data_version"].lower()
         assert version_str is not None
         if "v" in version_str:
             _, version = version_str.split("v")
@@ -638,6 +629,6 @@ class CDFWriter:
 
     def _get_instrument_mode(self):
         """Function to get the mode attribute (TBS)"""
-        instr_mode = self.global_attrs["Instrument_mode"]
+        instr_mode = self.data.meta["Instrument_mode"]
         assert instr_mode is not None
         return instr_mode.lower()  # Makse sure its all lowercase
