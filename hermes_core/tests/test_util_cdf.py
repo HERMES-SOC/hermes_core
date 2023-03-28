@@ -267,8 +267,8 @@ def test_cdf_writer_random_variable():
     # Test the File Exists
     assert test_file_cache_path.exists()
 
-    # # Remove the Test File from Cache
-    # test_file_cache_path.unlink()
+    # Remove the Test File from Cache
+    test_file_cache_path.unlink()
 
-    # # Test the File was Deleted
-    # assert not test_file_cache_path.exists()
+    # Test the File was Deleted
+    assert not test_file_cache_path.exists()
