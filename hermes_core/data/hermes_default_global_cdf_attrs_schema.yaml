@@ -1,7 +1,7 @@
 DOI:
   derived: false
   required: true
-  valid_ check: null
+  valid_check: null
 Data_level:
   derived: false
   required: true
@@ -58,7 +58,6 @@ Logical_source:
   derived: true
   required: true
   valid_check: null
-  value: null
 Logical_source_description:
   derived: true
   required: true

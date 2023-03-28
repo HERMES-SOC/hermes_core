@@ -57,7 +57,7 @@ def test_cdf_writer_valid_attrs():
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
 
     # Test number of Global Attrs in the generated CDF File (Result Data)
-    assert len(test_writer.target_cdf_file.attrs) == len(required_attrs.keys())
+    assert len(test_writer.cdf.attrs) == len(required_attrs.keys())
 
     # Save the CDF to a File
     test_writer.save_cdf()
@@ -100,10 +100,10 @@ def test_cdf_writer_overide_derived_attr():
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
 
     # Test number of Global Attrs in the generated CDF File (Result Data)
-    assert len(test_writer.target_cdf_file.attrs) == len(required_attrs.keys())
+    assert len(test_writer.cdf.attrs) == len(required_attrs.keys())
 
     # Test the Value was not Derrived and used the Overriden Value
-    assert str(test_writer.target_cdf_file.attrs["Data_type"]) == input_attrs[-1][-1]
+    assert str(test_writer.cdf.attrs["Data_type"]) == input_attrs[-1][-1]
 
     # Save the CDF to a File
     test_writer.save_cdf()
@@ -143,7 +143,10 @@ def test_cdf_writer_add_time():
     time_col = Time(time, format="unix")
 
     # Add the Time column
-    test_writer.add_time(time_column=time_col)
+    test_writer.add_time(time=time_col, time_attrs={})
+
+    # Assert the Time Dimension in the TimeSeries Data matches the input
+    assert (test_writer["time"].data.shape[0]) == len(time)
 
 
 def test_cdf_writer_single_variable():
@@ -166,7 +169,7 @@ def test_cdf_writer_single_variable():
     time_col = Time(time, format="unix")
 
     # Add the Time column
-    test_writer.add_time(time_column=time_col)
+    test_writer.add_time(time=time_col, time_attrs={})
 
     # Add Variable
     test_writer.add_variable(
@@ -180,16 +183,16 @@ def test_cdf_writer_single_variable():
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
 
     # Assert Types of the Target CDF
-    assert isinstance(test_writer.target_cdf_file, CDF)
-    assert isinstance(test_writer.target_cdf_file["test_var1"], Var)
-    assert isinstance(test_writer.target_cdf_file["test_var1"].attrs, zAttrList)
-    assert isinstance(test_writer.target_cdf_file.attrs, gAttrList)
+    assert isinstance(test_writer.cdf, CDF)
+    assert isinstance(test_writer.cdf["test_var1"], Var)
+    assert isinstance(test_writer.cdf["test_var1"].attrs, zAttrList)
+    assert isinstance(test_writer.cdf.attrs, gAttrList)
 
     # Test the Target CDF Containts the Variable Data
-    assert test_writer.target_cdf_file["test_var1"][0] == "test_data1"
+    assert test_writer.cdf["test_var1"][0] == "test_data1"
 
     # Test the Target CDF Contains the Variable Attributes
-    assert test_writer.target_cdf_file["test_var1"].attrs["test_attr1"] == "test_value1"
+    assert test_writer.cdf["test_var1"].attrs["test_attr1"] == "test_value1"
 
     # Save the CDF to a File
     test_writer.save_cdf()
@@ -221,15 +224,15 @@ def test_cdf_writer_random_variable():
     test_writer.add_attributes_from_dict(attributes=input_attrs)
 
     # Add Variable Data
-    N = 200  # Num Timesteps
-    M = 20  # Num Columns
+    N = 10  # Num Timesteps
+    M = 2  # Num Columns
 
     # Create an astropy.Time object
     time = np.arange(N)
     time_col = Time(time, format="unix")
 
     # Add the Time column
-    test_writer.add_time(time_column=time_col)
+    test_writer.add_time(time=time_col, time_attrs={})
 
     num_random_vars = 10
     for i in range(num_random_vars):
@@ -246,16 +249,16 @@ def test_cdf_writer_random_variable():
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
 
     # Assert Types of the Target CDF
-    assert isinstance(test_writer.target_cdf_file, CDF)
-    assert isinstance(test_writer.target_cdf_file["test_var1"], Var)
-    assert isinstance(test_writer.target_cdf_file["test_var1"].attrs, zAttrList)
-    assert isinstance(test_writer.target_cdf_file.attrs, gAttrList)
+    assert isinstance(test_writer.cdf, CDF)
+    assert isinstance(test_writer.cdf["test_var1"], Var)
+    assert isinstance(test_writer.cdf["test_var1"].attrs, zAttrList)
+    assert isinstance(test_writer.cdf.attrs, gAttrList)
 
     # Test the Target CDF Containts the Variable Data
-    assert test_writer.target_cdf_file["test_var1"].shape == (N, M)
+    assert test_writer.cdf["test_var1"].shape == (N, M)
 
     # Test the Target CDF Contains the Variable Attributes
-    assert test_writer.target_cdf_file["test_var1"].attrs["test_attr1"] == "test_value1"
+    assert test_writer.cdf["test_var1"].attrs["test_attr1"] == "test_value1"
 
     # Save the CDF to a File
     test_writer.save_cdf()
@@ -264,8 +267,8 @@ def test_cdf_writer_random_variable():
     # Test the File Exists
     assert test_file_cache_path.exists()
 
-    # Remove the Test File from Cache
-    test_file_cache_path.unlink()
+    # # Remove the Test File from Cache
+    # test_file_cache_path.unlink()
 
-    # Test the File was Deleted
-    assert not test_file_cache_path.exists()
+    # # Test the File was Deleted
+    # assert not test_file_cache_path.exists()

@@ -39,7 +39,7 @@ class CDFWriter:
     def __init__(self):
 
         # Current Working CDF File
-        self.target_cdf_file = None
+        self.cdf = None
 
         # Intermediate Data Structure
         self.data = TimeSeries()
@@ -57,14 +57,8 @@ class CDFWriter:
         """
         Deconstructor for CDFWriter class.
         """
-        if self.target_cdf_file:
-            self.target_cdf_file.close()
-
-    def __len__(self):
-        """
-        Function to get the number of variable data members in the CDFWriter class.
-        """
-        return len(self.data.keys())
+        if self.cdf:
+            self.cdf.close()
 
     def __repr__(self):
         """
@@ -77,18 +71,24 @@ class CDFWriter:
         Returns a string representation of the CDFWriter class.
         """
         str_repr = (
-            f"CDFWriter: Converted: {self.target_cdf_file is not None}"
+            f"CDFWriter: Converted: {self.cdf is not None}"
             f"\nGlobal Attrs: {self.data.meta}"
             f"\nVariable Data: {self.data}"
             # f"\nVariable Attributes: {self.variable_attrs}"
         )
         return str_repr
 
+    def __len__(self):
+        """
+        Function to get the number of variable data members in the CDFWriter class.
+        """
+        return len(self.data.keys())
+
     def __getitem__(self, name):
         """
         Function to get a data variable contained in the CDFWriter class.
         """
-        if name not in self.data:
+        if name not in self.data.colnames:
             raise KeyError(f"CDFWriter does not contain data variable {name}")
         # Get the Data and Attrs for the named variable
         var_data = self.data[name]
@@ -115,7 +115,7 @@ class CDFWriter:
         self.data.pop(name, None)
 
     def __iter__(self):
-        """s
+        """
         Function to iterate over data variables and attributes in the CDFWriter class.
         """
         for var_name in self.data.keys():
@@ -251,12 +251,21 @@ class CDFWriter:
         # Add the Attributes through the Dict
         self.add_attributes_from_dict(attributes=attribute_data)
 
-    def add_time(self, time_column: Time):
+    def add_time(self, time: Time, time_attrs: dict):
         """
         Function to add required `time` column to the CDFWriter class.
+
+        Parameters
+        ----------
+        time: `astropy.time.Time`
+            An `astropy.time.Time` object that contains the time dimension for the CDF
+            object to be created.
+
+        time_attrs: `dict`
+            A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
         """
         # Add the Time Coumn
-        self.data.add_column(col=time_column, name="time")
+        self.add_variable(var_name="time", var_data=time.to_datetime(), var_attrs=time_attrs)
 
     def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
         """
@@ -286,7 +295,7 @@ class CDFWriter:
         Function to convert members of the CDFWriter's internal dict
         state to a CDF File using the pyCDF module from spacepy
         """
-        assert self.target_cdf_file is None
+        assert self.cdf is None
         assert Path(output_path).exists()
 
         # Derive any Global Attributes
@@ -299,7 +308,7 @@ class CDFWriter:
         cdf_filename = f"{self.data.meta['Logical_file_id']}.cdf"
         log.info("Generating CDF: %s", cdf_filename)
         output_cdf_filepath = str(Path(output_path) / cdf_filename)
-        self.target_cdf_file = pycdf.CDF(output_cdf_filepath, masterpath="")
+        self.cdf = pycdf.CDF(output_cdf_filepath, masterpath="")
 
         # Add Global Attriubtes to the CDF File
         self._convert_global_attributes_to_cdf()
@@ -376,33 +385,33 @@ class CDFWriter:
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if not attr_value:
-                warn_user((f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)}. "))
+                warn_user(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
                 # Set to a intentionally invalid value
                 attr_value = f"{attr_name}-Not-Provided"
             # Add the Attribute to the CDF File
-            self.target_cdf_file.attrs[attr_name] = attr_value
+            self.cdf.attrs[attr_name] = attr_value
 
     def _convert_variable_attributes_to_cdf(self):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in self.__iter__():
             if var_name is "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
-                self.target_cdf_file["Epoch"] = var_data.value
+                self.cdf["Epoch"] = var_data.data
             else:
                 # Add the Variable to the CDF File
-                self.target_cdf_file[var_name] = var_data.data
+                self.cdf[var_name] = var_data.data
                 # Add the Variable Attributes
                 for var_attr_name, var_attr_val in var_data.meta.items():
-                    self.target_cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+                    self.cdf[var_name].attrs[var_attr_name] = var_attr_val
 
     def save_cdf(self):
         """Function to save and close CDF File"""
-        assert self.target_cdf_file is not None
+        assert self.cdf is not None
         # Save the CDF
-        self.target_cdf_file.save()
-        self.target_cdf_file.close()
+        self.cdf.save()
+        self.cdf.close()
         # Reset the Local Member
-        self.target_cdf_file = None
+        self.cdf = None
 
     # ==============================================================================================
     #                               ATTRIBUTE DERIVATION FUNCTIONS
