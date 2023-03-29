@@ -6,12 +6,12 @@ import datetime
 from pathlib import Path
 import yaml
 import numpy as np
-from spacepy import pycdf
+from spacepy.pycdf import CDF
+from spacepy.pycdf.istp import FileChecks
 
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.table import Column
-
 
 import hermes_core
 from hermes_core import log
@@ -20,6 +20,7 @@ from hermes_core.util.exceptions import warn_user
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
+DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
 
 
 class CDFWriter:
@@ -37,7 +38,6 @@ class CDFWriter:
     """
 
     def __init__(self):
-
         # Current Working CDF File
         self.cdf = None
 
@@ -51,7 +51,7 @@ class CDFWriter:
         self.global_attr_schema = self._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
-        self.variable_attr_schema = {}
+        self.variable_attr_schema = self._load_default_variable_attr_schema()
 
     def __del__(self):
         """
@@ -107,13 +107,6 @@ class CDFWriter:
         """
         return name in self.data
 
-    def __delitem__(self, name):
-        """
-        Function to remove a data variable and attrs from the CDFWriter class.
-        """
-        # Remove from variable data
-        self.data.pop(name, None)
-
     def __iter__(self):
         """
         Function to iterate over data variables and attributes in the CDFWriter class.
@@ -126,6 +119,14 @@ class CDFWriter:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
             Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
+        )
+        # Load the Schema
+        return self._load_yaml_data(yaml_file_path=default_schema_path)
+
+    def _load_default_variable_attr_schema(self) -> dict:
+        # The Default Schema file is contained in the `hermes_core/data` directory
+        default_schema_path = str(
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return self._load_yaml_data(yaml_file_path=default_schema_path)
@@ -290,10 +291,21 @@ class CDFWriter:
         var_column = Column(data=var_data, name=var_name, meta=var_attrs)
         self.data.add_column(col=var_column)
 
+    # =============================================================================================
+    #                         CDF FILE GENERATION FUNCTIONS
+    # =============================================================================================
+
     def to_cdf(self, output_path="./"):
         """
         Function to convert members of the CDFWriter's internal dict
         state to a CDF File using the pyCDF module from spacepy
+
+        Parameters
+        ----------
+        output_path: `str`
+            A string path to the directory where the resulting CSF file is to be saved.
+            By default the CDF file is saved to the current working directory.
+
         """
         assert self.cdf is None
         assert Path(output_path).exists()
@@ -301,14 +313,11 @@ class CDFWriter:
         # Derive any Global Attributes
         self.derive_attributes()
 
-        # Verify that all `required` attributes in the schema are present
-        self.verify_global_attr_schema()
-
         # Initialize a new CDF
         cdf_filename = f"{self.data.meta['Logical_file_id']}.cdf"
         log.info("Generating CDF: %s", cdf_filename)
         output_cdf_filepath = str(Path(output_path) / cdf_filename)
-        self.cdf = pycdf.CDF(output_cdf_filepath, masterpath="")
+        self.cdf = CDF(output_cdf_filepath, masterpath="")
 
         # Add Global Attriubtes to the CDF File
         self._convert_global_attributes_to_cdf()
@@ -359,26 +368,6 @@ class CDFWriter:
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
 
-    def verify_global_attr_schema(self):
-        """
-        Function to ensure all required attributes in the schema are present
-        in the `self.global_attr` member.
-
-        Raises `ValueError` if there are required attributes in the schema that
-        are not in the global attributes.
-        """
-        # Loop for each attribute in the schema
-        for attr_name, attr_schema in self.global_attr_schema.items():
-            # If it is a required attribute and not present
-            if attr_schema["required"] and (attr_name not in self.data.meta):
-                raise ValueError(
-                    (
-                        f"Required attribute ({attr_name}) not present in global attributes.",
-                        "Make sure to add all required attributes to the gloabl attributes",
-                        "before genereating a CDF file.",
-                    )
-                )
-
     def _convert_global_attributes_to_cdf(self):
         # Loop though Global Attributes in target_dict
         for attr_name, attr_value in self.data.meta.items():
@@ -387,16 +376,20 @@ class CDFWriter:
             if not attr_value:
                 warn_user(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
                 # Set to a intentionally invalid value
-                attr_value = f"{attr_name}-Not-Provided"
-            # Add the Attribute to the CDF File
-            self.cdf.attrs[attr_name] = attr_value
+                # attr_value = ""
+            else:
+                # Add the Attribute to the CDF File
+                self.cdf.attrs[attr_name] = attr_value
 
     def _convert_variable_attributes_to_cdf(self):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in self.__iter__():
-            if var_name is "time":
+            if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 self.cdf["Epoch"] = var_data.data
+                # Add the Variable Attributes
+                for var_attr_name, var_attr_val in var_data.meta.items():
+                    self.cdf["Epoch"].attrs[var_attr_name] = var_attr_val
             else:
                 # Add the Variable to the CDF File
                 self.cdf[var_name] = var_data.data
@@ -413,9 +406,112 @@ class CDFWriter:
         # Reset the Local Member
         self.cdf = None
 
-    # ==============================================================================================
+    # =============================================================================================
+    #                         DATA VALIDATION / VERIFICATION FUNCTIONS
+    # =============================================================================================
+
+    def validate_cdf(self, catch=False):
+        """
+        Function to validate the CDF file generated after calling `to_cdf()`.
+        The function executes the `pycdf.istp.FileChecks` tests to determine any
+        of the metadata properties contained in the file are incorrect or if there
+        are missing metadata properties in the CDF file.
+
+        Parameters
+        ----------
+        catch: `bool`
+            A bool value for whether to catch errors in checking the validation of the
+            generated CDF file. If `True` any excetions in validation checking will
+            throw an error. If `False` any exceptions will not be raised, but the test
+            failure will be recorded and returned.
+
+        Returns
+        -------
+        result : `list`
+            A `list` containing a descritption of each vlidation failure from the
+            `FileChecks` tests. Returns an empty list if compliant.
+
+        """
+        # Initialize Validation Errrors
+        validation_errors = []
+
+        # Verify that all `required` global attributes in the schema are present
+        global_attr_validation_errors = self.validate_global_attr_schema()
+        validation_errors.extend(global_attr_validation_errors)
+
+        # Verify that all `required` variable attributes in the schema are present
+        variable_attr_validation_errors = self.validate_variable_attr_schema()
+        validation_errors.extend(variable_attr_validation_errors)
+
+        # Validate the CDF Using ISTP Module
+        istp_validation_errors = FileChecks.all(f=self.cdf, catch=catch)
+        validation_errors.extend(istp_validation_errors)
+
+        return validation_errors
+
+    def validate_global_attr_schema(self):
+        """
+        Function to ensure all required global attributes in the schema are present
+        in the generated CDF File.
+        """
+        global_attr_validation_errors = []
+        # Loop for each attribute in the schema
+        for attr_name, attr_schema in self.global_attr_schema.items():
+            # If it is a required attribute and not present
+            if attr_schema["required"] and (attr_name not in self.cdf.attrs):
+                global_attr_validation_errors.append(
+                    f"Required attribute ({attr_name}) not present in global attributes.",
+                )
+        return global_attr_validation_errors
+
+    def validate_variable_attr_schema(self):
+        """
+        Function to ensure all required variable attributes in the schema are present
+        in the generated CDF file.
+        """
+        variable_attr_validation_errors = []
+
+        # Loop for each Variable in the CDF File
+        for var_name in self.cdf:
+            # Get the `Var()` Class for the Variable
+            var_data = self.cdf[var_name]
+
+            # Get the Variable Type to compare the required attributes
+            var_type = ""
+            if "VAR_TYPE" in var_data.attrs:
+                var_type = var_data.attrs["VAR_TYPE"]
+                variable_errors = self._validate_variable(var_name, var_type)
+                variable_attr_validation_errors.extend(variable_errors)
+            else:
+                variable_attr_validation_errors.append(
+                    f"Variable: {var_name} missing 'VAR_TYPE' attribute. Cannot Validate Variable."
+                )
+
+        return variable_attr_validation_errors
+
+    def _validate_variable(self, var_name, var_type):
+        """
+        Function to Validate an individual Variable.
+        """
+        variable_errors = []
+        # Get the Expected Attributes for the Variable Type
+        var_type_attrs = self.variable_attr_schema[var_type]
+
+        # Get the `Var()` Class for the Variable
+        var_data = self.cdf[var_name]
+
+        # Loop for each Variable Attribute in the schema
+        for attr_name in var_type_attrs:
+            attr_schema = self.variable_attr_schema["attribute_key"][attr_name]
+            # If it is a required attribute and not present
+            if attr_schema["required"] and attr_name not in var_data.attrs:
+                variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
+
+        return variable_errors
+
+    # =============================================================================================
     #                               ATTRIBUTE DERIVATION FUNCTIONS
-    # ==============================================================================================
+    # =============================================================================================
 
     def _get_logical_file_id(self):
         """
