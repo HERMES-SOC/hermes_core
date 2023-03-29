@@ -90,9 +90,9 @@ attribute_key:
     required: true
   FORM_PTR:
     required: true
-  LABAXIS:          # NOTE Only one of LABAXIS or LAB_PTR_i should be present
+  LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
     required: true
-  LAB_PTR_i:
+  LABL_PTR_i:
     required: true
   SI_CONVERSION:
     required: true
