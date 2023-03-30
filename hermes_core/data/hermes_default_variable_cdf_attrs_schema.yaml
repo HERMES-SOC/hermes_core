@@ -134,41 +134,41 @@ time_series:
 data:
   - CATDESC
   - DEPEND_0
-  - DEPEND_i # [for dimensional data variables]
+  # - DEPEND_i # [for dimensional data variables]
   - DISPLAY_TYPE
   - FIELDNAM
   - FILLVAL
   - FORMAT
-  - FORM_PTR
+  # - FORM_PTR
   - LABLAXIS
-  - LABL_PTR_i
+  # - LABL_PTR_i
   - SI_CONVERSION
   - UNITS
-  - UNIT_PTR
+  # - UNIT_PTR
   - VALIDMIN
   - VALIDMAX
   - VAR_TYPE 
 support_data:
   - CATDESC
   - DEPEND_0
-  - DEPEND_i
+  # - DEPEND_i
   - FIELDNAM
   - FILLVAL
   - FORMAT
-  - FORM_PTR
+  # - FORM_PTR
   - SI_CONVERSION
   - UNITS
-  - UNIT_PTR
+  # - UNIT_PTR
   - VALIDMIN
   - VALIDMAX
   - VAR_TYPE
 metadata:
   - CATDESC
   - DEPEND_0
-  - DEPEND_i
+  # - DEPEND_i
   - FIELDNAM
   - FILLVAL
   - FORMAT
-  - FORM_PTR
+  # - FORM_PTR
   - SI_CONVERSION
   - VAR_TYPE

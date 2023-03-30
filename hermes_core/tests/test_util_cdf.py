@@ -1,10 +1,12 @@
 """Tests for cdf.py"""
 
 from pathlib import Path
+import datetime
 import pytest
 import numpy as np
 from numpy.random import random
 
+import spacepy
 from spacepy.pycdf import CDF, Var, gAttrList, zAttrList
 
 from astropy.time import Time
@@ -424,6 +426,162 @@ def test_cdf_writer_validate_multiple_var_type():
         jsonify(result, "validation_result")
 
     assert result
+    assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
+
+    # Save the CDF to a File
+    test_writer.save_cdf()
+    # Remove the File
+    test_file_cache_path = Path(test_file_output_path)
+    test_file_cache_path.unlink()
+
+
+def test_cdf_writer_generate_valid_cdf():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_type": "Hn>High Resolution data",
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+
+    # Initialize a CDF File Wrapper
+    test_writer = CDFWriter()
+    # jsonify(test_writer.variable_attr_schema, "vattr_schema")
+
+    # Add Custom Data to the Wrapper
+    test_writer.add_attributes_from_dict(attributes=input_attrs)
+
+    # Add Variable Data
+    N = 10  # Num Timesteps
+
+    # Create an astropy.Time object
+    time = np.arange(N)
+    time_col = Time(time, format="unix")
+
+    # Add the Time column
+    test_writer.add_time(
+        time=time_col,
+        time_attrs={
+            "CATDESC": "TT2000 time tags",
+            "FIELDNAM": "Epoch",
+            # "FILLVAL": -9223372036854775808,
+            "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
+            "VAR_TYPE": "time_series",
+            "TIME_BASE": "J2000",
+            "RESOLUTION": "1s",
+            "TIME_SCALE": "Terrestrial Time (TT)",
+            "REFERENCE_POSITION": "rotating Earth geoid",
+        },
+    )
+
+    # Add 'data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        data = random(size=(N,))
+        # Add Variable
+        test_writer.add_variable(
+            var_name=f"test_var{i}",
+            var_data=data,
+            var_attrs={
+                "VAR_TYPE": "data",
+                "CATDESC": "Test Variable",
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "FIELDNAM": f"test_var{i}",
+                "FILLVAL": -1e31,
+                "FORMAT": "F9.4",
+                "LABLAXIS": "Label Axis",
+                "SI_CONVERSION": "1.0e3>m",
+                "UNITS": "km",
+                "VALIDMIN": 0.0,
+                "VALIDMAX": 1.0,
+            },
+        )
+
+    # Add 'support_data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        data = random(size=(N,))
+        # Add Variable
+        test_writer.add_variable(
+            var_name=f"test_support{i}",
+            var_data=data,
+            var_attrs={
+                "VAR_TYPE": "support_data",
+                "CATDESC": "Test Variable",
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "FIELDNAM": f"test_support{i}",
+                "FILLVAL": -1e31,
+                "FORMAT": "F9.4",
+                "LABLAXIS": "Label Axis",
+                "SI_CONVERSION": "1.0e3>m",
+                "UNITS": "km",
+                "VALIDMIN": 0.0,
+                "VALIDMAX": 1.0,
+            },
+        )
+
+    # Add 'metadata' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        data = random(size=(N,))
+        # Add Variable
+        test_writer.add_variable(
+            var_name=f"test_metadata{i}",
+            var_data=data,
+            var_attrs={
+                "VAR_TYPE": "metadata",
+                "CATDESC": "Test Variable",
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "FIELDNAM": f"test_metadata{i}",
+                "FILLVAL": -1e31,
+                "FORMAT": "F9.4",
+                "LABLAXIS": "Label Axis",
+                "SI_CONVERSION": "1.0e3>m",
+                "UNITS": "km",
+                "VALIDMIN": 0.0,
+                "VALIDMAX": 1.0,
+            },
+        )
+
+    # Convert the Wrapper to a CDF File
+    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
+    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+
+    # Validate the generated CDF File
+    result = test_writer.validate_cdf(catch=True)
+    if len(result) > 0:
+        jsonify(result, "validation_result")
+
+    assert result == []
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
 
     # Save the CDF to a File

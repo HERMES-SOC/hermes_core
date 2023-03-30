@@ -555,8 +555,12 @@ class CDFWriter:
             instrument_id = self._get_instrument_id()
             data_type = self._get_data_type()
             data_type_short_name, _ = data_type.split(">")
+
+            data_level = self._get_data_level()
+            mode = self._get_instrument_mode()
+
             # Build Derivation
-            logical_source = f"{spacecraft_id}_{instrument_id}_{data_type_short_name}"
+            logical_source = f"{spacecraft_id}_{instrument_id}_{mode}_{data_level}"
         else:
             logical_source = self.data.meta["Logical_source"]
         return logical_source
