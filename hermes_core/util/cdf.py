@@ -717,8 +717,16 @@ class CDFWriter:
         Function to get the start time of the data contained in the CDF
         given in format `YYYYMMDD_hhmmss`
         """
-        # TODO derrive from epoch
-        return datetime.datetime.now()
+        start_time = None
+        # Check if the 'Time' column has been set in the TimeSeries
+        if "time" not in self.data.colnames:
+            # No 'Time' Data Available
+            warn_user(f"Cannot Derive Data Start Time, missing Epoch information")
+            start_time = datetime.datetime.now()
+        else:
+            # Get the Start Time from the TimeSeries
+            start_time = self.data["time"][0]
+        return start_time
 
     def _get_version(self):
         """
