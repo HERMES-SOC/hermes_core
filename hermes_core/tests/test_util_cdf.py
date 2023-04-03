@@ -21,13 +21,6 @@ def test_cdf_writer_default_attrs():
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
 
-    # Required Attributes
-    default_attrs = test_writer._load_default_global_attr_schema()
-    required_attrs = dict(filter(lambda item: item[-1]["required"], default_attrs.items()))
-
-    # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
-
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     with pytest.raises(ValueError) as e:
@@ -37,29 +30,21 @@ def test_cdf_writer_default_attrs():
 def test_cdf_writer_valid_attrs():
     # fmt: off
     input_attrs = [
-        ("Descriptor", "EEA>Electron Electrostatic Analyzer")
+        ("Descriptor", "EEA>Electron Electrostatic Analyzer"),
+        ("Data_level", "l1>Level 1"),
+        ("Data_version", "v0.0.1"),
     ]
     # fmt: on
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
 
-    # Required Attributes
-    default_attrs = test_writer._load_default_global_attr_schema()
-    required_attrs = dict(filter(lambda item: item[-1]["required"], default_attrs.items()))
-
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_list(attributes=input_attrs)
-
-    # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # # Test number of Global Attrs in the generated CDF File (Result Data)
-    # assert len(test_writer.cdf.attrs) == len(required_attrs.keys())
 
     # Save the CDF to a File
     test_writer.save_cdf()
@@ -79,6 +64,8 @@ def test_cdf_writer_overide_derived_attr():
     # fmt: off
     input_attrs = [
         ("Descriptor", "EEA>Electron Electrostatic Analyzer"),
+        ("Data_level", "l1>Level 1"),
+        ("Data_version", "v0.0.1"),
         ("Data_type", "test>data_type")
     ]
     # fmt: on
@@ -86,22 +73,12 @@ def test_cdf_writer_overide_derived_attr():
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
 
-    # Required Attributes
-    default_attrs = test_writer._load_default_global_attr_schema()
-    required_attrs = dict(filter(lambda item: item[-1]["required"], default_attrs.items()))
-
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_list(attributes=input_attrs)
-
-    # Test Number of Global Attrs in the Target Dict (Intermediate Data)
-    assert len(test_writer.data.meta.keys()) == len(required_attrs.keys())
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Test number of Global Attrs in the generated CDF File (Result Data)
-    # assert len(test_writer.cdf.attrs) == len(required_attrs.keys())
 
     # Test the Value was not Derrived and used the Overriden Value
     assert str(test_writer.cdf.attrs["Data_type"]) == input_attrs[-1][-1]
@@ -152,7 +129,8 @@ def test_cdf_writer_single_variable():
     # fmt: off
     input_attrs = [
         ("Descriptor", "EEA>Electron Electrostatic Analyzer"),
-        ("Data_type", "test>data_type")
+        ("Data_level", "l1>Level 1"),
+        ("Data_version", "v0.0.1"),
     ]
     # fmt: on
 
@@ -210,7 +188,8 @@ def test_cdf_writer_random_variable():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_type": "test>data_type",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
     }
     # fmt: on
 
@@ -275,7 +254,8 @@ def test_cdf_writer_validate_missing_epoch_var_type():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_type": "test>data_type",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
     }
     # fmt: on
 
@@ -318,7 +298,8 @@ def test_cdf_writer_validate_present_epoch_var_type():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_type": "test>data_type",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
     }
     # fmt: on
 
@@ -362,7 +343,8 @@ def test_cdf_writer_validate_multiple_var_type():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_type": "test>data_type",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
     }
     # fmt: on
 
@@ -438,14 +420,18 @@ def test_cdf_writer_validate_multiple_var_type():
 def test_cdf_writer_generate_valid_cdf():
     # fmt: off
     input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_type": None,
+        "Data_version": "0.0.1",
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_type": "Hn>High Resolution data",
-        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
         "HTTP_LINK": [
             "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
             "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
             "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
         ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
         "Instrument_type": "Electric Fields (space)",
         "LINK_TEXT": [
             "ISTP Guide",
@@ -473,6 +459,10 @@ def test_cdf_writer_generate_valid_cdf():
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
     # jsonify(test_writer.variable_attr_schema, "vattr_schema")
+
+    # Required Attributes
+    default_attrs = test_writer._load_default_global_attr_schema()
+    required_attrs = dict(filter(lambda item: item[-1]["required"], default_attrs.items()))
 
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_dict(attributes=input_attrs)
@@ -575,6 +565,9 @@ def test_cdf_writer_generate_valid_cdf():
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+
+    # Test number of Global Attrs in the generated CDF File (Result Data)
+    assert len(test_writer.cdf.attrs) >= len(required_attrs.keys())
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(catch=True)

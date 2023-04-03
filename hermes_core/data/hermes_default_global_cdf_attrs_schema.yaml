@@ -1,18 +1,18 @@
 DOI:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 Data_level:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Derived)
   valid_check: null
 Data_product_descriptor:
   derived: false
-  required: false
+  required: false # NOT Required in ISTP Guide (Derived)
   valid_check: null
 Data_type:
   derived: true
-  required: true
+  required: true # NOT Required in ISTP Guide (Derived)
   valid_check: null
 Data_version:
   derived: false
@@ -28,15 +28,15 @@ Discipline:
   valid_check: null
 Generation_date:
   derived: true
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 HTTP_LINK:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 Instrument_mode:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Derived)
   valid_check: null
 Instrument_type:
   derived: false
@@ -44,11 +44,11 @@ Instrument_type:
   valid_check: null
 LINK_TEXT:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 LINK_TITLE:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 Logical_file_id:
   derived: true
@@ -64,7 +64,7 @@ Logical_source_description:
   valid_check: null
 MODS:
   derived: false
-  required: true
+  required: true # NOT Required in ISTP Guide (Recommended)
   valid_check: null
 Mission_group:
   derived: false
@@ -88,7 +88,7 @@ Source_name:
   valid_check: null
 Start_time:
   derived: true
-  required: true
+  required: true # NOT Required in ISTP Guide (Derived)
   valid_check: null
 TEXT:
   derived: false

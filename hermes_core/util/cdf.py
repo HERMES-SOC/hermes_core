@@ -334,7 +334,7 @@ class CDFWriter:
             if attr_schema["derived"]:
                 derived_value = self._derive_attribute(attr_name=attr_name)
                 # Only Derive Global Attributes if they have not been manually derived/overridden
-                if not self.data.meta[attr_name]:
+                if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
                     self.data.meta[attr_name] = derived_value
                 else:
                     log.debug(
@@ -521,7 +521,8 @@ class CDFWriter:
         extension (e.g. '.cdf'). This attribute is requires to avoid
         loss of the originial source in case of renaming.
         """
-        if not self.data.meta["Logical_file_id"]:
+        attr_name = "Logical_file_id"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
             # Get Parts
             instrument_id = self._get_instrument_id()
             start_time = self._get_start_time()
@@ -539,7 +540,7 @@ class CDFWriter:
             )
             science_filename = science_filename.rstrip(util.FILENAME_EXTENSION)
         else:
-            science_filename = self.data.meta["Logical_file_id"]
+            science_filename = self.data.meta[attr_name]
         return science_filename
 
     def _get_logical_source(self):
@@ -549,7 +550,8 @@ class CDFWriter:
         This attribute determines the file naming convention in the SKT Editor
         and is used by CDA Web.
         """
-        if not self.data.meta["Logical_source"]:
+        attr_name = "Logical_source"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
             # Get Parts
             spacecraft_id = self._get_spacecraft_id()
             instrument_id = self._get_instrument_id()
@@ -562,7 +564,7 @@ class CDFWriter:
             # Build Derivation
             logical_source = f"{spacecraft_id}_{instrument_id}_{mode}_{data_level}"
         else:
-            logical_source = self.data.meta["Logical_source"]
+            logical_source = self.data.meta[attr_name]
         return logical_source
 
     def _get_logical_source_description(self):
@@ -572,7 +574,8 @@ class CDFWriter:
         This attribute writes out the full words associated with the encryped
         `Logical_source`  attribute.
         """
-        if not self.data.meta["Logical_source_description"]:
+        attr_name = "Logical_source_description"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
             # Get Parts
             spacecraft_long_name = self._get_spacecraft_long_name()
             instrument_long_name = self._get_instrument_long_name()
@@ -581,7 +584,7 @@ class CDFWriter:
                 f"{data_level_long_name} {spacecraft_long_name} {instrument_long_name}"
             )
         else:
-            logical_source_description = self.data.meta["Logical_source_description"]
+            logical_source_description = self.data.meta[attr_name]
         return logical_source_description
 
     def _get_data_type(self):
@@ -594,49 +597,64 @@ class CDFWriter:
             - data_level
             - optional_data_product_descriptor
         """
-        if not self.data.meta["Data_type"]:
-            # Get Short Parts
-            mode = self._get_instrument_mode()
-            data_level = self._get_data_level()
-            odpd = self._get_data_product_descriptor()
+        attr_name = "Data_type"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            short_parts = []
+            long_parts = []
 
-            # Get Long Parts
+            # Get `mode`
+            mode_short_name = self._get_instrument_mode()
             mode_long_name = self._get_instrument_mode().upper()  # NOTE Seems to be Upper case?
-            data_level_long_name = self._get_data_level_long_name()
-            odpd_long_name = (
-                self._get_data_product_descriptor().upper()
-            )  # NOTE Seems to be Uppar case?
+            if mode_short_name and mode_long_name:
+                short_parts.append(mode_short_name)
+                long_parts.append(mode_long_name)
 
-            # Build Derivation (With ODPD)
-            if odpd:
-                data_type = (
-                    f"{mode}_{data_level}_{odpd}>"
-                    f"{mode_long_name} {data_level_long_name} {odpd_long_name}"
-                )
-            else:
-                data_type = f"{mode}_{data_level}>{mode_long_name} {data_level_long_name}"
+            # Get `data level`
+            data_level_short_name = self._get_data_level()
+            data_level_long_name = self._get_data_level_long_name()
+            if data_level_short_name and data_level_long_name:
+                short_parts.append(data_level_short_name)
+                long_parts.append(data_level_long_name)
+
+            # Get `data product descriptor`
+            odpd_short_name = self._get_data_product_descriptor()
+            odpd_long_name = self._get_data_product_descriptor().upper()
+            if odpd_short_name and odpd_long_name:
+                short_parts.append(odpd_short_name)
+                long_parts.append(odpd_long_name)
+
+            # Build Derivation
+            data_type = "_".join(short_parts) + ">" + " ".join(long_parts)
         else:
-            data_type = self.data.meta["Data_type"]
+            data_type = self.data.meta[attr_name]
         return data_type
 
     def _get_spacecraft_id(self):
         """Function to get Spacecraft ID from Source_name Global Attribute"""
-        sc_id = self.data.meta["Source_name"]
-        assert sc_id is not None
-        # Formatting
-        if ">" in sc_id:
-            short_name, _ = sc_id.split(">")
-            sc_id = short_name.lower()  # Makse sure its all lowercase
+        attr_name = "Source_name"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            # Get Module Default
+            sc_id = hermes_core.MISSION_NAME
+        else:
+            sc_id = self.data.meta["Source_name"]
+            # Formatting
+            if ">" in sc_id:
+                short_name, _ = sc_id.split(">")
+                sc_id = short_name.lower()  # Makse sure its all lowercase
         return sc_id
 
     def _get_spacecraft_long_name(self):
         """Function to get Spacecraft ID from Source_name Global Attribute"""
-        sc_id = self.data.meta["Source_name"]
-        assert sc_id is not None
-        # Formatting
-        if ">" in sc_id:
-            _, long_name = sc_id.split(">")
-            sc_id = long_name
+        attr_name = "Source_name"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            # Get Module Default
+            sc_id = hermes_core.MISSION_NAME
+        else:
+            sc_id = self.data.meta["Source_name"]
+            # Formatting
+            if ">" in sc_id:
+                _, long_name = sc_id.split(">")
+                sc_id = long_name
         return sc_id
 
     def _get_instrument_id(self):
@@ -646,12 +664,15 @@ class CDFWriter:
         Instrument of investigation identifier shortened to three
         letter acronym.
         """
-        instr_id = self.data.meta["Descriptor"]
-        assert instr_id is not None
-        # Formatting
-        if ">" in instr_id:
-            short_name, _ = instr_id.split(">")
-            instr_id = short_name.lower()  # Makse sure its all lowercase
+        attr_name = "Descriptor"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            instr_id = None
+        else:
+            instr_id = self.data.meta["Descriptor"]
+            # Formatting
+            if ">" in instr_id:
+                short_name, _ = instr_id.split(">")
+                instr_id = short_name.lower()  # Makse sure its all lowercase
         return instr_id
 
     def _get_instrument_long_name(self):
@@ -661,12 +682,15 @@ class CDFWriter:
         Instrument of investigation identifier shortened to three
         letter acronym.
         """
-        instr_id = self.data.meta["Descriptor"]
-        assert instr_id is not None
-        # Formatting
-        if ">" in instr_id:
-            _, long_name = instr_id.split(">")
-            instr_id = long_name
+        attr_name = "Descriptor"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            instr_id = None
+        else:
+            instr_id = self.data.meta["Descriptor"]
+            # Formatting
+            if ">" in instr_id:
+                _, long_name = instr_id.split(">")
+                instr_id = long_name
         return instr_id
 
     def _get_data_level(self):
@@ -675,11 +699,15 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        data_level = self.data.meta["Data_level"]
-        # Formatting
-        if ">" in data_level:
-            short_name, _ = data_level.split(">")
-            data_level = short_name.lower()  # Makse sure its all lowercase
+        attr_name = "Data_level"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            data_level = None
+        else:
+            data_level = self.data.meta["Data_level"]
+            # Formatting
+            if ">" in data_level:
+                short_name, _ = data_level.split(">")
+                data_level = short_name.lower()  # Makse sure its all lowercase
         return data_level
 
     def _get_data_level_long_name(self):
@@ -688,11 +716,15 @@ class CDFWriter:
 
         The level to which the data product has been processed.
         """
-        data_level = self.data.meta["Data_level"]
-        # Formatting
-        if ">" in data_level:
-            _, long_name = data_level.split(">")
-            data_level = long_name
+        attr_name = "Data_level"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            data_level = None
+        else:
+            data_level = self.data.meta["Data_level"]
+            # Formatting
+            if ">" in data_level:
+                _, long_name = data_level.split(">")
+                data_level = long_name
         return data_level
 
     def _get_data_product_descriptor(self):
@@ -704,10 +736,11 @@ class CDFWriter:
         If a descriptor contains multiple components, underscores are used top separate
         hose components.
         """
-        if "Data_product_descriptor" in self.data.meta:
-            odpd = self.data.meta["Data_product_descriptor"]
-        else:
+        attr_name = "Data_product_descriptor"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
             odpd = ""
+        else:
+            odpd = self.data.meta["Data_product_descriptor"]
         return odpd
 
     def _get_generation_date(self):
@@ -721,9 +754,8 @@ class CDFWriter:
         Function to get the start time of the data contained in the CDF
         given in format `YYYYMMDD_hhmmss`
         """
-        start_time = None
-        # Check if the 'Time' column has been set in the TimeSeries
-        if "time" not in self.data.colnames:
+        attr_name = "time"
+        if attr_name not in self.data.columns:
             # No 'Time' Data Available
             warn_user(f"Cannot Derive Data Start Time, missing Epoch information")
             start_time = datetime.datetime.now()
@@ -736,16 +768,22 @@ class CDFWriter:
         """
         Function to get the 3-part version number of the data product.
         """
-        version_str = self.data.meta["Data_version"].lower()
-        assert version_str is not None
-        if "v" in version_str:
-            _, version = version_str.split("v")
+        attr_name = "Data_version"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            version = None
         else:
-            version = version_str
+            version_str = self.data.meta["Data_version"].lower()
+            if "v" in version_str:
+                _, version = version_str.split("v")
+            else:
+                version = version_str
         return version
 
     def _get_instrument_mode(self):
         """Function to get the mode attribute (TBS)"""
-        instr_mode = self.data.meta["Instrument_mode"]
-        assert instr_mode is not None
+        attr_name = "Instrument_mode"
+        if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
+            instr_mode = ""
+        else:
+            instr_mode = self.data.meta["Instrument_mode"]
         return instr_mode.lower()  # Makse sure its all lowercase
