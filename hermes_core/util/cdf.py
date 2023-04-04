@@ -59,6 +59,7 @@ class CDFWriter:
         """
         if self.cdf:
             self.cdf.close()
+        self.cdf = None
 
     def __repr__(self):
         """
@@ -72,8 +73,8 @@ class CDFWriter:
         """
         str_repr = (
             f"CDFWriter: Converted: {self.cdf is not None}"
-            f"\nGlobal Attrs: {self.data.meta}"
-            f"\nVariable Data: {self.data}"
+            f"\nGlobal Attrs:\n{self.data.meta}"
+            f"\nVariable Data:\n{self.data}"
             # f"\nVariable Attributes: {self.variable_attrs}"
         )
         return str_repr
@@ -99,13 +100,16 @@ class CDFWriter:
         Function to set a data variable conained in the CDFWriter class.
         """
         # Set the Data for the named variable
-        self.data[name] = data
+        if name == "time":
+            self.add_time(time=data, time_attrs={})
+        else:
+            self.add_variable(var_name=name, var_data=data, var_attrs={})
 
     def __contains__(self, name):
         """
         Function to see whether a data variable is in the CDFWriter class.
         """
-        return name in self.data
+        return name in self.data.columns
 
     def __iter__(self):
         """
@@ -558,11 +562,8 @@ class CDFWriter:
             data_type = self._get_data_type()
             data_type_short_name, _ = data_type.split(">")
 
-            data_level = self._get_data_level()
-            mode = self._get_instrument_mode()
-
             # Build Derivation
-            logical_source = f"{spacecraft_id}_{instrument_id}_{mode}_{data_level}"
+            logical_source = f"{spacecraft_id}_{instrument_id}_{data_type_short_name}"
         else:
             logical_source = self.data.meta[attr_name]
         return logical_source
@@ -579,9 +580,10 @@ class CDFWriter:
             # Get Parts
             spacecraft_long_name = self._get_spacecraft_long_name()
             instrument_long_name = self._get_instrument_long_name()
-            data_level_long_name = self._get_data_level_long_name()
+            data_type = self._get_data_type()
+            _, data_type_long_name = data_type.split(">")
             logical_source_description = (
-                f"{data_level_long_name} {spacecraft_long_name} {instrument_long_name}"
+                f"{spacecraft_long_name} {instrument_long_name} {data_type_long_name}"
             )
         else:
             logical_source_description = self.data.meta[attr_name]
@@ -604,22 +606,22 @@ class CDFWriter:
 
             # Get `mode`
             mode_short_name = self._get_instrument_mode()
-            mode_long_name = self._get_instrument_mode().upper()  # NOTE Seems to be Upper case?
-            if mode_short_name and mode_long_name:
+            mode_long_name = self._get_instrument_mode()
+            if bool(mode_short_name and mode_long_name):
                 short_parts.append(mode_short_name)
                 long_parts.append(mode_long_name)
 
             # Get `data level`
             data_level_short_name = self._get_data_level()
             data_level_long_name = self._get_data_level_long_name()
-            if data_level_short_name and data_level_long_name:
+            if bool(data_level_short_name and data_level_long_name):
                 short_parts.append(data_level_short_name)
                 long_parts.append(data_level_long_name)
 
             # Get `data product descriptor`
             odpd_short_name = self._get_data_product_descriptor()
-            odpd_long_name = self._get_data_product_descriptor().upper()
-            if odpd_short_name and odpd_long_name:
+            odpd_long_name = self._get_data_product_descriptor()
+            if bool(odpd_short_name and odpd_long_name):
                 short_parts.append(odpd_short_name)
                 long_parts.append(odpd_long_name)
 
@@ -754,11 +756,12 @@ class CDFWriter:
         Function to get the start time of the data contained in the CDF
         given in format `YYYYMMDD_hhmmss`
         """
-        attr_name = "time"
-        if attr_name not in self.data.columns:
-            # No 'Time' Data Available
-            warn_user(f"Cannot Derive Data Start Time, missing Epoch information")
-            start_time = datetime.datetime.now()
+        gattr_name = "Start_time"
+        vattr_name = "time"
+        if (gattr_name in self.data.meta) and (self.data.meta[gattr_name]):
+            start_time = self.data.meta[gattr_name]
+        elif vattr_name not in self.data.columns:
+            start_time = None
         else:
             # Get the Start Time from the TimeSeries
             start_time = self.data["time"][0]
