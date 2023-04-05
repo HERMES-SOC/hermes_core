@@ -25,15 +25,25 @@ DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_sche
 
 class CDFWriter:
     """
-    Python Class to Convert abstract Data Structures to CDF file
-    formats compliant with SpacePy's pyCDF Module. These CDF Files
-    can then be indexed and shared through SPDF.
+    Python Class to provide an intermediate interafce to generate CDF files
+    vlidated against ISTP standards. One limitation of the `spacepy.pycdf` library is
+    that you can not create CDF-like data structures in memory without generating and saving
+    a local `.cdf` File. This class provides an interface to manipulate CDF-like data
+    structures in memory before the generation and saving of a local `.cdf` file.
 
-    The purpose of this class is to provide an intermediate interafce to generate CDF Files.
-    One limitation of the pyCDF library is that you can not create CDF-like data structures
-    in memory without generating and saving a local `.cdf` File. This class provides an
-    interface to manipulate CDF-like data structures in memory before the generation and saving
-    of a local `.cdf` file.
+    The class uses an `atropy.timeseries.TimeSeries` table to provide an intermediate
+    interfce for modifying CDF-like data structure. The `TimeSeries` object can contain
+    global metadata, single or multidimensional time series data, and variable metadata
+    about each column/variable member in the `TimeSeries`. This intermediate structure is
+    converted to a `spacepy.pycdf.CDF` data structure through the `to_cdf()` function. This
+    function executes attribute derivations for required global attributes, if they have
+    not already been overwritten and the individual sub-attributes are present. Global
+    metadata is extracted from the `OrderedDict()` `.meta` property of the `TimeSeries`
+    and added as `(key, value)` pairs in the `CDF` data structure. Variable data and
+    attributes are converted from the `Column` `.meta` and `.data` members respectively to
+    the `CDF` variable data and attributes respectively.
+
+
 
     """
 
@@ -294,6 +304,62 @@ class CDFWriter:
         # Add the Variable as a new Column
         var_column = Column(data=var_data, name=var_name, meta=var_attrs)
         self.data.add_column(col=var_column)
+
+    # =============================================================================================
+    #                         CDF FILE LOADING FUNCTIONS
+    # =============================================================================================
+
+    @staticmethod
+    def from_cdf(pathname: str):
+        """
+        Function to create a CDFWriter object from an existing CDF File. This allows
+        someone to add data to a skeleton CDF and save the resulting data struture to
+        a new, validated CDF file.
+
+        Parameters
+        ----------
+        pathname: `str`
+            A string path of the file to open
+
+        """
+        if not Path(pathname).exists():
+            raise FileNotFoundError(f"CDF Could not be loaded from path: {pathname}")
+
+        # Initialize a new Placeholder CDFWriter object
+        writer = CDFWriter()
+
+        # Open CDF file with context manager
+        with CDF(pathname) as input_file:
+            # Add Global Attributes from the CDF file to TimeSeries
+            input_global_attrs = {}
+            for attr_name in input_file.attrs:
+                if len(input_file.attrs[attr_name]) > 1:
+                    # gAttr is a List
+                    input_global_attrs[attr_name] = input_file.attrs[attr_name][:]
+                else:
+                    # gAttr is a single value
+                    input_global_attrs[attr_name] = input_file.attrs[attr_name][0]
+            writer.add_attributes_from_dict(input_global_attrs)
+
+            # First Variable we need to add is time/Epoch
+            if "Epoch" in input_file:
+                time_data = Time(input_file["Epoch"][:].copy())
+                time_attrs = {}
+                for attr_name in input_file["Epoch"].attrs:
+                    time_attrs[attr_name] = input_file["Epoch"].attrs[attr_name]
+                writer.add_time(time_data, time_attrs)
+
+            # Add Variable Attributtes from the CDF file to TimeSeries
+            for var_name in input_file:
+                if var_name != "Epoch":  # Since we added this separately
+                    var_data = input_file[var_name][:].copy()
+                    var_attrs = {}
+                    for attr_name in input_file[var_name].attrs:
+                        var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+                    writer.add_variable(var_name, var_data, var_attrs)
+
+        # Return the created CDFWriter objet
+        return writer
 
     # =============================================================================================
     #                         CDF FILE GENERATION FUNCTIONS

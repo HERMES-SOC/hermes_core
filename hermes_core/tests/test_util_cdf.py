@@ -317,7 +317,6 @@ def test_cdf_writer_validate_missing_epoch_var_type():
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
-    # jsonify(test_writer.variable_attr_schema, "vattr_schema")
 
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_dict(attributes=input_attrs)
@@ -338,8 +337,6 @@ def test_cdf_writer_validate_missing_epoch_var_type():
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(catch=True)
-    # if len(result) > 0:
-    #     jsonify(result, "validation_result")
 
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." in result
 
@@ -361,7 +358,6 @@ def test_cdf_writer_validate_present_epoch_var_type():
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
-    # jsonify(test_writer.variable_attr_schema, "vattr_schema")
 
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_dict(attributes=input_attrs)
@@ -382,8 +378,6 @@ def test_cdf_writer_validate_present_epoch_var_type():
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(catch=True)
-    # if len(result) > 0:
-    #     jsonify(result, "validation_result")
 
     assert result
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
@@ -406,7 +400,6 @@ def test_cdf_writer_validate_multiple_var_type():
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
-    # jsonify(test_writer.variable_attr_schema, "vattr_schema")
 
     # Add Custom Data to the Wrapper
     test_writer.add_attributes_from_dict(attributes=input_attrs)
@@ -460,8 +453,6 @@ def test_cdf_writer_validate_multiple_var_type():
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(catch=True)
-    if len(result) > 0:
-        jsonify(result, "validation_result")
 
     assert result
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
@@ -513,7 +504,6 @@ def test_cdf_writer_generate_valid_cdf():
 
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
-    # jsonify(test_writer.variable_attr_schema, "vattr_schema")
 
     # Required Attributes
     default_attrs = test_writer._load_default_global_attr_schema()
@@ -613,15 +603,12 @@ def test_cdf_writer_generate_valid_cdf():
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-    print(test_file_output_path)
 
     # Test number of Global Attrs in the generated CDF File (Result Data)
     assert len(test_writer.cdf.attrs) >= len(required_attrs.keys())
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(catch=True)
-    # if len(result) > 1:
-    #     jsonify(result, "validation_result")
     assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
     # Save the CDF to a File
@@ -631,8 +618,167 @@ def test_cdf_writer_generate_valid_cdf():
     test_file_cache_path.unlink()
 
 
-def jsonify(obj, name):
+def test_cdf_writer_from_cdf():
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+
+    # Initialize a CDF File Wrapper
+    test_writer = CDFWriter()
+
+    # Add Custom Data to the Wrapper
+    test_writer.add_attributes_from_dict(attributes=input_attrs)
+
+    # Add Variable Data
+    N = 10  # Num Timesteps
+
+    # Create an astropy.Time object
+    time = np.arange(N)
+    time_col = Time(time, format="unix")
+
+    # Add the Time column
+    test_writer["time"] = time_col
+    test_writer["time"].meta = {
+        "CATDESC": "TT2000 time tags",
+        "FIELDNAM": "Epoch",
+        # "FILLVAL": -9223372036854775808,
+        "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
+        "VAR_TYPE": "time_series",
+        "TIME_BASE": "J2000",
+        "RESOLUTION": "1s",
+        "TIME_SCALE": "Terrestrial Time (TT)",
+        "REFERENCE_POSITION": "rotating Earth geoid",
+    }
+
+    # Add 'data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        data = random(size=(N,))
+        # Add Variable
+        test_writer.add_variable(
+            var_name=f"test_var{i}",
+            var_data=data,
+            var_attrs={
+                "VAR_TYPE": "data",
+                "CATDESC": "Test Variable",
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "FIELDNAM": f"test_var{i}",
+                "FILLVAL": -1e31,
+                "FORMAT": "F9.4",
+                "LABLAXIS": "Label Axis",
+                "SI_CONVERSION": "1.0e3>m",
+                "UNITS": "km",
+                "VALIDMIN": 0.0,
+                "VALIDMAX": 1.0,
+            },
+        )
+
+    # Add 'support_data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        data = random(size=(N,))
+        # Add Variable
+        test_writer.add_variable(
+            var_name=f"test_support{i}",
+            var_data=data,
+            var_attrs={
+                "VAR_TYPE": "support_data",
+                "CATDESC": "Test Variable",
+                "DEPEND_0": "Epoch",
+                "DISPLAY_TYPE": "time_series",
+                "FIELDNAM": f"test_support{i}",
+                "FILLVAL": -1e31,
+                "FORMAT": "F9.4",
+                "LABLAXIS": "Label Axis",
+                "SI_CONVERSION": "1.0e3>m",
+                "UNITS": "km",
+                "VALIDMIN": 0.0,
+                "VALIDMAX": 1.0,
+            },
+        )
+
+    # Add 'metadata' VAR_TYPE Attributes
+    data = random(size=(N,))
+    # Add Variable
+    test_writer["test_metadata"] = data
+    test_writer["test_metadata"].meta = {
+        "VAR_TYPE": "metadata",
+        "CATDESC": "Test Variable",
+        "DEPEND_0": "Epoch",
+        "DISPLAY_TYPE": "time_series",
+        "FIELDNAM": f"test_metadata",
+        "FILLVAL": -1e31,
+        "FORMAT": "F9.4",
+        "LABLAXIS": "Label Axis",
+        "SI_CONVERSION": "1.0e3>m",
+        "UNITS": "km",
+        "VALIDMIN": 0.0,
+        "VALIDMAX": 1.0,
+    }
+
+    # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    result_output_path = str(Path(test_cache) / f"{name}.json")
-    with open(result_output_path, "w") as f:
-        json.dump(obj, f)
+    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+
+    # Validate the generated CDF File
+    result = test_writer.validate_cdf(catch=True)
+    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+
+    # Save the CDF to a File
+    test_writer.save_cdf()
+
+    # Try to Load the CDF File in a new CDFWriter
+    new_writer = CDFWriter.from_cdf(test_file_output_path)
+
+    # Remove the Original File
+    test_file_cache_path = Path(test_file_output_path)
+    test_file_cache_path.unlink()
+
+    # Convert the Wrapper to a CDF File
+    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
+    test_file_output_path2 = new_writer.to_cdf(output_path=test_cache)
+    assert test_file_output_path == test_file_output_path2
+
+    # Validate the generated CDF File
+    result2 = new_writer.validate_cdf(catch=True)
+    assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
+    assert len(result) == len(result2)
+
+    # Remove the Second File
+    test_file_cache_path2 = Path(test_file_output_path2)
+    test_file_cache_path2.unlink()
+    assert (not test_file_cache_path.exists()) and (not test_file_cache_path2.exists())
