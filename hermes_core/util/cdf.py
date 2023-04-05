@@ -325,7 +325,7 @@ class CDFWriter:
         if not Path(pathname).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {pathname}")
 
-        # Initialize a new Placeholder CDFWriter object
+        # Initialize a new CDFWriter object
         writer = CDFWriter()
 
         # Open CDF file with context manager
@@ -359,6 +359,36 @@ class CDFWriter:
                     writer.add_variable(var_name, var_data, var_attrs)
 
         # Return the created CDFWriter objet
+        return writer
+
+    @staticmethod
+    def from_timeseries(ts: TimeSeries):
+        """
+        Function to create a CDFWriter object from an existing CDF File. This allows
+        someone to add data to a skeleton CDF and save the resulting data struture to
+        a new, validated CDF file.
+
+        Parameters
+        ----------
+        ts: `TimeSeries`
+            A TimeSeries object to create a CDFWriter from
+
+        """
+        # Initialize a new CDFWriter object
+        writer = CDFWriter()
+
+        # Add Global Attributes
+        writer.add_attributes_from_dict(ts.meta)
+
+        # Add the Time Data
+        writer.add_variable("time", ts["time"].data, ts["time"].meta)
+
+        # Add Columns
+        for col in ts.itercols():
+            if col.name != "time":
+                writer.add_variable(col.name, col.data, col.meta)
+
+        # Return the new Writer
         return writer
 
     # =============================================================================================

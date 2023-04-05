@@ -9,6 +9,8 @@ from numpy.random import random
 import spacepy
 from spacepy.pycdf import CDF, Var, gAttrList, zAttrList
 
+from astropy.timeseries import TimeSeries
+from astropy.table import Column
 from astropy.time import Time
 
 import hermes_core
@@ -782,3 +784,135 @@ def test_cdf_writer_from_cdf():
     test_file_cache_path2 = Path(test_file_output_path2)
     test_file_cache_path2.unlink()
     assert (not test_file_cache_path.exists()) and (not test_file_cache_path2.exists())
+
+
+def test_cdf_writer_from_timeseries():
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+
+    # Initialize a TimeSeries
+    ts = TimeSeries()
+
+    # Add the Global Attrs
+    ts.meta = input_attrs
+
+    # Add Variable Data
+    N = 10  # Num Timesteps
+    # Create an astropy.Time object
+    time = np.arange(N)
+    time_col = Time(time, format="unix")
+    # Add the Time column
+    time_attrs = {
+        "CATDESC": "TT2000 time tags",
+        "FIELDNAM": "Epoch",
+        # "FILLVAL": -9223372036854775808,
+        "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
+        "VAR_TYPE": "time_series",
+        "TIME_BASE": "J2000",
+        "RESOLUTION": "1s",
+        "TIME_SCALE": "Terrestrial Time (TT)",
+        "REFERENCE_POSITION": "rotating Earth geoid",
+    }
+    ts.add_column(Column(data=time_col.to_datetime(), name="time", meta=time_attrs))
+
+    # Add 'data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        # Add Variable
+        ts.add_column(
+            Column(
+                data=random(size=(N,)),
+                name=f"test_var{i}",
+                meta={
+                    "VAR_TYPE": "data",
+                    "CATDESC": "Test Variable",
+                    "DEPEND_0": "Epoch",
+                    "DISPLAY_TYPE": "time_series",
+                    "FIELDNAM": f"test_var{i}",
+                    "FILLVAL": -1e31,
+                    "FORMAT": "F9.4",
+                    "LABLAXIS": "Label Axis",
+                    "SI_CONVERSION": "1.0e3>m",
+                    "UNITS": "km",
+                    "VALIDMIN": 0.0,
+                    "VALIDMAX": 1.0,
+                },
+            )
+        )
+
+    # Add 'support_data' VAR_TYPE Attributes
+    num_random_vars = 2
+    for i in range(num_random_vars):
+        # Add Variable
+        ts.add_column(
+            Column(
+                data=random(size=(N,)),
+                name=f"test_support{i}",
+                meta={
+                    "VAR_TYPE": "support_data",
+                    "CATDESC": "Test Variable",
+                    "DEPEND_0": "Epoch",
+                    "DISPLAY_TYPE": "time_series",
+                    "FIELDNAM": f"test_support{i}",
+                    "FILLVAL": -1e31,
+                    "FORMAT": "F9.4",
+                    "LABLAXIS": "Label Axis",
+                    "SI_CONVERSION": "1.0e3>m",
+                    "UNITS": "km",
+                    "VALIDMIN": 0.0,
+                    "VALIDMAX": 1.0,
+                },
+            )
+        )
+
+    # Initialize a CDF File Wrapper
+    test_writer = CDFWriter.from_timeseries(ts)
+
+    # Convert the Wrapper to a CDF File
+    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
+    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+
+    # Validate the generated CDF File
+    result = test_writer.validate_cdf(catch=True)
+    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+
+    # Save the CDF to a File
+    test_writer.save_cdf()
+    # Remove the File
+    test_file_cache_path = Path(test_file_output_path)
+    test_file_cache_path.unlink()
+    assert not test_file_cache_path.exists()
