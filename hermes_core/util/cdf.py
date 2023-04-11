@@ -6,6 +6,7 @@ import datetime
 from pathlib import Path
 import yaml
 import numpy as np
+import spacepy
 from spacepy.pycdf import CDF
 from spacepy.pycdf.istp import FileChecks
 
@@ -616,18 +617,6 @@ class CDFWriter:
                             (
                                 f"Variable: {var_name} Attribute '{attr_name}' not one of valid options.",
                                 f"Was {attr_value}, expected one of {attr_valid_values}",
-                            )
-                        )
-                elif "conditional_data_type" in attr_schema:
-                    var_data_type = var_data.type()
-                    print(var_data_type)
-                    expected_attr_value = attr_schema["conditional_data_type"][var_data_type]
-                    attr_value = var_data.attrs[attr_name]
-                    if attr_value != expected_attr_value:
-                        variable_errors.append(
-                            (
-                                f"Variable: {var_name} Attribute '{attr_name}' not one of valid options.",
-                                f"Was {attr_value}, expected {expected_attr_value}",
                             )
                         )
         return variable_errors

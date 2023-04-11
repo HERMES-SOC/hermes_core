@@ -681,14 +681,19 @@ def test_cdf_writer_from_cdf():
     test_writer["time"] = time_col
     test_writer["time"].meta = {
         "CATDESC": "TT2000 time tags",
+        "DEPEND_0": "Epoch",
+        "FORMAT": "I16",
         "FIELDNAM": "Epoch",
-        # "FILLVAL": -9223372036854775808,
         "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
-        "VAR_TYPE": "time_series",
+        "VAR_TYPE": "support_data",
         "TIME_BASE": "J2000",
+        "UNITS": "UT",
         "RESOLUTION": "1s",
         "TIME_SCALE": "Terrestrial Time (TT)",
         "REFERENCE_POSITION": "rotating Earth geoid",
+        "SI_CONVERSION": "1e-9>s",
+        "VALIDMIN": datetime.datetime(1970, 1, 1, 0, 0, 0),
+        "VALIDMAX": datetime.datetime(1970, 1, 1, 0, 0, 50),
     }
 
     # Add 'data' VAR_TYPE Attributes
@@ -844,14 +849,19 @@ def test_cdf_writer_from_timeseries():
     # Add the Time column
     time_attrs = {
         "CATDESC": "TT2000 time tags",
+        "DEPEND_0": "Epoch",
+        "FORMAT": "I16",
         "FIELDNAM": "Epoch",
-        # "FILLVAL": -9223372036854775808,
         "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
-        "VAR_TYPE": "time_series",
+        "VAR_TYPE": "support_data",
         "TIME_BASE": "J2000",
+        "UNITS": "UT",
         "RESOLUTION": "1s",
         "TIME_SCALE": "Terrestrial Time (TT)",
         "REFERENCE_POSITION": "rotating Earth geoid",
+        "SI_CONVERSION": "1e-9>s",
+        "VALIDMIN": datetime.datetime(1970, 1, 1, 0, 0, 0),
+        "VALIDMAX": datetime.datetime(1970, 1, 1, 0, 0, 50),
     }
     ts.add_column(Column(data=time_col.to_datetime(), name="time", meta=time_attrs))
 

@@ -38,54 +38,15 @@ attribute_key:
     required: true
   DISPLAY_TYPE:
     required: true
-    check:
-      valid_values:
-        time_series
-        spectrogram
-        stack_plot
-        image
+    valid_values:
+      time_series
+      spectrogram
+      stack_plot
+      image
   FIELDNAM:
     required: true
   FILLVAL:
     required: true
-    check:
-      conditional_data_type:
-        -
-          - BYTE
-          - -128
-        -
-          - INTEGER*2
-          - -32768 
-        -
-          - INTEGER*4
-          - -2147483648
-        -
-          - INTEGER*8
-          - -9223372036854775808
-        -
-          - Unsigned INTEGER*1
-          - 255
-        -
-          - Unsigned INTEGER*2
-          - 65535
-        -
-          - Unsigned INTEGER*4
-          - 4294967295
-        -
-          - REAL*4
-          - -1.0E31 
-        -
-          - REAL*8
-          - -1.0E31 
-        -
-          - EPOCH
-          - -1.0E31 
-        -
-          - EPOCH16
-          - -1.0E31
-        -
-          - TT2000
-          - -9223372036854775808LL  
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     required: true
   FORM_PTR:
