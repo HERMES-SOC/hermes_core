@@ -606,7 +606,30 @@ class CDFWriter:
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
-
+            else:
+                # If the Var Data can be Validated
+                if "valid_values" in attr_schema:
+                    attr_valid_values = attr_schema["valid_values"]
+                    attr_value = var_data.attrs[attr_name]
+                    if attr_value not in attr_valid_values:
+                        variable_errors.append(
+                            (
+                                f"Variable: {var_name} Attribute '{attr_name}' not one of valid options.",
+                                f"Was {attr_value}, expected one of {attr_valid_values}",
+                            )
+                        )
+                elif "conditional_data_type" in attr_schema:
+                    var_data_type = var_data.type()
+                    print(var_data_type)
+                    expected_attr_value = attr_schema["conditional_data_type"][var_data_type]
+                    attr_value = var_data.attrs[attr_name]
+                    if attr_value != expected_attr_value:
+                        variable_errors.append(
+                            (
+                                f"Variable: {var_name} Attribute '{attr_name}' not one of valid options.",
+                                f"Was {attr_value}, expected {expected_attr_value}",
+                            )
+                        )
         return variable_errors
 
     # =============================================================================================

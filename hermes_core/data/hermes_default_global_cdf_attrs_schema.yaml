@@ -1,96 +1,72 @@
 DOI:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 Data_level:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  valid_check: null
 Data_product_descriptor:
   derived: false
   required: false # NOT Required in ISTP Guide (Derived)
-  valid_check: null
 Data_type:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
-  valid_check: null
 Data_version:
   derived: false
   required: true
-  valid_check: null
 Descriptor:
   derived: false
   required: true
-  valid_check: null
 Discipline:
   derived: false
   required: true
-  valid_check: null
 Generation_date:
   derived: true
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 HTTP_LINK:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 Instrument_mode:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  valid_check: null
 Instrument_type:
   derived: false
   required: true
-  valid_check: null
 LINK_TEXT:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 LINK_TITLE:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 Logical_file_id:
   derived: true
   required: true
-  valid_check: null
 Logical_source:
   derived: true
   required: true
-  valid_check: null
 Logical_source_description:
   derived: true
   required: true
-  valid_check: null
 MODS:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
-  valid_check: null
 Mission_group:
   derived: false
   required: true
-  valid_check: null
 PI_affiliation:
   derived: false
   required: true
-  valid_check: null
 PI_name:
   derived: false
   required: true
-  valid_check: null
 Project:
   derived: false
   required: true
-  valid_check: null
 Source_name:
   derived: false
   required: true
-  valid_check: null
 Start_time:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
-  valid_check: null
 TEXT:
   derived: false
   required: true
-  valid_check: null
