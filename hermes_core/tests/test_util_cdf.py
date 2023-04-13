@@ -86,7 +86,7 @@ def test_cdf_writer_invalid_derivation():
     test_writer.add_attributes_from_list(attributes=input_attrs)
 
     # Update the Global Attrs to be Invalid
-    test_writer.global_attr_schema["New_Attr"] = {
+    test_writer._global_attr_schema["New_Attr"] = {
         "derived": True,
         "required": True,
         "valid_check": None,

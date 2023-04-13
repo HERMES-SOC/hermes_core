@@ -2,6 +2,7 @@
 This module provides CDF file functionality.
 
 """
+from typing import Union
 import datetime
 from pathlib import Path
 import yaml
@@ -13,6 +14,7 @@ from spacepy.pycdf.istp import FileChecks
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.table import Column
+from astropy.units import Quantity
 
 import hermes_core
 from hermes_core import log
@@ -59,10 +61,10 @@ class CDFWriter:
         self._load_default_attributes()
 
         # Data Validation, Complaiance, Derived Attributes
-        self.global_attr_schema = self._load_default_global_attr_schema()
+        self._global_attr_schema = self._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
-        self.variable_attr_schema = self._load_default_variable_attr_schema()
+        self._variable_attr_schema = self._load_default_variable_attr_schema()
 
     def __del__(self):
         """
@@ -283,7 +285,7 @@ class CDFWriter:
         # Add the Time Coumn
         self.add_variable(var_name="time", var_data=time.to_datetime(), var_attrs=time_attrs)
 
-    def add_variable(self, var_name: str, var_data: np.ndarray, var_attrs: dict):
+    def add_variable(self, var_name: str, var_data: Union[np.ndarray, Quantity], var_attrs: dict):
         """
         Function to add variable data to the CDFWriter class. Variable data here is assumed
         to be array-like or matrix-like to be stored in the CDF. Additionally, varaible
@@ -302,9 +304,16 @@ class CDFWriter:
             A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
 
         """
-        # Add the Variable as a new Column
-        var_column = Column(data=var_data, name=var_name, meta=var_attrs)
-        self.data.add_column(col=var_column)
+        if isinstance(var_data, np.ndarray):
+            # Add the Variable as a new Column
+            var_column = Column(data=var_data, name=var_name, meta=var_attrs)
+            self.data.add_column(col=var_column)
+        elif isinstance(var_data, Quantity):
+            data_value = var_data.value
+            data_unit = var_data.unit
+            data_info = var_data.info
+            var_column = Column(data=data_value, name=var_name, unit=data_unit, meta=var_attrs)
+            self.data.add_column(col=var_column)
 
     # =============================================================================================
     #                         CDF FILE LOADING FUNCTIONS
@@ -431,7 +440,7 @@ class CDFWriter:
     def derive_attributes(self):
         """Function to derive global attributes in `gAttrList` member"""
         # Loop through Global Attributes
-        for attr_name, attr_schema in self.global_attr_schema.items():
+        for attr_name, attr_schema in self._global_attr_schema.items():
             if attr_schema["derived"]:
                 derived_value = self._derive_attribute(attr_name=attr_name)
                 # Only Derive Global Attributes if they have not been manually derived/overridden
@@ -557,7 +566,7 @@ class CDFWriter:
         """
         global_attr_validation_errors = []
         # Loop for each attribute in the schema
-        for attr_name, attr_schema in self.global_attr_schema.items():
+        for attr_name, attr_schema in self._global_attr_schema.items():
             # If it is a required attribute and not present
             if attr_schema["required"] and (attr_name not in self.cdf.attrs):
                 global_attr_validation_errors.append(
@@ -596,14 +605,14 @@ class CDFWriter:
         """
         variable_errors = []
         # Get the Expected Attributes for the Variable Type
-        var_type_attrs = self.variable_attr_schema[var_type]
+        var_type_attrs = self._variable_attr_schema[var_type]
 
         # Get the `Var()` Class for the Variable
         var_data = self.cdf[var_name]
 
         # Loop for each Variable Attribute in the schema
         for attr_name in var_type_attrs:
-            attr_schema = self.variable_attr_schema["attribute_key"][attr_name]
+            attr_schema = self._variable_attr_schema["attribute_key"][attr_name]
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
