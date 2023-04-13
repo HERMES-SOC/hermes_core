@@ -29,7 +29,7 @@ def test_cdf_writer_default_attrs():
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     with pytest.raises(AttributeError) as e:
-        test_writer.to_cdf(output_path=test_cache)
+        test_writer.write_cdf(output_path=test_cache)
 
     # Test Deleting the Writer
     del test_writer
@@ -53,10 +53,7 @@ def test_cdf_writer_valid_attrs():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Save the CDF to a File
-    test_writer.save_cdf()
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     test_file_cache_path = Path(test_file_output_path)
     # Test the File Exists
@@ -99,7 +96,7 @@ def test_cdf_writer_invalid_derivation():
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
     with pytest.raises(ValueError) as e:
-        test_writer.to_cdf(output_path=test_cache)
+        test_writer.write_cdf(output_path=test_cache)
 
 
 def test_cdf_writer_overide_derived_attr():
@@ -134,13 +131,7 @@ def test_cdf_writer_overide_derived_attr():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Test the Value was not Derrived and used the Overriden Value
-    assert str(test_writer.cdf.attrs["Data_type"]) == input_attrs["Data_type"]
-
-    # Save the CDF to a File
-    test_writer.save_cdf()
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     test_file_cache_path = Path(test_file_output_path)
     # Test the File Exists
@@ -214,22 +205,7 @@ def test_cdf_writer_single_variable():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Assert Types of the Target CDF
-    assert isinstance(test_writer.cdf, CDF)
-    assert isinstance(test_writer.cdf["test_var1"], Var)
-    assert isinstance(test_writer.cdf["test_var1"].attrs, zAttrList)
-    assert isinstance(test_writer.cdf.attrs, gAttrList)
-
-    # Test the Target CDF Containts the Variable Data
-    assert test_writer.cdf["test_var1"][0] == "test_data1"
-
-    # Test the Target CDF Contains the Variable Attributes
-    assert test_writer.cdf["test_var1"].attrs["test_attr1"] == "test_value1"
-
-    # Save the CDF to a File
-    test_writer.save_cdf()
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     test_file_cache_path = Path(test_file_output_path)
     # Test the File Exists
@@ -280,22 +256,7 @@ def test_cdf_writer_random_variable():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Assert Types of the Target CDF
-    assert isinstance(test_writer.cdf, CDF)
-    assert isinstance(test_writer.cdf["test_var1"], Var)
-    assert isinstance(test_writer.cdf["test_var1"].attrs, zAttrList)
-    assert isinstance(test_writer.cdf.attrs, gAttrList)
-
-    # Test the Target CDF Containts the Variable Data
-    assert test_writer.cdf["test_var1"].shape == (N, M)
-
-    # Test the Target CDF Contains the Variable Attributes
-    assert test_writer.cdf["test_var1"].attrs["test_attr1"] == "test_value1"
-
-    # Save the CDF to a File
-    test_writer.save_cdf()
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     test_file_cache_path = Path(test_file_output_path)
     # Test the File Exists
@@ -335,15 +296,13 @@ def test_cdf_writer_validate_missing_epoch_var_type():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
 
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." in result
 
-    # Save the CDF to a File
-    test_writer.save_cdf()
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
     test_file_cache_path.unlink()
@@ -376,16 +335,14 @@ def test_cdf_writer_validate_present_epoch_var_type():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
 
     assert result
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
 
-    # Save the CDF to a File
-    test_writer.save_cdf()
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
     test_file_cache_path.unlink()
@@ -451,16 +408,14 @@ def test_cdf_writer_validate_multiple_var_type():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
 
     assert result
     assert "Variable: Epoch missing 'VAR_TYPE' attribute. Cannot Validate Variable." not in result
 
-    # Save the CDF to a File
-    test_writer.save_cdf()
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
     test_file_cache_path.unlink()
@@ -610,17 +565,12 @@ def test_cdf_writer_generate_valid_cdf():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
-
-    # Test number of Global Attrs in the generated CDF File (Result Data)
-    assert len(test_writer.cdf.attrs) >= len(required_attrs.keys())
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
     assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
-    # Save the CDF to a File
-    test_writer.save_cdf()
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
     test_file_cache_path.unlink()
@@ -765,14 +715,11 @@ def test_cdf_writer_from_cdf():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
     assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
-
-    # Save the CDF to a File
-    test_writer.save_cdf()
 
     # Try to Load the CDF File in a new CDFWriter
     new_writer = CDFWriter.from_cdf(test_file_output_path)
@@ -783,11 +730,11 @@ def test_cdf_writer_from_cdf():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path2 = new_writer.to_cdf(output_path=test_cache)
+    test_file_output_path2 = new_writer.write_cdf(output_path=test_cache)
     assert test_file_output_path == test_file_output_path2
 
     # Validate the generated CDF File
-    result2 = new_writer.validate_cdf(catch=True)
+    result2 = new_writer.validate_cdf(cdf_file_path=test_file_output_path2, catch=True)
     assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
     assert len(result) == len(result2)
 
@@ -920,14 +867,12 @@ def test_cdf_writer_from_timeseries():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_writer.to_cdf(output_path=test_cache)
+    test_file_output_path = test_writer.write_cdf(output_path=test_cache)
 
     # Validate the generated CDF File
-    result = test_writer.validate_cdf(catch=True)
+    result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
     assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
-    # Save the CDF to a File
-    test_writer.save_cdf()
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
     test_file_cache_path.unlink()
