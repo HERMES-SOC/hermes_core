@@ -1,5 +1,6 @@
 """Tests for cdf.py"""
 
+from typing import OrderedDict
 from pathlib import Path
 import datetime
 import pytest
@@ -23,6 +24,15 @@ def test_cdf_writer_default_attrs():
     # Initialize a CDF File Wrapper
     test_writer = CDFWriter()
 
+    assert isinstance(test_writer.data, TimeSeries)
+    assert isinstance(test_writer.meta, OrderedDict)
+    assert len(test_writer.meta) > 0
+    assert isinstance(test_writer.units, OrderedDict)
+    assert len(test_writer.units) == 0
+    assert isinstance(test_writer.columns, OrderedDict)
+    assert len(test_writer.columns) == 0
+    assert test_writer.time is None
+    assert test_writer.shape == (0, 0)
     assert str(test_writer) is not None
     assert test_writer.__repr__() is not None
 

@@ -2,7 +2,7 @@
 This module provides CDF file functionality.
 
 """
-from typing import Union
+from typing import Union, OrderedDict
 import datetime
 from pathlib import Path
 import yaml
@@ -63,6 +63,75 @@ class CDFWriter:
         # Data Validation and Compliance for Variable Data
         self._variable_attr_schema = self._load_default_variable_attr_schema()
 
+    @property
+    def meta(self):
+        """
+        (OrderedDict), returns the metadata contained in the TimeSeries
+        """
+        return self.data.meta
+
+    @meta.setter
+    def meta(self, value):
+        self.data.meta = value
+
+    @property
+    def units(self):
+        """
+        (OrderedDict), returns the units of the columns of data
+        """
+        units = {}
+        for name in self.data.columns:
+            var_data = self.data[name]
+            # Get the Unit
+            if var_data.unit:
+                unit = var_data.unit
+            elif "UNITS" in var_data.meta and var_data.meta["UNITS"]:
+                unit = var_data.meta["UNITS"]
+            else:
+                unit = None
+            units[name] = unit
+        return OrderedDict(units)
+
+    @units.setter
+    def units(self, value):
+        for name, unit in value.items():
+            # Override in the the Column property
+            self.data[name].unit = unit
+            # Override in the Column Metadata
+            if isinstance(self.data[name], Column):
+                self.data[name].meta["UNITS"] = unit
+            elif isinstance(self.data[name], Quantity):
+                self.data[name].info["UNITS"] = unit
+
+    @property
+    def columns(self):
+        """
+        (OrderedDict), returns columns from data.columns
+        """
+        return self.data.columns
+
+    @property
+    def time(self):
+        """
+        returns the time array from data.time
+        """
+        if "time" in self.data.columns:
+            return self.data.time
+        else:
+            return None
+
+    @property
+    def shape(self):
+        """
+        The shape of the data, a tuple (nrows, ncols)
+        """
+        if "time" in self.data.columns:
+            nrows = self.data.time.shape[0]
+        else:
+            nrows = 0
+        ncols = len(self.data.columns)
+        return (nrows, ncols)
+
     def __repr__(self):
         """
         Returns a representation of the CDFWriter class.
@@ -73,12 +142,19 @@ class CDFWriter:
         """
         Returns a string representation of the CDFWriter class.
         """
-        str_repr = (
-            f"CDFWriter:"
-            f"\nGlobal Attrs:\n{self.data.meta}"
-            f"\nVariable Data:\n{self.data}"
-            # f"\nVariable Attributes: {self.variable_attrs}"
-        )
+        str_repr = f"CDFWriter() Object:\n"
+        # Global Attributes/Metedata
+        str_repr += f"Global Attrs:\n"
+        for attr_name, attr_value in self.data.meta.items():
+            str_repr += f"\t{attr_name}: {attr_value}\n"
+        # Variable Data
+        str_repr += f"Variable Data:\n{self.data}\n"
+        # Variable Attributes
+        str_repr += f"Variable Attributes:\n"
+        for col_name in self.data.columns:
+            str_repr += f"\tVar: {col_name}\n"
+            for attr_name, attr_value in self.data[col_name].meta.items():
+                str_repr += f"\t\t{attr_name}: {attr_value}\n"
         return str_repr
 
     def __len__(self):
@@ -117,9 +193,9 @@ class CDFWriter:
         """
         Function to iterate over data variables and attributes in the CDFWriter class.
         """
-        for var_name in self.data.keys():
-            var_data = self.data[var_name]
-            yield (var_name, var_data)
+        for name in self.data.columns:
+            var_data = self.data[name]
+            yield (name, var_data)
 
     def _load_default_global_attr_schema(self) -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
