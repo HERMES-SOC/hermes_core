@@ -6,9 +6,10 @@ from typing import Union, OrderedDict
 import datetime
 from pathlib import Path
 import yaml
+from copy import deepcopy
 import numpy as np
 import spacepy
-from spacepy.pycdf import CDF
+from spacepy.pycdf import CDF, _Hyperslice
 from spacepy.pycdf.istp import FileChecks
 
 from astropy.timeseries import TimeSeries
@@ -50,12 +51,33 @@ class CDFWriter:
 
     """
 
-    def __init__(self):
+    def __init__(self, ts: TimeSeries):
+        # Verify that the input TimeSeries has all needed Columns
+        if len(ts.columns) == 0:
+            raise ValueError(
+                (
+                    "Input TimeSeries cannot be empty. ",
+                    "Must contain at minimum 'time' and one measurement column.",
+                )
+            )
+        if "time" not in ts.columns:
+            raise ValueError(
+                "TimeSeries must contain at minimum 'time' and one measurement column."
+            )
+
         # Intermediate Data Structure
         self.data = TimeSeries()
-
         # Load Default Global Attributes
         self._load_default_attributes()
+
+        # Add Global Attributes
+        self.data.meta.update(ts.meta)
+        # Add the Time Data
+        self._add_variable("time", ts["time"].data, ts["time"].meta)
+        # Add Columns
+        for col in ts.itercols():
+            if col.name != "time":
+                self._add_variable(col.name, col.data, col.meta)
 
         # Data Validation, Complaiance, Derived Attributes
         self._global_attr_schema = self._load_default_global_attr_schema()
@@ -153,8 +175,8 @@ class CDFWriter:
         str_repr += f"Variable Attributes:\n"
         for col_name in self.data.columns:
             str_repr += f"\tVar: {col_name}\n"
-            for attr_name, attr_value in self.data[col_name].meta.items():
-                str_repr += f"\t\t{attr_name}: {attr_value}\n"
+            # for attr_name, attr_value in self.data[col_name].meta.items():
+            #     str_repr += f"\t\t{attr_name}: {attr_value}\n"
         return str_repr
 
     def __len__(self):
@@ -178,10 +200,7 @@ class CDFWriter:
         Function to set a data variable conained in the CDFWriter class.
         """
         # Set the Data for the named variable
-        if name == "time":
-            self.add_time(time=data, time_attrs={})
-        else:
-            self.add_variable(var_name=name, var_data=data, var_attrs={})
+        self._add_variable(var_name=name, var_data=data, var_attrs={})
 
     def __contains__(self, name):
         """
@@ -241,80 +260,6 @@ class CDFWriter:
                 log.critical(exc)
         return yaml_data
 
-    def add_attributes_from_list(self, attributes: list):
-        """
-        Function to add data to the CDFWriter's internal Dict
-        state by passing a native list type Object.
-
-        Parameters
-        ----------
-        attributes: `list`
-            A native python `list` object containing `tuples` of `(key, value)`
-            attributes.
-
-        Examples
-        -------
-        ```
-        example_data = [
-            ("attribute_example_1", "attribute_value_1"),
-            ("attribute_example_2", "attribute_value_2")
-        ]
-        example_writer = CDFWriter()
-        # Add the Example Data
-        example_writer.add_data_from_list(attributes=example_data)
-        ```
-        """
-        # Loop through attributes to add
-        for attr_key, attr_value in attributes:
-            # Check to see if the attribute is already present
-            if attr_key in self.data.meta.keys():
-                # Log Debug that we're overriding
-                log.debug(
-                    "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
-                    attr_key,
-                    self.data.meta[attr_key],
-                    attr_value,
-                )
-            # Override or set the vale of the attribute in state
-            self.data.meta[attr_key] = attr_value
-
-    def add_attributes_from_dict(self, attributes: dict):
-        """
-        Function to add data to the CDFWriter's internal Dict
-        state by passing a native list type Object.
-
-        Parameters
-        ----------
-        attributes: `dict`
-            A native python `dict` object containing `(key, value)`
-            attributes.
-
-        Examples
-        -------
-        ```
-        example_data = {
-            "attribute_example_1": "attribute_value_1",
-            "attribute_example_2": "attribute_value_2"
-        }
-        example_writer = CDFWriter()
-        # Add the Example Data
-        example_writer.add_data_from_dict(attributes=example_data)
-        ```
-        """
-        # Loop through attributes to add
-        for attr_key, attr_value in attributes.items():
-            # Check to see if the attribute is already present
-            if attr_key in self.data.meta.keys():
-                # Log Debug that we're overriding
-                log.debug(
-                    "In `add_attributes_from_list()` Overriding value for attr %s from %s to %s",
-                    attr_key,
-                    self.data.meta[attr_key],
-                    attr_value,
-                )
-            # Override or set the vale of the attribute in state
-            self.data.meta[attr_key] = attr_value
-
     def add_attributes_from_yaml(self, attributes_path: str):
         """
         Function to add attributes to the CDFWriter's internal Dict
@@ -332,25 +277,9 @@ class CDFWriter:
         attribute_data = self._load_yaml_data(attributes_path)
 
         # Add the Attributes through the Dict
-        self.add_attributes_from_dict(attributes=attribute_data)
+        self.data.meta.update(attribute_data)
 
-    def add_time(self, time: Time, time_attrs: dict):
-        """
-        Function to add required `time` column to the CDFWriter class.
-
-        Parameters
-        ----------
-        time: `astropy.time.Time`
-            An `astropy.time.Time` object that contains the time dimension for the CDF
-            object to be created.
-
-        time_attrs: `dict`
-            A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
-        """
-        # Add the Time Coumn
-        self.add_variable(var_name="time", var_data=time.to_datetime(), var_attrs=time_attrs)
-
-    def add_variable(self, var_name: str, var_data: Union[np.ndarray, Quantity], var_attrs: dict):
+    def _add_variable(self, var_name: str, var_data: Union[np.ndarray, Quantity], var_attrs: dict):
         """
         Function to add variable data to the CDFWriter class. Variable data here is assumed
         to be array-like or matrix-like to be stored in the CDF. Additionally, varaible
@@ -389,6 +318,8 @@ class CDFWriter:
             var_attrs.update(data_info)
             var_column = Column(data=data_value, name=var_name, unit=data_unit, meta=var_attrs)
             self.data.add_column(col=var_column)
+        # Derive any Attributes that can be Derived
+        self._derive_variable_attributes(var_name=var_name)
 
     # =============================================================================================
     #                         CDF FILE LOADING FUNCTIONS
@@ -410,8 +341,8 @@ class CDFWriter:
         if not Path(pathname).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {pathname}")
 
-        # Initialize a new CDFWriter object
-        writer = CDFWriter()
+        # Create a new TimeSeries
+        ts = TimeSeries()
 
         # Open CDF file with context manager
         with CDF(pathname) as input_file:
@@ -424,7 +355,7 @@ class CDFWriter:
                 else:
                     # gAttr is a single value
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][0]
-            writer.add_attributes_from_dict(input_global_attrs)
+            ts.meta.update(input_global_attrs)
 
             # First Variable we need to add is time/Epoch
             if "Epoch" in input_file:
@@ -432,7 +363,8 @@ class CDFWriter:
                 time_attrs = {}
                 for attr_name in input_file["Epoch"].attrs:
                     time_attrs[attr_name] = input_file["Epoch"].attrs[attr_name]
-                writer.add_time(time_data, time_attrs)
+                ts["time"] = time_data.to_datetime()
+                ts["time"].meta.update(time_attrs)
 
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in input_file:
@@ -441,39 +373,13 @@ class CDFWriter:
                     var_attrs = {}
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
-                    writer.add_variable(var_name, var_data, var_attrs)
+                    ts[var_name] = var_data
+                    ts[var_name].meta.update(var_attrs)
+
+        # Initialize a new CDFWriter object
+        writer = CDFWriter(ts)
 
         # Return the created CDFWriter objet
-        return writer
-
-    @staticmethod
-    def from_timeseries(ts: TimeSeries):
-        """
-        Function to create a CDFWriter object from an existing CDF File. This allows
-        someone to add data to a skeleton CDF and save the resulting data struture to
-        a new, validated CDF file.
-
-        Parameters
-        ----------
-        ts: `TimeSeries`
-            A TimeSeries object to create a CDFWriter from
-
-        """
-        # Initialize a new CDFWriter object
-        writer = CDFWriter()
-
-        # Add Global Attributes
-        writer.add_attributes_from_dict(ts.meta)
-
-        # Add the Time Data
-        writer.add_variable("time", ts["time"].data, ts["time"].meta)
-
-        # Add Columns
-        for col in ts.itercols():
-            if col.name != "time":
-                writer.add_variable(col.name, col.data, col.meta)
-
-        # Return the new Writer
         return writer
 
     # =============================================================================================
@@ -685,6 +591,24 @@ class CDFWriter:
                         derived_value,
                         self.data.meta[attr_name],
                     )
+        # Loop through Variable Attributes
+        for name in self.data.columns:
+            self._derive_variable_attributes(var_name=name)
+
+    def _derive_variable_attributes(self, var_name):
+        var_data = self.data[var_name]
+
+        # Check the Attributes that can be derived
+        if "DEPEND_0" not in var_data.meta:
+            var_data.meta["DEPEND_0"] = self._get_depend()
+        if "FIELDNAM" not in var_data.meta:
+            var_data.meta["FIELDNAM"] = self._get_fieldnam(var_name)
+        if "FILLVAL" not in var_data.meta:
+            var_data.meta["FILLVAL"] = self._get_fillval(var_name)
+        if "VALIDMIN" not in var_data.meta:
+            var_data.meta["VALIDMIN"] = self._get_validmin(var_name)
+        if "VALIDMAX" not in var_data.meta:
+            var_data.meta["VALIDMAX"] = self._get_validmax(var_name)
 
     def _derive_attribute(self, attr_name):
         """
@@ -706,6 +630,80 @@ class CDFWriter:
             return self._get_logical_source_description()
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
+
+    def _get_depend(self):
+        return "Epoch"
+
+    def _get_fieldnam(self, var_name):
+        if var_name != "time":
+            return deepcopy(var_name)
+        else:
+            return "Epoch"
+
+    def _get_fillval(self, var_name):
+        # Get the Variable Data (should be numpy.ndarray)
+        var_data = self.data[var_name]
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data)
+        # Get the FILLVAL for the gussed data type
+        fillval = self._fillval_helper(cdf_type=guess_types[0])
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return spacepy.pycdf.lib.v_tt2000_to_datetime(fillval)
+        else:
+            return fillval
+
+    def _fillval_helper(self, cdf_type):
+        # Fill value, indexed by the CDF type (numeric)
+        fillvals = {}
+        # Integers
+        for i in (1, 2, 4, 8):
+            fillvals[getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value] = -(
+                2 ** (8 * i - 1)
+            )
+            if i == 8:
+                continue
+            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = 2 ** (8 * i) - 1
+        fillvals[spacepy.pycdf.const.CDF_EPOCH16.value] = (-1e31, -1e31)
+        fillvals[spacepy.pycdf.const.CDF_REAL8.value] = -1e31
+        fillvals[spacepy.pycdf.const.CDF_REAL4.value] = -1e31
+        fillvals[spacepy.pycdf.const.CDF_CHAR.value] = " "
+        fillvals[spacepy.pycdf.const.CDF_UCHAR.value] = " "
+        # Equivalent pairs
+        for cdf_t, equiv in (
+            (spacepy.pycdf.const.CDF_TIME_TT2000, spacepy.pycdf.const.CDF_INT8),
+            (spacepy.pycdf.const.CDF_EPOCH, spacepy.pycdf.const.CDF_REAL8),
+            (spacepy.pycdf.const.CDF_BYTE, spacepy.pycdf.const.CDF_INT1),
+            (spacepy.pycdf.const.CDF_FLOAT, spacepy.pycdf.const.CDF_REAL4),
+            (spacepy.pycdf.const.CDF_DOUBLE, spacepy.pycdf.const.CDF_REAL8),
+        ):
+            fillvals[cdf_t.value] = fillvals[equiv.value]
+        value = fillvals[cdf_type]
+        return value
+
+    def _get_validmin(self, var_name):
+        # Get the Variable Data (should be numpy.ndarray)
+        var_data = self.data[var_name]
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data)
+        minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return minval + datetime.timedelta(seconds=1)
+        else:
+            return minval
+
+    def _get_validmax(self, var_name):
+        # Get the Variable Data (should be numpy.ndarray)
+        var_data = self.data[var_name]
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data)
+        minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+        # if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        #     return spacepy.pycdf.lib.v_tt2000_to_datetime(maxval)
+        # else:
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return maxval - datetime.timedelta(seconds=1)
+        else:
+            return maxval
 
     def _get_logical_file_id(self):
         """
