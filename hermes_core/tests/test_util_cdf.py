@@ -13,6 +13,7 @@ from spacepy.pycdf import CDF, Var, gAttrList, zAttrList
 from astropy.timeseries import TimeSeries
 from astropy.table import Column
 from astropy.time import Time
+from astropy.units import Quantity
 
 import hermes_core
 from hermes_core.util.cdf import CDFWriter
@@ -20,7 +21,7 @@ from hermes_core.util.cdf import CDFWriter
 import json
 
 
-def get_test_timeseries():
+def get_bad_timeseries():
     ts = TimeSeries()
 
     # Create an astropy.Time object
@@ -35,9 +36,42 @@ def get_test_timeseries():
     return ts
 
 
+def get_test_timeseries():
+    ts = TimeSeries()
+
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    # col = Column(data=time_col, name="time", meta={})
+    ts["time"] = time_col
+
+    # Add Variable
+    quant = Quantity(value=random(size=(10)), unit="m")
+    ts["measurement"] = quant
+    ts["measurement"].meta = OrderedDict(
+        {
+            "VAR_TYPE": "metadata",
+            "CATDESC": "Test Metadata",
+            "DISPLAY_TYPE": "time_series",
+            "FORMAT": "F9.4",
+            "LABLAXIS": "Label Axis",
+            "SI_CONVERSION": "1.0e3>m",
+            "UNITS": "km",
+
+        }
+    )
+    return ts
+
+
 def test_cdf_writer_empty_ts():
     with pytest.raises(ValueError):
         _ = CDFWriter(ts=TimeSeries())
+
+
+def test_cdf_writer_bad_ts():
+    ts = get_bad_timeseries()
+    with pytest.raises(TypeError):
+        _ = CDFWriter(ts=ts)
 
 
 def test_cdf_writer_default_attrs():
@@ -56,6 +90,10 @@ def test_cdf_writer_default_attrs():
     assert test_writer.shape == (10, 2)
     assert str(test_writer) is not None
     assert test_writer.__repr__() is not None
+
+    # Check "measurement"
+    assert isinstance(test_writer["measurement"].meta, OrderedDict)
+    assert "CATDESC" in test_writer["measurement"].meta
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -195,8 +233,8 @@ def test_cdf_writer_single_variable():
     test_writer.meta.update(input_attrs)
 
     # Add Variable
-    test_writer["test_var1"] = np.array(["test_data1"])
-    test_writer["test_var1"].meta = {"test_attr1": "test_value1"}
+    test_writer["test_var1"] = Quantity(value=random(size=(10)), unit="km")
+    test_writer["test_var1"].meta.update({"test_attr1": "test_value1"})
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -236,8 +274,8 @@ def test_cdf_writer_random_variable():
     num_random_vars = 10
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_var{i}"] = random(size=(N, M))
-        test_writer[f"test_var{i}"].meta = {f"test_attr{i}": f"test_value{i}"}
+        test_writer[f"test_var{i}"] = Quantity(value=random(size=(10)), unit="km")
+        test_writer[f"test_var{i}"].meta.update({f"test_attr{i}": f"test_value{i}"})
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -344,22 +382,22 @@ def test_cdf_writer_validate_multiple_var_type():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_var{i}"] = random(size=(N,))
-        test_writer[f"test_var{i}"].meta = {f"VAR_TYPE": "data"}
+        test_writer[f"test_var{i}"] = Quantity(value=random(size=(10)), unit="km")
+        test_writer[f"test_var{i}"].meta.update({f"VAR_TYPE": "data"})
 
     # Add 'support_data' VAR_TYPE Attributes
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_support{i}"] = random(size=(N,))
-        test_writer[f"test_support{i}"].meta = {f"VAR_TYPE": "support_data"}
+        test_writer[f"test_support{i}"] = Quantity(value=random(size=(10)), unit="km")
+        test_writer[f"test_support{i}"].meta.update({f"VAR_TYPE": "support_data"})
 
     # Add 'metadata' VAR_TYPE Attributes
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_metadata{i}"] = random(size=(N,))
-        test_writer[f"test_metadata{i}"].meta = {f"VAR_TYPE": "metadata"}
+        test_writer[f"test_metadata{i}"] = Quantity(value=random(size=(10)), unit="km")
+        test_writer[f"test_metadata{i}"].meta.update({f"VAR_TYPE": "metadata"})
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
@@ -456,7 +494,7 @@ def test_cdf_writer_generate_valid_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_var{i}"] = random(size=(N,))
+        test_writer[f"test_var{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_var{i}"].meta.update(
             {
                 "VAR_TYPE": "data",
@@ -478,7 +516,7 @@ def test_cdf_writer_generate_valid_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_support{i}"] = random(size=(N,))
+        test_writer[f"test_support{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_support{i}"].meta.update(
             {
                 "VAR_TYPE": "support_data",
@@ -500,7 +538,7 @@ def test_cdf_writer_generate_valid_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_metadata{i}"] = random(size=(N,))
+        test_writer[f"test_metadata{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_metadata{i}"].meta.update(
             {
                 "VAR_TYPE": "metadata",
@@ -524,6 +562,8 @@ def test_cdf_writer_generate_valid_cdf():
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
+    for err in result:
+        print(err)
     assert len(result) <= 2  # TODO Logical Source and File ID Do not Agree
 
     # Remove the File
@@ -604,7 +644,7 @@ def test_cdf_writer_from_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_var{i}"] = random(size=(N,))
+        test_writer[f"test_var{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_var{i}"].meta.update(
             {
                 "VAR_TYPE": "data",
@@ -626,7 +666,7 @@ def test_cdf_writer_from_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_support{i}"] = random(size=(N,))
+        test_writer[f"test_support{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_support{i}"].meta.update(
             {
                 "VAR_TYPE": "support_data",
@@ -648,7 +688,7 @@ def test_cdf_writer_from_cdf():
     num_random_vars = 2
     for i in range(num_random_vars):
         # Add Variable
-        test_writer[f"test_metadata{i}"] = random(size=(N,))
+        test_writer[f"test_metadata{i}"] = Quantity(value=random(size=(10)), unit="km")
         test_writer[f"test_metadata{i}"].meta.update(
             {
                 "VAR_TYPE": "metadata",
