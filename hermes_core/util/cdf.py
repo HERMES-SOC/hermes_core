@@ -581,7 +581,7 @@ class CDFWriter:
         # Loop through Global Attributes
         for attr_name, attr_schema in self._global_attr_schema.items():
             if attr_schema["derived"]:
-                derived_value = self._derive_attribute(attr_name=attr_name)
+                derived_value = self._derive_global_attribute(attr_name=attr_name)
                 # Only Derive Global Attributes if they have not been manually derived/overridden
                 if (attr_name not in self.data.meta) or (not self.data.meta[attr_name]):
                     self.data.meta[attr_name] = derived_value
@@ -602,6 +602,10 @@ class CDFWriter:
     def _derive_variable_attributes(self, var_name):
         var_data = self.data[var_name]
 
+        # Derive Time-Specific Attributes
+        if var_name == "time":
+            self._derive_time_attributes()
+
         # Check the Attributes that can be derived
         if "DEPEND_0" not in var_data.meta:
             var_data.meta["DEPEND_0"] = self._get_depend()
@@ -616,7 +620,22 @@ class CDFWriter:
         if "VALIDMAX" not in var_data.meta:
             var_data.meta["VALIDMAX"] = self._get_validmax(var_name)
 
-    def _derive_attribute(self, attr_name):
+    def _derive_time_attributes(self):
+        var_data = self.data.time
+
+        # Check the Attributes that can be derived
+        if "REFERENCE_POSITION" not in var_data.meta:
+            var_data.meta["REFERENCE_POSITION"] = self._get_reference_position()
+        if "RESOLUTION" not in var_data.meta:
+            var_data.meta["RESOLUTION"] = self._get_resolution()
+        if "TIME_BASE" not in var_data.meta:
+            var_data.meta["TIME_BASE"] = self._get_time_base()
+        if "TIME_SCALE" not in var_data.meta:
+            var_data.meta["TIME_SCALE"] = self._get_time_scale()
+        if "UNITS" not in var_data.meta:
+            var_data.meta["UNITS"] = self._get_time_units()
+
+    def _derive_global_attribute(self, attr_name):
         """
         Function to Derive Attributes based on other attribues in the CDF
         writer's internal dict state.
@@ -636,6 +655,10 @@ class CDFWriter:
             return self._get_logical_source_description()
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
+
+    # =============================================================================================
+    #                               VARIABLE ATTRIBUTE DERIVATIONS
+    # =============================================================================================
 
     def _get_depend(self):
         return "Epoch"
@@ -691,6 +714,63 @@ class CDFWriter:
         value = fillvals[cdf_type]
         return value
 
+    def _get_reference_position(self):
+        # Get the Variable Data
+        var_data = self.time
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return "rotating Earth geoid"
+        else:
+            raise TypeError(f"Reference Position for Time type ({guess_types[0]}) not found.")
+
+    def _get_resolution(self):
+        # Get the Variable Data
+        var_data = self.time
+        times = len(var_data)
+        if times < 2:
+            raise ValueError(f"Can not derive Time Resolution, need 2 samples, found {times}.")
+        # Calculate the Timedelta between two datetimes
+        times = var_data.to_datetime()
+        delta = times[1] - times[0]
+        # Get the number of seconds between samples.
+        delta_seconds = delta.total_seconds()
+        return f"{delta_seconds}s"
+
+    def _get_time_base(self):
+        # Get the Variable Data
+        var_data = self.time
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return "J2000"
+        else:
+            raise TypeError(f"Time Base for Time type ({guess_types[0]}) not found.")
+
+    def _get_time_scale(self):
+        # Get the Variable Data
+        var_data = self.time
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return "Terrestrial Time (TT)"
+        else:
+            raise TypeError(f"Time Scale for Time type ({guess_types[0]}) not found.")
+
+    def _get_time_units(self):
+        # Get the Variable Data
+        var_data = self.time
+        # Guess the spacepy.pycdf.const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH.value:
+            return "ms"
+        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            return "ns"
+        if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH16.value:
+            return "ps"
+        else:
+            raise TypeError(f"Time Units for Time type ({guess_types[0]}) not found.")
+
     def _get_units(self, var_name):
         # Get the Variable Data
         var_data = self.data[var_name]
@@ -731,6 +811,10 @@ class CDFWriter:
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval
+
+    # =============================================================================================
+    #                               GLOBAL ATTRIBUTE DERIVATIONS
+    # =============================================================================================
 
     def _get_logical_file_id(self):
         """

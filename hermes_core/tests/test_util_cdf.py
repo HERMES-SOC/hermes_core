@@ -473,11 +473,6 @@ def test_cdf_writer_generate_valid_cdf():
             "CATDESC": "TT2000 time tags",
             "FORMAT": "I16",
             "VAR_TYPE": "support_data",
-            "TIME_BASE": "J2000",
-            "UNITS": "UT",
-            "RESOLUTION": "1s",
-            "TIME_SCALE": "Terrestrial Time (TT)",
-            "REFERENCE_POSITION": "rotating Earth geoid",
             "SI_CONVERSION": "1e-9>s",
         }
     )
@@ -599,11 +594,6 @@ def test_cdf_writer_from_cdf():
             "CATDESC": "TT2000 time tags",
             "FORMAT": "I16",
             "VAR_TYPE": "support_data",
-            "TIME_BASE": "J2000",
-            "UNITS": "UT",
-            "RESOLUTION": "1s",
-            "TIME_SCALE": "Terrestrial Time (TT)",
-            "REFERENCE_POSITION": "rotating Earth geoid",
             "SI_CONVERSION": "1e-9>s",
         }
     )
