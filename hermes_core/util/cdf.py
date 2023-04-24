@@ -127,17 +127,6 @@ class CDFWriter:
             units[name] = unit
         return OrderedDict(units)
 
-    @units.setter
-    def units(self, value):
-        for name, unit in value.items():
-            # Override in the the Column property
-            self.data[name].unit = unit
-            # Override in the Column Metadata
-            if isinstance(self.data[name], Column):
-                self.data[name].meta["UNITS"] = unit
-            elif isinstance(self.data[name], Quantity):
-                self.data[name].info["UNITS"] = unit
-
     @property
     def columns(self):
         """
@@ -620,6 +609,8 @@ class CDFWriter:
             var_data.meta["FIELDNAM"] = self._get_fieldnam(var_name)
         if "FILLVAL" not in var_data.meta:
             var_data.meta["FILLVAL"] = self._get_fillval(var_name)
+        if "UNITS" not in var_data.meta:
+            var_data.meta["UNITS"] = self._get_units(var_name)
         if "VALIDMIN" not in var_data.meta:
             var_data.meta["VALIDMIN"] = self._get_validmin(var_name)
         if "VALIDMAX" not in var_data.meta:
@@ -656,7 +647,7 @@ class CDFWriter:
             return "Epoch"
 
     def _get_fillval(self, var_name):
-        # Get the Variable Data (should be numpy.ndarray)
+        # Get the Variable Data
         var_data = self.data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
@@ -700,8 +691,17 @@ class CDFWriter:
         value = fillvals[cdf_type]
         return value
 
+    def _get_units(self, var_name):
+        # Get the Variable Data
+        var_data = self.data[var_name]
+        unit = ""
+        # Get the Unit from the TimeSeries Quantity if it exists
+        if hasattr(var_data, "unit"):
+            unit = var_data.unit.name
+        return unit
+
     def _get_validmin(self, var_name):
-        # Get the Variable Data (should be numpy.ndarray)
+        # Get the Variable Data
         var_data = self.data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
@@ -717,7 +717,7 @@ class CDFWriter:
             return minval
 
     def _get_validmax(self, var_name):
-        # Get the Variable Data (should be numpy.ndarray)
+        # Get the Variable Data
         var_data = self.data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type

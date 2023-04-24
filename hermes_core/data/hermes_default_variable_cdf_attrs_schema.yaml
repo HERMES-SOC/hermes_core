@@ -56,7 +56,7 @@ attribute_key:
   LABL_PTR_i:
     required: true
   SI_CONVERSION:
-    required: true
+    required: true  # NOT Required in ISTP Guide
     check:
       conditional_si_units: null
   UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present

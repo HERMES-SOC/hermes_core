@@ -56,8 +56,6 @@ def get_test_timeseries():
             "FORMAT": "F9.4",
             "LABLAXIS": "Label Axis",
             "SI_CONVERSION": "1.0e3>m",
-            "UNITS": "km",
-
         }
     )
     return ts
@@ -473,11 +471,7 @@ def test_cdf_writer_generate_valid_cdf():
     test_writer["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
-            # "DEPEND_0": "Epoch",
             "FORMAT": "I16",
-            # "FIELDNAM": "Epoch",
-            # # "FILLVAL": -9223372036854775808,
-            # "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
             "VAR_TYPE": "support_data",
             "TIME_BASE": "J2000",
             "UNITS": "UT",
@@ -485,8 +479,6 @@ def test_cdf_writer_generate_valid_cdf():
             "TIME_SCALE": "Terrestrial Time (TT)",
             "REFERENCE_POSITION": "rotating Earth geoid",
             "SI_CONVERSION": "1e-9>s",
-            # "VALIDMIN": datetime.datetime(1970, 1, 1, 0, 0, 0),
-            # "VALIDMAX": datetime.datetime(1970, 1, 1, 0, 0, 50),
         }
     )
 
@@ -499,16 +491,10 @@ def test_cdf_writer_generate_valid_cdf():
             {
                 "VAR_TYPE": "data",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_var{i}",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             }
         )
 
@@ -521,16 +507,10 @@ def test_cdf_writer_generate_valid_cdf():
             {
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_support{i}",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             },
         )
 
@@ -543,16 +523,10 @@ def test_cdf_writer_generate_valid_cdf():
             {
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_metadata",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             }
         )
 
@@ -623,11 +597,7 @@ def test_cdf_writer_from_cdf():
     test_writer["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
-            # "DEPEND_0": "Epoch",
             "FORMAT": "I16",
-            # "FIELDNAM": "Epoch",
-            # # "FILLVAL": -9223372036854775808,
-            # "FILLVAL": spacepy.pycdf.lib.v_tt2000_to_datetime(-9223372036854775808),
             "VAR_TYPE": "support_data",
             "TIME_BASE": "J2000",
             "UNITS": "UT",
@@ -635,8 +605,6 @@ def test_cdf_writer_from_cdf():
             "TIME_SCALE": "Terrestrial Time (TT)",
             "REFERENCE_POSITION": "rotating Earth geoid",
             "SI_CONVERSION": "1e-9>s",
-            # "VALIDMIN": datetime.datetime(1970, 1, 1, 0, 0, 0),
-            # "VALIDMAX": datetime.datetime(1970, 1, 1, 0, 0, 50),
         }
     )
 
@@ -649,16 +617,11 @@ def test_cdf_writer_from_cdf():
             {
                 "VAR_TYPE": "data",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_var{i}",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
                 "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             }
         )
 
@@ -671,16 +634,11 @@ def test_cdf_writer_from_cdf():
             {
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_support{i}",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
                 "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             },
         )
 
@@ -693,16 +651,11 @@ def test_cdf_writer_from_cdf():
             {
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Variable",
-                # "DEPEND_0": "Epoch",
                 "DISPLAY_TYPE": "time_series",
-                # "FIELDNAM": f"test_metadata",
-                # "FILLVAL": -1e31,
                 "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
                 "SI_CONVERSION": "1.0e3>m",
                 "UNITS": "km",
-                # "VALIDMIN": 0.0,
-                # "VALIDMAX": 1.0,
             }
         )
 
