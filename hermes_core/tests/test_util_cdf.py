@@ -53,9 +53,7 @@ def get_test_timeseries():
             "VAR_TYPE": "metadata",
             "CATDESC": "Test Metadata",
             "DISPLAY_TYPE": "time_series",
-            "FORMAT": "F9.4",
             "LABLAXIS": "Label Axis",
-            "SI_CONVERSION": "1.0e3>m",
         }
     )
     return ts
@@ -471,9 +469,7 @@ def test_cdf_writer_generate_valid_cdf():
     test_writer["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
-            "FORMAT": "I16",
             "VAR_TYPE": "support_data",
-            "SI_CONVERSION": "1e-9>s",
         }
     )
 
@@ -487,9 +483,7 @@ def test_cdf_writer_generate_valid_cdf():
                 "VAR_TYPE": "data",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
             }
         )
 
@@ -503,9 +497,7 @@ def test_cdf_writer_generate_valid_cdf():
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
             },
         )
 
@@ -519,9 +511,7 @@ def test_cdf_writer_generate_valid_cdf():
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
             }
         )
 
@@ -592,9 +582,7 @@ def test_cdf_writer_from_cdf():
     test_writer["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
-            "FORMAT": "I16",
             "VAR_TYPE": "support_data",
-            "SI_CONVERSION": "1e-9>s",
         }
     )
 
@@ -608,10 +596,7 @@ def test_cdf_writer_from_cdf():
                 "VAR_TYPE": "data",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
             }
         )
 
@@ -625,10 +610,7 @@ def test_cdf_writer_from_cdf():
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
             },
         )
 
@@ -642,10 +624,7 @@ def test_cdf_writer_from_cdf():
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Variable",
                 "DISPLAY_TYPE": "time_series",
-                "FORMAT": "F9.4",
                 "LABLAXIS": "Label Axis",
-                "SI_CONVERSION": "1.0e3>m",
-                "UNITS": "km",
             }
         )
 

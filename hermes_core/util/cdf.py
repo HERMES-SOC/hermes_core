@@ -2,6 +2,7 @@
 This module provides CDF file functionality.
 
 """
+import math
 from typing import Union, OrderedDict
 import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from spacepy.pycdf.istp import FileChecks
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.table import Column
+import astropy.units as u
 from astropy.units import Quantity
 
 import hermes_core
@@ -613,6 +615,10 @@ class CDFWriter:
             var_data.meta["FIELDNAM"] = self._get_fieldnam(var_name)
         if "FILLVAL" not in var_data.meta:
             var_data.meta["FILLVAL"] = self._get_fillval(var_name)
+        if "FORMAT" not in var_data.meta:
+            var_data.meta["FORMAT"] = self._get_format(var_name)
+        if "SI_CONVERSION" not in var_data.meta:
+            var_data.meta["SI_CONVERSION"] = self._get_si_conversion(var_name)
         if "UNITS" not in var_data.meta:
             var_data.meta["UNITS"] = self._get_units(var_name)
         if "VALIDMIN" not in var_data.meta:
@@ -714,6 +720,138 @@ class CDFWriter:
         value = fillvals[cdf_type]
         return value
 
+    def _get_format(self, var_name):
+        # Get the Variable Data
+        var_data = self.data[var_name]
+        if var_name == "time":
+            # Guess the spacepy.pycdf.const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+            return self._format_helper(var_name, guess_types[0])
+        else:
+            # Guess the spacepy.pycdf.const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
+            return self._format_helper(var_name, guess_types[0])
+
+    def _format_helper(self, var_name, cdftype):
+        minn = "VALIDMIN"
+        maxx = "VALIDMAX"
+        # Get the Variable Data
+        var_data = self.data[var_name]
+
+        if cdftype in (
+            spacepy.pycdf.const.CDF_INT1.value,
+            spacepy.pycdf.const.CDF_INT2.value,
+            spacepy.pycdf.const.CDF_INT4.value,
+            spacepy.pycdf.const.CDF_INT8.value,
+            spacepy.pycdf.const.CDF_UINT1.value,
+            spacepy.pycdf.const.CDF_UINT2.value,
+            spacepy.pycdf.const.CDF_UINT4.value,
+            spacepy.pycdf.const.CDF_BYTE.value,
+        ):
+            if minn in var_data.meta:  # Just use validmin or scalemin
+                minval = var_data.meta[minn]
+            elif cdftype in (
+                spacepy.pycdf.const.CDF_UINT1.value,
+                spacepy.pycdf.const.CDF_UINT2.value,
+                spacepy.pycdf.const.CDF_UINT4.value,
+            ):  # unsigned, easy
+                minval = 0
+            elif cdftype == spacepy.pycdf.const.CDF_BYTE.value:
+                minval = -(2**7)
+            else:  # Signed, harder
+                size = next(
+                    (
+                        i
+                        for i in (1, 2, 4, 8)
+                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value == cdftype
+                    )
+                )
+                minval = -(2 ** (8 * size - 1))
+            if maxx in var_data.meta:  # Just use max
+                maxval = var_data.meta[maxx]
+            elif cdftype == spacepy.pycdf.const.CDF_BYTE.value:
+                maxval = 2**7 - 1
+            else:
+                size = next(
+                    (
+                        8 * i
+                        for i in (1, 2, 4)
+                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value == cdftype
+                    ),
+                    None,
+                )
+                if size is None:
+                    size = (
+                        next(
+                            (
+                                8 * i
+                                for i in (1, 2, 4, 8)
+                                if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
+                                == cdftype
+                            )
+                        )
+                        - 1
+                    )
+                maxval = 2**size - 1
+            # Two tricks:
+            # -Truncate and add 1 rather than ceil so get
+            # powers of 10 (log10(10) = 1 but needs two digits)
+            # -Make sure not taking log of zero
+            if minval < 0:  # Need an extra space for the negative sign
+                fmt = "I{}".format(int(math.log10(max(abs(maxval), abs(minval), 1))) + 2)
+            else:
+                fmt = "I{}".format(int(math.log10(maxval) if maxval != 0 else 1) + 1)
+        elif cdftype == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+            fmt = "A{}".format(len("9999-12-31T23:59:59.999999999"))
+        elif cdftype == spacepy.pycdf.const.CDF_EPOCH16.value:
+            fmt = "A{}".format(len("31-Dec-9999 23:59:59.999.999.000.000"))
+        elif cdftype == spacepy.pycdf.const.CDF_EPOCH.value:
+            fmt = "A{}".format(len("31-Dec-9999 23:59:59.999"))
+        elif cdftype in (
+            spacepy.pycdf.const.CDF_REAL8.value,
+            spacepy.pycdf.const.CDF_REAL4.value,
+            spacepy.pycdf.const.CDF_FLOAT.value,
+            spacepy.pycdf.const.CDF_DOUBLE.value,
+        ):
+            if "VALIDMIN" in var_data.meta and "VALIDMAX" in var_data.meta:
+                range = var_data.meta["VALIDMAX"] - var_data.meta["VALIDMIN"]
+            # If not, just use nothing.
+            else:
+                range = None
+            # Find how many spaces we need for the 'integer' part of the number
+            # (Use maxx-minn for this...effectively uses VALIDMIN/MAX for most
+            # cases.)
+            if range and (minn in var_data.meta and maxx in var_data.meta):
+                if len(str(int(var_data.meta[maxx]))) >= len(str(int(var_data.meta[minn]))):
+                    ln = str(int(var_data.meta[maxx]))
+                else:
+                    ln = str(int(var_data.meta[minn]))
+            if range and ln and range < 0:  # Cover all our bases:
+                range = None
+            # Switch on Range
+            if range and ln and range <= 11:  # If range <= 11, we want 2 decimal places:
+                # Need extra for '.', and 3 decimal places (4 extra)
+                fmt = "F{}.3".format(len([i for i in ln]) + 4)
+            elif range and ln and 11 < range <= 101:
+                # Need extra for '.' (1 extra)
+                fmt = "F{}.2".format(len([i for i in ln]) + 3)
+            elif range and ln and 101 < range <= 1000:
+                # Need extra for '.' (1 extra)
+                fmt = "F{}.1".format(len([i for i in ln]) + 2)
+            else:
+                # No range, must not be populated, copied from REAL4/8(s) above
+                # OR we don't care because it's a 'big' number:
+                fmt = "G10.2E3"
+        elif cdftype in (spacepy.pycdf.const.CDF_CHAR.value, spacepy.pycdf.const.CDF_UCHAR.value):
+            fmt = "A{}".format(len(var_data.value))
+        else:
+            raise ValueError(
+                "Couldn't find FORMAT for {} of type {}".format(
+                    var_name, spacepy.pycdf.lib.cdftypenames.get(cdftype, "UNKNOWN")
+                )
+            )
+        return fmt
+
     def _get_reference_position(self):
         # Get the Variable Data
         var_data = self.time
@@ -736,6 +874,25 @@ class CDFWriter:
         # Get the number of seconds between samples.
         delta_seconds = delta.total_seconds()
         return f"{delta_seconds}s"
+
+    def _get_si_conversion(self, var_name):
+        # Get the Variable Data
+        var_data = self.data[var_name]
+        if var_name == "time":
+            time_unit_str = self._get_time_units()
+            time_unit = u.s
+            if time_unit_str == "ms":
+                time_unit = u.ms
+            if time_unit_str == "ns":
+                time_unit = u.ns
+            if time_unit_str == "ps":
+                time_unit = u.ns
+            conversion_rate = time_unit.to(u.s)
+            si_conversion = f"{conversion_rate:e}>{u.s}"
+        else:
+            conversion_rate = var_data.unit.to(var_data.si.unit)
+            si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+        return si_conversion
 
     def _get_time_base(self):
         # Get the Variable Data
