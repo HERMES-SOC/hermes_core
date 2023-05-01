@@ -13,3 +13,4 @@ For more details checkout the :ref:`reference`.
    Brief Tour <tour>
    customization
    logger
+   cdf_writer
