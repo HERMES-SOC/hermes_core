@@ -1,0 +1,135 @@
+# Based on :  https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
+#             HERMES CDF Format Guide
+# Check Types: The key 'check' for any attribute can be followed by the
+# the method by whick the attribute should be checked during vaildation. 
+#   valid_values: 
+#     contains a list of `string` values which the attibute can take. 
+#   conditional_data_type:
+#     contains a nested list of lists, where each outer list element is
+#       a 2-element list of key-value pairs. The Key being the data type
+#       of the variable and the value being the resultant value based on
+#       the conditional data type.
+#   conditional_si_units:
+#       TODO
+attribute_key:
+  # ===== EPOCH-ONLY VARIABLE ATTRIBUTES =====
+  TIME_BASE:
+    required: true    # NOT Required in ISTP Guide
+  RESOLUTION:
+    required: true    # NOT Required in ISTP Guide
+  TIME_SCALE:
+    required: true    # NOT Required in ISTP Guide
+  REFERENCE_POSITION:
+    required: true    # NOT Required in ISTP Guide
+  LEAP_SECONDS_INCLUDED:
+    required: false   # NOT Required in ISTP Guide
+  ABSOLUTE_ERROR:
+    required: false   # NOT Required in ISTP Guide
+  RELATIVE_ERROR:
+    required: false   # NOT Required in ISTP Guide
+  BIN_LOCATION:
+    required: false   # NOT Required in ISTP Guide
+  # ===== DATA VARIABLE ATTRIBUTES =====
+  CATDESC:
+    required: true
+  DEPEND_0:
+    required: true
+  DEPEND_i:         # For i'th dimensional data variables
+    required: true
+  DISPLAY_TYPE:
+    required: true
+    valid_values:
+      time_series
+      spectrogram
+      stack_plot
+      image
+  FIELDNAM:
+    required: true
+  FILLVAL:
+    required: true
+  FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
+    required: true
+  FORM_PTR:
+    required: true
+  LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
+    required: true
+  LABL_PTR_i:
+    required: true
+  SI_CONVERSION:
+    required: true  # NOT Required in ISTP Guide
+    check:
+      conditional_si_units: null
+  UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
+    required: true
+  UNIT_PTR:
+    required: true
+  VALIDMIN:
+    required: true
+  VALIDMAX:
+    required: true
+  VAR_TYPE:
+    required: true
+    valid_values:
+        data
+        support_data
+        metadata
+        ignore_data
+  COORDINATE_SYSTEM:
+    required: false   # NOT Required in HERMES Format Guide
+  TENSOR_ORDER:
+    required: false   # NOT Required in HERMES Format Guide
+  REPRESENTATION_i:
+    required: false   # NOT Required in HERMES Format Guide
+  OPERATOR_TYPE:
+    required: false   # NOT Required in HERMES Format Guide
+time_series:
+  - TIME_BASE
+  - RESOLUTION
+  - TIME_SCALE
+  - REFERENCE_POSITION
+  - LEAP_SECONDS_INCLUDED
+  - ABSOLUTE_ERROR
+  - RELATIVE_ERROR
+  - BIN_LOCATION
+  - VAR_TYPE
+data:
+  - CATDESC
+  - DEPEND_0
+  # - DEPEND_i # [for dimensional data variables]
+  - DISPLAY_TYPE
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  # - FORM_PTR
+  - LABLAXIS
+  # - LABL_PTR_i
+  - SI_CONVERSION
+  - UNITS
+  # - UNIT_PTR
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE 
+support_data:
+  - CATDESC
+  - DEPEND_0
+  # - DEPEND_i
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  # - FORM_PTR
+  - SI_CONVERSION
+  - UNITS
+  # - UNIT_PTR
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE
+metadata:
+  - CATDESC
+  - DEPEND_0
+  # - DEPEND_i
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  # - FORM_PTR
+  - SI_CONVERSION
+  - VAR_TYPE
