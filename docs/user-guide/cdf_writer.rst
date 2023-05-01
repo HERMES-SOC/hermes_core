@@ -100,23 +100,48 @@ Adding metadata attributes to a ``CDFWriter``
 
 CDF file global metadata and variable metadata can be added through the ``CDFWriter`` 
 
-Variable Metadata can be updated for a ``CDFWriter`` variable using its ``.meta`` property 
-which is an ``OrderdDict`` containing relevant information::
+**Variable Metadata** can be updated for a ``CDFWriter`` variable using its ``.meta`` property 
+which is an ``OrderdDict`` containing relevant information. The ``CDFWriter`` derives most
+variable metadata required for ISTP compliance. However, there are a few pieces of metadaata
+that must be supplied by users to generate ISTP-compliant CDF files:
 
-    >>> writer["variable_name"].meta.update({
-      "VAR_TYPE": "data",
-      "CATDESC": "Test Variable","
+* `CATDESC` : (Catalogue Description) This is a human readable desctiption of the data variable. 
+* `DISPLAY_TYPE` : This tells the automated software, such as CDAWeb how the data should be 
+    displayed.
+* `LABLAXIS` : Used to label a plot axis or to provide a heading for data listing. 
+* `VAR_TYPE` : Used in CDAWeb to indicate if the data should be used directly by users. 
+
+For Example::
+
+    >>> writer["measurement"].meta.update({
+        "VAR_TYPE": "metadata",
+        "CATDESC": "Test Measurement",
+        "DISPLAY_TYPE": "time_series",
+        "LABLAXIS": "Measutement Label",
     })
 
 
-Global Metadata cen be updated for a ```CDFWriter``` object using the object's ``.meta`` parameter
-which is an ``OrderdDict`` containing relevant information::
+**Global Metadata** cen be updated for a ```CDFWriter``` object using the object's ``.meta`` parameter
+which is an ``OrderdDict`` containing relevant information. The ``CDFWriter`` derives most global 
+metadata required for ISTP compliance. However, there are a few pieces of metadata that must be 
+supplied by users to successfuly generate ISTP-compliant CDF files:
 
-    >>> writer.meta.update({
+* `Descriptor` : This attribute identifies the name of the instrument or sensor that collected
+    the data. Both the a long name and a short name are given. For any data file, onle a
+    single value is allowed.
+* `Data_level` : This attribute identifies the level to which the data has been
+    processed. Ex. "ql>Quick Look"
+* `Data_version` : This attribute identifies the version (vX.Y.Z) of a particular CDF 
+    data file.
+
+For Example::
+
+    >>> input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_version": "0.0.1",
         "Data_level": "l1>Level 1",
-    })
+        "Data_version": "v0.0.1",
+    }
+    >>> writer.meta.update(input_attrs)
 
 
 Using ``CDFWriter`` to Write a CDF File
