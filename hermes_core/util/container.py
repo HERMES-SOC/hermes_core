@@ -91,7 +91,7 @@ class ScienceData:
 
         for colname in self.data.columns:
             if colname != "time" and not isinstance(self.data[colname], u.Quantity):
-                raise ValueError(f"Column '{colname}' must be an astropy.Quantity object")
+                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
 
         # Add any Metadata from the original TimeSeries
         self.data.time.meta = OrderedDict()
@@ -304,13 +304,16 @@ class ScienceData:
         Parameters:
             output_path (str): A string path to the directory where file is to be saved.
 
+        Returns:
+            str: A path to the saved file.
+
         Raises:
             ValueError: If no handler is specified for saving data.
 
         """
         if self.handler is None:
             raise ValueError("No handler specified for saving data")
-        self.handler.save_data(data=self, file_path=output_path)
+        return self.handler.save_data(data=self, file_path=output_path)
 
     @classmethod
     def load(cls, filename, handler):

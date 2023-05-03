@@ -37,6 +37,9 @@ class CDFSchema(FileTypeSchema):
         # Data Validation and Compliance for Variable Data
         self._variable_attr_schema = self._load_default_variable_attr_schema()
 
+        # Load Default Global Attributes
+        self.default_global_attrs = self._load_default_attributes()
+
     @property
     def global_attribute_schema(self):
         return self._global_attr_schema
@@ -60,6 +63,13 @@ class CDFSchema(FileTypeSchema):
         )
         # Load the Schema
         return self._load_yaml_data(yaml_file_path=default_schema_path)
+
+    def _load_default_attributes(self):
+        # The Default Attributes file is contained in the `hermes_core/data` directory
+        default_attributes_path = str(
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_FILE
+        )
+        return self._load_yaml_data(yaml_file_path=default_attributes_path)
 
     def _load_yaml_data(self, yaml_file_path):
         """

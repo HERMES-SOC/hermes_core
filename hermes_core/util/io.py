@@ -133,7 +133,14 @@ class CDFHandler(ScienceDataIOHandler):
         Parameters:
             data (ScienceData): An instance of ScienceData containing the data to be saved.
             file_path (str): The path to save the CDF file.
+
+        Returns:
+            str: A path to the saved file.
         """
+
+        # Update Default Attributes
+        self._update_default_attributes(data)
+
         # Derive any Global Attributes
         self.derive_attributes(data)
 
@@ -146,6 +153,13 @@ class CDFHandler(ScienceDataIOHandler):
 
             # Add zAttributes
             self._convert_variable_attributes_to_cdf(data, cdf_file)
+        return output_cdf_filepath
+
+    def _update_default_attributes(self, data):
+        # Loop through the default Global Attributes
+        for attr_name, attr_value in self.schema.default_global_attrs.items():
+            if attr_name not in data.meta:
+                data.meta[attr_name] = attr_value
 
     def _convert_global_attributes_to_cdf(self, data, cdf_file: CDF):
         # Loop though Global Attributes in target_dict
