@@ -1,13 +1,7 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
-import yaml
-import spacepy
-from spacepy.pycdf import CDF, _Hyperslice
+from spacepy.pycdf import CDF
 from spacepy.pycdf.istp import FileChecks
-import hermes_core
-from hermes_core import log
-from hermes_core.util import util
-from hermes_core.util.exceptions import warn_user
+from hermes_core.util.schema import CDFSchema
 
 
 class ScienceDataValidator(ABC):
@@ -34,59 +28,11 @@ class CDFValidator(ScienceDataValidator):
     Validator for CDF files.
     """
 
-    DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
-    DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
-    DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
-
     def __init__(self):
         super().__init__()
 
-        # Data Validation, Complaiance, Derived Attributes
-        self._global_attr_schema = self._load_default_global_attr_schema()
-
-        # Data Validation and Compliance for Variable Data
-        self._variable_attr_schema = self._load_default_variable_attr_schema()
-
-    def _load_default_global_attr_schema(self) -> dict:
-        # The Default Schema file is contained in the `hermes_core/data` directory
-        default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / CDFValidator.DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
-        )
-        # Load the Schema
-        return self._load_yaml_data(yaml_file_path=default_schema_path)
-
-    def _load_default_variable_attr_schema(self) -> dict:
-        # The Default Schema file is contained in the `hermes_core/data` directory
-        default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / CDFValidator.DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
-        )
-        # Load the Schema
-        return self._load_yaml_data(yaml_file_path=default_schema_path)
-
-    def _load_yaml_data(self, yaml_file_path):
-        """
-        Function to load data from a Yaml file.
-
-        Parameters
-        ----------
-        yaml_file_path: `str`
-            Path to schem file to be used for CDF formatting.
-
-        """
-        assert isinstance(yaml_file_path, str)
-        assert Path(yaml_file_path).exists()
-        # Load the Yaml file to Dict
-        yaml_data = {}
-        with open(yaml_file_path, "r") as f:
-            try:
-                yaml_data = yaml.safe_load(f)
-            except yaml.YAMLError as exc:
-                log.critical(exc)
-        return yaml_data
+        # CDF Schema
+        self.schema = CDFSchema()
 
     def validate(self, file_path):
         """
@@ -105,11 +51,11 @@ class CDFValidator(ScienceDataValidator):
             # Open CDF file with context manager
             with CDF(file_path) as cdf_file:
                 # Verify that all `required` global attributes in the schema are present
-                global_attr_validation_errors = self.validate_global_attr_schema(cdf_file=cdf_file)
+                global_attr_validation_errors = self._validate_global_attr_schema(cdf_file=cdf_file)
                 validation_errors.extend(global_attr_validation_errors)
 
                 # Verify that all `required` variable attributes in the schema are present
-                variable_attr_validation_errors = self.validate_variable_attr_schema(
+                variable_attr_validation_errors = self._validate_variable_attr_schema(
                     cdf_file=cdf_file
                 )
                 validation_errors.extend(variable_attr_validation_errors)
@@ -123,14 +69,14 @@ class CDFValidator(ScienceDataValidator):
 
         return validation_errors
 
-    def validate_global_attr_schema(self, cdf_file: CDF):
+    def _validate_global_attr_schema(self, cdf_file: CDF):
         """
         Function to ensure all required global attributes in the schema are present
         in the generated CDF File.
         """
         global_attr_validation_errors = []
         # Loop for each attribute in the schema
-        for attr_name, attr_schema in self._global_attr_schema.items():
+        for attr_name, attr_schema in self.schema.global_attribute_schema.items():
             # If it is a required attribute and not present
             if attr_schema["required"] and (attr_name not in cdf_file.attrs):
                 global_attr_validation_errors.append(
@@ -138,7 +84,7 @@ class CDFValidator(ScienceDataValidator):
                 )
         return global_attr_validation_errors
 
-    def validate_variable_attr_schema(self, cdf_file: CDF):
+    def _validate_variable_attr_schema(self, cdf_file: CDF):
         """
         Function to ensure all required variable attributes in the schema are present
         in the generated CDF file.
@@ -169,14 +115,14 @@ class CDFValidator(ScienceDataValidator):
         """
         variable_errors = []
         # Get the Expected Attributes for the Variable Type
-        var_type_attrs = self._variable_attr_schema[var_type]
+        var_type_attrs = self.schema.variable_attribute_schema[var_type]
 
         # Get the `Var()` Class for the Variable
         var_data = cdf_file[var_name]
 
         # Loop for each Variable Attribute in the schema
         for attr_name in var_type_attrs:
-            attr_schema = self._variable_attr_schema["attribute_key"][attr_name]
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
