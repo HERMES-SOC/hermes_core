@@ -521,8 +521,6 @@ def test_cdf_writer_generate_valid_cdf():
 
     # Validate the generated CDF File
     result = test_writer.validate_cdf(cdf_file_path=test_file_output_path, catch=True)
-    for err in result:
-        print(err)
     assert len(result) <= 2  # TODO Logical Source and File ID Do not Agree
 
     # Remove the File

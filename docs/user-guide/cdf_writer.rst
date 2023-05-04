@@ -46,7 +46,7 @@ A ``CDFWriter`` must be created from a ``TimeSeries`` object containing at least
 
 Import the required ``astropy`` dependencies and create an empty ``TimeSeries``::
 
-    >>> from `astropy.TimeSeries` import TimeSeries
+    >>> from astropy.timeseries import TimeSeries
     >>> from astropy.time import Time
     >>> from astropy.units.quantity import Quantity
     >>> ts = TimeSeries()
@@ -67,7 +67,7 @@ Create a ``Quantity`` object that contsins measurement data and add it to the ``
 
 You can now pass the ``TimeSeries`` into a ``CDFWriter``
 
-    >>> frrom hermes_core.util.cdf import CDFWriter
+    >>> from hermes_core.util.cdf import CDFWriter
     >>> writer = CDFWriter(ts=ts)
 
 The ``CDFWriter`` can the be updated, measurements added, metadata added, and written to a new CDF file. 
@@ -79,7 +79,7 @@ Creating a ``CDFWriter`` from an existing CDF File
 Given a current CDF File you can create a ``CDFWriter`` data container through passing a path to the CDF file::
 
     >>> from hermes_core.util.cdf import CDFWriter
-    >>> writer = CDFWriter.from_cdf("hermes_eea_default_ql_19700101_v0.0.1.cdf")
+    >>> writer = CDFWriter.from_cdf("hermes_eea_default_ql_19700101_v0.0.1.cdf") # doctest: +SKIP  
 
 The ``CDFWriter`` can the be updated, measurements added, metadata added, and written to a new CDF file. 
 
@@ -89,10 +89,10 @@ Adding data to a ``CDFWriter``
 
 Data can be added to the ``CDFWriter`` using Astropy ``Quantity`` objects::
 
-    >>> writer["variable_name"] = Quantity(value=my_mumpy_data, unit="your_data_units")
-    >>> wtiter
+    >>> data = random(size=(50))
+    >>> writer["variable_name"] = Quantity(value=data, unit="m")
 
-This will now display the ``CDFWriter`` object and a new column with name "variable_name".
+Variable metadata is derived for for the given measuerment automatically when adding a new ``Quantity``.
 
 
 Adding metadata attributes to a ``CDFWriter``
@@ -114,11 +114,11 @@ that must be supplied by users to generate ISTP-compliant CDF files:
 For Example::
 
     >>> writer["measurement"].meta.update({
-        "VAR_TYPE": "metadata",
-        "CATDESC": "Test Measurement",
-        "DISPLAY_TYPE": "time_series",
-        "LABLAXIS": "Measutement Label",
-    })
+    ...     "VAR_TYPE": "metadata",
+    ...     "CATDESC": "Test Measurement",
+    ...     "DISPLAY_TYPE": "time_series",
+    ...     "LABLAXIS": "Measutement Label",
+    ... })
 
 
 **Global Metadata** cen be updated for a ```CDFWriter``` object using the object's ``.meta`` parameter
@@ -137,10 +137,10 @@ supplied by users to successfuly generate ISTP-compliant CDF files:
 For Example::
 
     >>> input_attrs = {
-        "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_level": "l1>Level 1",
-        "Data_version": "v0.0.1",
-    }
+    ...     "Descriptor": "EEA>Electron Electrostatic Analyzer",
+    ...     "Data_level": "l1>Level 1",
+    ...     "Data_version": "v0.0.1",
+    ... }
     >>> writer.meta.update(input_attrs)
 
 
@@ -154,7 +154,7 @@ as a parameter, a path to the folder where the CDF file should be saved.
 For example::
 
     >>> output_path = "./"
-    >>> cdf_file_path = writer.write_cdf(output_path)
+    >>> cdf_file_path = writer.write_cdf(output_path) # doctest: +SKIP 
 
 This returns the full path to the CDF file that was generated. From this you can validate and 
 distribute your data as a CDF file.
@@ -167,7 +167,7 @@ The ``CDFWriter`` uses the ``spacepy.pycdf.istp`` module for data validation, in
 tests for additional metadata. A CDF file can be validated using the ``validate_cdf(...)`` method
 and by passong, as a parameter, a full path to the CDF file to be validated::
 
-    >>> validation_errors = writer.validate_cdf(cdf_file_path)
+    >>> validation_errors = writer.validate_cdf(cdf_file_path) # doctest: +SKIP 
 
 This returns a ``list[str]`` that contains any vlidation errors that were enountered when examining
 the CDF file. If no validation errors were found the method will return an empty list. 
