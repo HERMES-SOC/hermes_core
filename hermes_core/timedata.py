@@ -2,18 +2,30 @@
 Data Container class for Heliophysics Science Data.
 """
 
-import os
+from pathlib import Path
 from typing import OrderedDict
 from astropy.timeseries import TimeSeries
-from astropy.table import Table, vstack
+from astropy.table import vstack
 from astropy import units as u
 from hermes_core.util.validation import CDFValidator, NetCDFValidator, FITSValidator
 from hermes_core.util.io import TimeDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
 
 
-def read(filename):
+def read(filepath):
+    """
+    A generic file reader.
+
+    Parameters
+    ----------
+    filepath : `str`
+        A fully specificed file path.
+
+    Returns
+    -------
+        result : TimeData
+    """
     # Determine the file type
-    file_extension = os.path.splitext(filename)[1]
+    file_extension = Path(filepath).suffix
 
     # Create the appropriate handler object based on file type
     if file_extension == ".cdf":
@@ -26,12 +38,24 @@ def read(filename):
         raise ValueError(f"Unsupported file type: {file_extension}")
 
     # Load data using the handler and return a TimeData object
-    return TimeData.load(filename, handler=handler)
+    return TimeData.load(filepath, handler=handler)
 
 
-def validate(filename):
+def validate(filepath):
+    """
+    Validate a data file such as a CDF.
+
+    Parameters
+    ----------
+    filepath : `str`
+        A fully specificed file path.
+
+    Returns
+    -------
+        result
+    """
     # Determine the file type
-    file_extension = os.path.splitext(filename)[1]
+    file_extension = Path(filepath).suffix
 
     # Create the appropriate validator object based on file type
     if file_extension == ".cdf":
@@ -44,7 +68,7 @@ def validate(filename):
         raise ValueError(f"Unsupported file type: {file_extension}")
 
     # Call the validate method of the validator object
-    return validator.validate(filename)
+    return validator.validate(filepath)
 
 
 class TimeData:
@@ -61,12 +85,13 @@ class TimeData:
 
     """
 
-    def __init__(self, data, handler=None):
+    def __init__(self, data, meta=None, handler=None, **kwargs):
         """
         Initialize a TimeData object.
 
         Parameters:
             data (TimeSeries): The science data stored as a TimeSeries object.
+            meta: `dict`
             handler (TimeDataIOHandler, optional): The handler for input/output operations. Defaults to None.
 
         Raises:
@@ -94,11 +119,15 @@ class TimeData:
         self.data.time.meta = OrderedDict()
         if hasattr(data["time"], "meta"):
             self.data.time.meta.update(data["time"].meta)
+        self.data.time.meta.update(meta["time"])
+
+        # Add Measurement Metadata
         for col in self.data.columns:
             if col != "time":
                 self.data[col].meta = OrderedDict()
                 if hasattr(data[col], "meta"):
                     self.data[col].meta.update(data[col].meta)
+                self.data[col].meta.update(meta[col])
 
         self.handler = handler
 
@@ -244,7 +273,7 @@ class TimeData:
         Function to set a data variable conained in the CDFWriter class.
         """
         # Set the Data for the named variable
-        self._add_variable(var_name=name, var_data=data, var_attrs={})
+        self.add_measurement(measure_name=name, measure_data=data, measure_meta={})
 
     def __contains__(self, name):
         """
@@ -260,39 +289,46 @@ class TimeData:
             var_data = self.data[name]
             yield (name, var_data)
 
-    def _add_variable(self, var_name: str, var_data: u.Quantity, var_attrs: dict):
+    def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):
         """
         Function to add variable data to the TimeData class. Variable data here is assumed
         to be array-like or matrix-like to be stored in the TimeData. Additionally, varaible
         attributes can be added though a native python `dict` of `(key, value)` pairs that
         are added to the TimeData variable.
 
-        Parameters
+         Parameters
         ----------
-        var_name: `str`
-            Name of the variable to add to the CDFWriter.
+        measure_name: `str`
+            Name of the measurement or column to add.
+        
+        measure_data: `Quantity` array
+            The data to add.
+        
+        measure_meta: `dict`
+            The metadata associated with the measurement.
 
-        var_data: `Quantity`
-                the data added to the internal `TimeSeries` with the `var_name` as the
-                column name and `var_attrs` as the column metadata. Data contained in the
-                `Quantity.info` member is combined with the `var_attrs` to add additional
-                attributes or update and override existing attributes.
-
-        var_attrs: `dict`
-            A collection of `(key,value)` pairs to add as attributes of the CDF varaible.
-
+        Raises
+        ------
+            TypeError: If var_data is not of type Quantity.
         """
         # Verify that all columns are `Quantity`
-        if (not isinstance(var_data, u.Quantity)) or (not var_data.unit):
+        if (not isinstance(measure_data, u.Quantity)) or (not measure_data.unit):
             raise TypeError(
-                f"Column {var_name} must be type `astropy.units.Quantity` and have `unit` assigned."
+                f"Column {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
             )
 
-        self.data[var_name] = var_data
-        # Add any Metadata from the original TimeSeries
-        self.data[var_name].meta = OrderedDict()
-        if hasattr(var_data, "meta"):
-            self.data[var_name].meta.update(var_attrs)
+        self.data[measure_name] = measure_data
+        # Add any Metadata from the original Quantity
+        self.data[measure_name].meta = OrderedDict()
+        if hasattr(measure_data, "meta"):
+            self.data[measure_name].meta.update(measure_data.meta)
+        self.data[measure_name].meta.update(measure_meta)
+
+    def remove_measurement(self, measure_name):
+        """
+        Remove a measuremt or column.
+        """
+        self.data.remove_column(measure_name)
 
     def append(self, data):
         """
@@ -350,12 +386,12 @@ class TimeData:
         return self.handler.save_data(data=self, file_path=output_path)
 
     @classmethod
-    def load(cls, filename, handler):
+    def load(cls, file_path, handler):
         """
         Load science data from a file using the specified handler.
 
         Parameters:
-            filename (str): The name of the file to load the data from.
+            file_path (str): A fully specificed file path.
             handler (TimeDataIOHandler): The handler for input/output operations.
 
         Returns:
@@ -367,5 +403,5 @@ class TimeData:
         """
         if not isinstance(handler, TimeDataIOHandler):
             raise ValueError("Handler must be an instance of TimeDataIOHandler")
-        data = handler.load_data(filename)
+        data = handler.load_data(file_path)
         return cls(data, handler)
