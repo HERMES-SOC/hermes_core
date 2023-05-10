@@ -14,6 +14,65 @@ __all__ = [
     "TimeData", "CDFMeta"
 ]
 
+def read(filepath):
+    """
+    A generic file reader.
+
+    Parameters
+    ----------
+    filepath : `str`
+        A fully specificed file path.
+
+    Returns
+    -------
+        result : TimeData
+    """
+    # Determine the file type
+    file_extension = Path(filepath).suffix
+
+    # Create the appropriate handler object based on file type
+    if file_extension == ".cdf":
+        handler = CDFHandler()
+    elif file_extension == ".nc":
+        handler = NetCDFHandler()
+    elif file_extension == ".fits":
+        handler = FITSHandler()
+    else:
+        raise ValueError(f"Unsupported file type: {file_extension}")
+
+    # Load data using the handler and return a TimeData object
+    return TimeData.load(filepath, handler=handler)
+
+
+def validate(filepath):
+    """
+    Validate a data file such as a CDF.
+
+    Parameters
+    ----------
+    filepath : `str`
+        A fully specificed file path.
+
+    Returns
+    -------
+        result
+    """
+    # Determine the file type
+    file_extension = Path(filepath).suffix
+
+    # Create the appropriate validator object based on file type
+    if file_extension == ".cdf":
+        validator = CDFValidator()
+    elif file_extension == ".nc":
+        validator = NetCDFValidator()
+    elif file_extension == ".fits":
+        validator = FITSValidator()
+    else:
+        raise ValueError(f"Unsupported file type: {file_extension}")
+
+    # Call the validate method of the validator object
+    return validator.validate(filepath)
+
 
 class TimeData:
     """
@@ -29,6 +88,8 @@ class TimeData:
     units : `dict`, optional
         A mapping from column names in ``data`` to the physical units of that column.
         Defaults to `None`.
+    handler (TimeDataIOHandler, optional): The handler for input/output operations. Defaults to None.
+
 
     Attributes
     ----------
@@ -48,7 +109,7 @@ class TimeData:
 
     """
 
-    def __init__(self, data, meta=None, **kwargs):
+    def __init__(self, data, meta=None, handler=None, **kwargs):
         """
         Initialize a TimeData object.
 
@@ -63,19 +124,22 @@ class TimeData:
         ValueError: If the number of columns is less than 2 or the required 'time' column is missing,
         TypeError: If any column, excluding 'time', is not an astropy.Quantity object with units.
         """
-        if isinstance(data, TimeSeries):
-            if len(data.columns) < 2:
-                raise ValueError("Data must have at least 2 columns, one for time and one for the measurement")
-            if "time" not in data.columns:
-                raise ValueError("Data must have a 'time' column")
-            self._data = TimeSeries(data, copy=True)
-        else:
-            raise ValueError("Invalid data type. Must be a TimeSeries or Table object.")
+        # Verify TimeSeries compliance
+        if not isinstance(data, TimeSeries):
+            raise TypeError("Data must be a TimeSeries object.")
+        if len(data.columns) < 2:
+            raise ValueError("Science data must have at least 2 columns")
+        if "time" not in data.columns:
+            raise ValueError("Science data must have a 'time' column")
 
-        for colname in self._data.columns:
-            if colname != "time" and not isinstance(self._data[colname], u.Quantity):
+        # Check individual Columns
+        for colname in data.columns:
+            if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
 
+        # Copy the TimeSeries
+        self._data = TimeSeries(data, copy=True)
+        
         # Add any Metadata from the original TimeSeries
         self._data.time.meta = OrderedDict()
         if hasattr(data["time"], "meta"):
@@ -85,6 +149,22 @@ class TimeData:
                 self._data[col].meta = OrderedDict()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
+        
+        # Add any Metadata from the original TimeSeries
+        self.data.time.meta = OrderedDict()
+        if hasattr(data["time"], "meta"):
+            self.data.time.meta.update(data["time"].meta)
+        self.data.time.meta.update(meta["time"])
+
+        # Add Measurement Metadata
+        for col in self.data.columns:
+            if col != "time":
+                self.data[col].meta = OrderedDict()
+                if hasattr(data[col], "meta"):
+                    self.data[col].meta.update(data[col].meta)
+                self.data[col].meta.update(meta[col])
+
+        self.handler = handler
         
         # Derive and add CDF metadata
         # the following is going to potentially overwrite metadata
@@ -112,6 +192,7 @@ class TimeData:
         """
         return self._data.meta
 
+
     @meta.setter
     def meta(self, value):
         """
@@ -122,6 +203,34 @@ class TimeData:
         """
         self._data.meta = value
 
+
+    @property
+    def handler(self):
+        """
+        The handler for input/output operations.
+
+        Returns:
+            TimeDataIOHandler: The handler for input/output operations.
+
+        """
+        return self._handler
+
+    @handler.setter
+    def handler(self, value):
+        """
+        Set the handler for input/output operations.
+
+        Parameters:
+            value (TimeDataIOHandler): The handler to set.
+
+        Raises:
+            ValueError: If the handler is not an instance of TimeDataIOHandler.
+
+        """
+        if value is not None and not isinstance(value, TimeDataIOHandler):
+            raise ValueError("Handler must be an instance of TimeDataIOHandler")
+        self._handler = value
+
     @property
     def units(self):
         """
@@ -130,6 +239,7 @@ class TimeData:
         units = {}
         for name in self._data.columns:
             var_data = self._data[name]
+
             # Get the Unit
             if hasattr(var_data, "unit"):
                 unit = var_data.unit
@@ -167,6 +277,7 @@ class TimeData:
         else:
             nrows = 0
         ncols = len(self._data.columns)
+
         return (nrows, ncols)
 
     def __repr__(self):
@@ -191,6 +302,7 @@ class TimeData:
         for col_name in self._data.columns:
             str_repr += f"\tVar: {col_name}\n"
             # for attr_name, attr_value in self._data[col_name].meta.items():
+
             #     str_repr += f"\t\t{attr_name}: {attr_value}\n"
         return str_repr
 
@@ -213,6 +325,7 @@ class TimeData:
     def __setitem__(self, name, data, meta):
         """
         Function to add a new measurement.
+
         """
         # Set the Data for the named variable
         self.add_measurement(measure_name=name, measure_data=data, measure_meta={})
@@ -229,6 +342,7 @@ class TimeData:
         """
         for name in self._data.columns:
             var_data = self._data[name]
+
             yield (name, var_data)
 
     def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):
@@ -249,16 +363,20 @@ class TimeData:
         Raises
         ------
         TypeError: If var_data is not of type Quantity.
+
         """
         # Verify that all columns are `Quantity`
         if (not isinstance(measure_data, u.Quantity)) or (not measure_data.unit):
             raise TypeError(
-                f"var_data must be type `astropy.units.Quantity` and have `unit` assigned."
+                f"Column {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
             )
 
-        self._data[measure_name] = measure_data
-        self._data[measure_name].meta = OrderedDict()
-        self._data[measure_name].meta.update(measure_meta)
+        self.data[measure_name] = measure_data
+        # Add any Metadata from the original Quantity
+        self.data[measure_name].meta = OrderedDict()
+        if hasattr(measure_data, "meta"):
+            self.data[measure_name].meta.update(measure_data.meta)
+        self.data[measure_name].meta.update(measure_meta)
 
     def remove_measurement(self, measure_name):
         """
@@ -353,6 +471,82 @@ class TimeData:
             Fully specificied filepath of the output file.
         """
         pass
+      
+    def append(self, data):
+        """
+        Function to add TimeSeries data to the end of the current data containers TimeSeries table.
+
+        Parameters:
+            data (TimeSeries): The science data appended as a TimeSeries object.
+        """
+        # Verify TimeSeries compliance
+        if not isinstance(data, TimeSeries):
+            raise TypeError("Data must be a TimeSeries object.")
+        if len(data.columns) < 2:
+            raise ValueError("Science data must have at least 2 columns")
+        if "time" not in data.columns:
+            raise ValueError("Science data must have a 'time' column")
+        if len(self.data.columns) != len(data.columns):
+            raise ValueError(
+                (
+                    f"Shape of curent TimeSeries ({self.shape}) does not match",
+                    "shape of data to add ({len(data.columns)}).",
+                )
+            )
+
+        # Check individual Columns
+        for colname in self.data.columns:
+            if colname != "time" and not isinstance(self.data[colname], u.Quantity):
+                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+
+        # Save Metadata since it is not carried over with vstack
+        metadata_holder = {col: self.data[col].meta for col in self.columns}
+
+        # Vertically Stack the TimeSeries
+        self.data = vstack([self.data, data])
+
+        # Add Metadata back to the Stacked TimeSeries
+        for col in self.columns:
+            self.data[col].meta = metadata_holder[col]
+
+    def save(self, output_path):
+        """
+        Save the science data to a file using the specified handler.
+
+        Parameters:
+            output_path (str): A string path to the directory where file is to be saved.
+
+        Returns:
+            str: A path to the saved file.
+
+        Raises:
+            ValueError: If no handler is specified for saving data.
+
+        """
+        if self.handler is None:
+            raise ValueError("No handler specified for saving data")
+        return self.handler.save_data(data=self, file_path=output_path)
+
+    @classmethod
+    def load(cls, file_path, handler):
+        """
+        Load science data from a file using the specified handler.
+
+        Parameters:
+            file_path (str): A fully specificed file path.
+            handler (TimeDataIOHandler): The handler for input/output operations.
+
+        Returns:
+            TimeData: A TimeData object containing the loaded data.
+
+        Raises:
+            ValueError: If the handler is not an instance of TimeDataIOHandler.
+
+        """
+        if not isinstance(handler, TimeDataIOHandler):
+            raise ValueError("Handler must be an instance of TimeDataIOHandler")
+        data = handler.load_data(file_path)
+        return cls(data, handler)
 
 
 def CDFMeta():

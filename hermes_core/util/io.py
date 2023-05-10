@@ -23,67 +23,7 @@ from hermes_core.timedata import TimeData
 # ================================================================================================
 
 
-def read(filepath):
-    """
-    A generic file reader.
-
-    Parameters
-    ----------
-    filepath : `str`
-        A fully specificed file path.
-
-    Returns
-    -------
-    result : TimeData
-    """
-    # Determine the file type
-    file_extension = Path(filepath).suffix
-
-    # Create the appropriate handler object based on file type
-    if file_extension == ".cdf":
-        handler = CDFHandler()
-    elif file_extension == ".nc":
-        handler = NetCDFHandler()
-    elif file_extension == ".fits":
-        handler = FITSHandler()
-    else:
-        raise ValueError(f"Unsupported file type: {file_extension}")
-
-    # Load data using the handler and return a ScienceData object
-    return handler.read(filepath)
-
-
-def validate(filepath):
-    """
-    Validate a data file such as a CDF.
-
-    Parameters
-    ----------
-    filepath : `str`
-        A fully specificed file path.
-
-    Returns
-    -------
-    result
-    """
-    # Determine the file type
-    file_extension = Path(filepath).suffix
-
-    # Create the appropriate validator object based on file type
-    if file_extension == ".cdf":
-        validator = CDFValidator()
-    elif file_extension == ".nc":
-        validator = NetCDFValidator()
-    elif file_extension == ".fits":
-        validator = FITSValidator()
-    else:
-        raise ValueError(f"Unsupported file type: {file_extension}")
-
-    # Call the validate method of the validator object
-    return validator.validate(filepath)
-
-
-class ScienceDataIOHandler(ABC):
+class TimeDataIOHandler(ABC):
     """
     Abstract base class for handling input/output operations of heliophysics data.
     """
@@ -125,9 +65,9 @@ class ScienceDataIOHandler(ABC):
 # ================================================================================================
 
 
-class CDFHandler(ScienceDataIOHandler):
+class CDFHandler(TimeDataIOHandler):
     """
-    A concrete implementation of ScienceDataIOHandler for handling heliophysics data in CDF format.
+    A concrete implementation of TimeDataIOHandler for handling heliophysics data in CDF format.
 
     This class provides methods to load and save heliophysics data from/to a CDF file.
     """
@@ -201,7 +141,7 @@ class CDFHandler(ScienceDataIOHandler):
         Save heliophysics data to a CDF file.
 
         Parameters:
-            data (ScienceData): An instance of ScienceData containing the data to be saved.
+            data (TimeData): An instance of TimeData containing the data to be saved.
             file_path (str): The path to save the CDF file.
 
         Returns:
@@ -212,7 +152,7 @@ class CDFHandler(ScienceDataIOHandler):
         self._update_default_attributes(data)
 
         # Derive any Global Attributes
-        self.derive_attributes(data)
+        self._derive_attributes(data)
 
         # Initialize a new CDF
         cdf_filename = f"{data.meta['Logical_file_id']}.cdf"
@@ -258,7 +198,7 @@ class CDFHandler(ScienceDataIOHandler):
                 for var_attr_name, var_attr_val in var_data.meta.items():
                     cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
-    def derive_attributes(self, data):
+    def _derive_attributes(self, data):
         """Function to derive global attributes"""
         # Loop through Global Attributes
         for attr_name, attr_schema in self.schema.global_attribute_schema.items():
@@ -924,9 +864,9 @@ class CDFHandler(ScienceDataIOHandler):
 # ================================================================================================
 
 
-class NetCDFHandler(ScienceDataIOHandler):
+class NetCDFHandler(TimeDataIOHandler):
     """
-    A concrete implementation of ScienceDataIOHandler for handling heliophysics data in NetCDF format.
+    A concrete implementation of TimeDataIOHandler for handling heliophysics data in NetCDF format.
 
     This class provides methods to load and save heliophysics data from/to a NetCDF file.
     """
@@ -948,15 +888,15 @@ class NetCDFHandler(ScienceDataIOHandler):
         Save heliophysics data to a NetCDF file.
 
         Parameters:
-            data (ScienceData): An instance of ScienceData containing the data to be saved.
+            data (TimeData): An instance of TimeData containing the data to be saved.
             file_path (str): The path to save the NetCDF file.
         """
         pass
 
 
-class FITSHandler(ScienceDataIOHandler):
+class FITSHandler(TimeDataIOHandler):
     """
-    A concrete implementation of ScienceDataIOHandler for handling heliophysics data in FITS format.
+    A concrete implementation of TimeDataIOHandler for handling heliophysics data in FITS format.
 
     This class provides methods to load and save heliophysics data from/to a FITS file.
     """
@@ -978,7 +918,7 @@ class FITSHandler(ScienceDataIOHandler):
         Save heliophysics data to a FITS file.
 
         Parameters:
-            data (ScienceData): An instance of ScienceData containing the data to be saved.
+            data (TimeData): An instance of TimeData containing the data to be saved.
             file_path (str): The path to save the FITS file.
         """
         pass
