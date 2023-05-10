@@ -122,16 +122,22 @@ def parse_science_filename(filepath):
             raise ValueError(
                 f"File {filename} not recognized. Not a valid target name."
             )
-        if filename_components[2] != VALID_DATA_LEVELS[0]:
+
+        offset = 1 if len(filename_components) > 5 else 0
+
+        if offset:
+            result["mode"] = filename_components[2]
+
+        if filename_components[2 + offset] != VALID_DATA_LEVELS[0]:
             raise ValueError(
-                f"Data level {filename_components[2]} is not correct for this file extension."
+                f"Data level {filename_components[2 + offset]} is not correct for this file extension."
             )
         else:
-            result["level"] = filename_components[2]
+            result["level"] = filename_components[2 + offset]
         #  reverse the dictionary to look up instrument name from the short name
         from_shortname = {v: k for k, v in hermes_core.INST_TO_TARGETNAME.items()}
 
-        result["time"] = Time.strptime(filename_components[3], TIME_FORMAT_L0)
+        result["time"] = Time.strptime(filename_components[3 + offset], TIME_FORMAT_L0)
 
     elif file_ext == ".cdf":
         if filename_components[1] not in hermes_core.INST_SHORTNAMES:
