@@ -16,7 +16,7 @@ from astropy.time import Time
 from astropy.units import Quantity
 
 import hermes_core
-from hermes_core.util.timedata import read, validate, TimeData
+from hermes_core.timedata import read, validate, TimeData
 from hermes_core.util.io import CDFHandler
 
 
