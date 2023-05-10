@@ -5,10 +5,10 @@ Data Container class for Heliophysics Science Data.
 import os
 from typing import OrderedDict
 from astropy.timeseries import TimeSeries
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy import units as u
 from hermes_core.util.validation import CDFValidator, NetCDFValidator, FITSValidator
-from hermes_core.util.io import ScienceDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
+from hermes_core.util.io import TimeDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
 
 
 def read(filename):
@@ -25,8 +25,8 @@ def read(filename):
     else:
         raise ValueError(f"Unsupported file type: {file_extension}")
 
-    # Load data using the handler and return a ScienceData object
-    return ScienceData.load(filename, handler=handler)
+    # Load data using the handler and return a TimeData object
+    return TimeData.load(filename, handler=handler)
 
 
 def validate(filename):
@@ -47,51 +47,48 @@ def validate(filename):
     return validator.validate(filename)
 
 
-class ScienceData:
+class TimeData:
     """
     A class for storing and manipulating science data.
 
     Parameters:
         data (TimeSeries): The science data stored as a TimeSeries object.
-        handler (ScienceDataIOHandler, optional): The handler for input/output operations. Defaults to None.
+        handler (TimeDataIOHandler, optional): The handler for input/output operations. Defaults to None.
 
     Attributes:
         meta (dict): Metadata associated with the science data.
-        handler (ScienceDataIOHandler): The handler for input/output operations.
+        handler (TimeDataIOHandler): The handler for input/output operations.
 
     """
 
     def __init__(self, data, handler=None):
         """
-        Initialize a ScienceData object.
+        Initialize a TimeData object.
 
         Parameters:
             data (TimeSeries): The science data stored as a TimeSeries object.
-            handler (ScienceDataIOHandler, optional): The handler for input/output operations. Defaults to None.
+            handler (TimeDataIOHandler, optional): The handler for input/output operations. Defaults to None.
 
         Raises:
             ValueError: If the number of columns is less than 2, the required 'time' column is missing,
                         or any column, excluding 'time', is not an astropy.Quantity object with units.
 
         """
-        if isinstance(data, TimeSeries):
-            if len(data.columns) < 2:
-                raise ValueError("Science data must have at least 2 columns")
-            if "time" not in data.columns:
-                raise ValueError("Science data must have a 'time' column")
-            self.data = TimeSeries(data, copy=True)
-        elif isinstance(data, Table):
-            if len(data.columns) < 2:
-                raise ValueError("Science data must have at least 2 columns")
-            if "time" not in data.columns:
-                raise ValueError("Science data must have a 'time' column")
-            self.data = TimeSeries(data, time_column="time", copy=True)
-        else:
-            raise ValueError("Invalid data type. Must be a TimeSeries or Table object.")
+        # Verify TimeSeries compliance
+        if not isinstance(data, TimeSeries):
+            raise TypeError("Data must be a TimeSeries object.")
+        if len(data.columns) < 2:
+            raise ValueError("Science data must have at least 2 columns")
+        if "time" not in data.columns:
+            raise ValueError("Science data must have a 'time' column")
 
-        for colname in self.data.columns:
-            if colname != "time" and not isinstance(self.data[colname], u.Quantity):
+        # Check individual Columns
+        for colname in data.columns:
+            if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+
+        # Copy the TimeSeries
+        self.data = TimeSeries(data, copy=True)
 
         # Add any Metadata from the original TimeSeries
         self.data.time.meta = OrderedDict()
@@ -133,7 +130,7 @@ class ScienceData:
         The handler for input/output operations.
 
         Returns:
-            ScienceDataIOHandler: The handler for input/output operations.
+            TimeDataIOHandler: The handler for input/output operations.
 
         """
         return self._handler
@@ -144,14 +141,14 @@ class ScienceData:
         Set the handler for input/output operations.
 
         Parameters:
-            value (ScienceDataIOHandler): The handler to set.
+            value (TimeDataIOHandler): The handler to set.
 
         Raises:
-            ValueError: If the handler is not an instance of ScienceDataIOHandler.
+            ValueError: If the handler is not an instance of TimeDataIOHandler.
 
         """
-        if value is not None and not isinstance(value, ScienceDataIOHandler):
-            raise ValueError("Handler must be an instance of ScienceDataIOHandler")
+        if value is not None and not isinstance(value, TimeDataIOHandler):
+            raise ValueError("Handler must be an instance of TimeDataIOHandler")
         self._handler = value
 
     @property
@@ -211,7 +208,7 @@ class ScienceData:
         """
         Returns a string representation of the CDFWriter class.
         """
-        str_repr = f"ScienceData() Object:\n"
+        str_repr = f"TimeData() Object:\n"
         # Global Attributes/Metedata
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self.data.meta.items():
@@ -265,10 +262,10 @@ class ScienceData:
 
     def _add_variable(self, var_name: str, var_data: u.Quantity, var_attrs: dict):
         """
-        Function to add variable data to the ScienceData class. Variable data here is assumed
-        to be array-like or matrix-like to be stored in the ScienceData. Additionally, varaible
+        Function to add variable data to the TimeData class. Variable data here is assumed
+        to be array-like or matrix-like to be stored in the TimeData. Additionally, varaible
         attributes can be added though a native python `dict` of `(key, value)` pairs that
-        are added to the ScienceData variable.
+        are added to the TimeData variable.
 
         Parameters
         ----------
@@ -297,6 +294,43 @@ class ScienceData:
         if hasattr(var_data, "meta"):
             self.data[var_name].meta.update(var_attrs)
 
+    def append(self, data):
+        """
+        Function to add TimeSeries data to the end of the current data containers TimeSeries table.
+
+        Parameters:
+            data (TimeSeries): The science data appended as a TimeSeries object.
+        """
+        # Verify TimeSeries compliance
+        if not isinstance(data, TimeSeries):
+            raise TypeError("Data must be a TimeSeries object.")
+        if len(data.columns) < 2:
+            raise ValueError("Science data must have at least 2 columns")
+        if "time" not in data.columns:
+            raise ValueError("Science data must have a 'time' column")
+        if len(self.data.columns) != len(data.columns):
+            raise ValueError(
+                (
+                    f"Shape of curent TimeSeries ({self.shape}) does not match",
+                    "shape of data to add ({len(data.columns)}).",
+                )
+            )
+
+        # Check individual Columns
+        for colname in self.data.columns:
+            if colname != "time" and not isinstance(self.data[colname], u.Quantity):
+                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+
+        # Save Metadata since it is not carried over with vstack
+        metadata_holder = {col: self.data[col].meta for col in self.columns}
+
+        # Vertically Stack the TimeSeries
+        self.data = vstack([self.data, data])
+
+        # Add Metadata back to the Stacked TimeSeries
+        for col in self.columns:
+            self.data[col].meta = metadata_holder[col]
+
     def save(self, output_path):
         """
         Save the science data to a file using the specified handler.
@@ -322,16 +356,16 @@ class ScienceData:
 
         Parameters:
             filename (str): The name of the file to load the data from.
-            handler (ScienceDataIOHandler): The handler for input/output operations.
+            handler (TimeDataIOHandler): The handler for input/output operations.
 
         Returns:
-            ScienceData: A ScienceData object containing the loaded data.
+            TimeData: A TimeData object containing the loaded data.
 
         Raises:
-            ValueError: If the handler is not an instance of ScienceDataIOHandler.
+            ValueError: If the handler is not an instance of TimeDataIOHandler.
 
         """
-        if not isinstance(handler, ScienceDataIOHandler):
-            raise ValueError("Handler must be an instance of ScienceDataIOHandler")
+        if not isinstance(handler, TimeDataIOHandler):
+            raise ValueError("Handler must be an instance of TimeDataIOHandler")
         data = handler.load_data(filename)
         return cls(data, handler)

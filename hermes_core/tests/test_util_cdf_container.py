@@ -16,7 +16,7 @@ from astropy.time import Time
 from astropy.units import Quantity
 
 import hermes_core
-from hermes_core.util.container import read, validate, ScienceData
+from hermes_core.util.timedata import read, validate, TimeData
 from hermes_core.util.io import CDFHandler
 
 
@@ -60,19 +60,19 @@ def get_test_timeseries():
 
 def test_science_data_empty_ts():
     with pytest.raises(ValueError):
-        _ = ScienceData(data=TimeSeries())
+        _ = TimeData(data=TimeSeries())
 
 
 def test_science_data_bad_ts():
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
-        _ = ScienceData(data=ts)
+        _ = TimeData(data=ts)
 
 
 def test_science_data_no_handler():
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts)
+    test_data = TimeData(ts)
 
     assert isinstance(test_data.data, TimeSeries)
     assert isinstance(test_data.meta, OrderedDict)
@@ -102,7 +102,7 @@ def test_science_data_no_handler():
 def test_science_data_default():
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts, handler=CDFHandler())
+    test_data = TimeData(ts, handler=CDFHandler())
 
     assert isinstance(test_data.data, TimeSeries)
     assert isinstance(test_data.meta, OrderedDict)
@@ -143,7 +143,7 @@ def test_science_data_valid_attrs():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts, handler=CDFHandler())
+    test_data = TimeData(ts, handler=CDFHandler())
 
     # Add Custom Data to the Wrapper
     test_data.meta.update(input_attrs)
@@ -174,7 +174,7 @@ def test_science_data_single_variable():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts, handler=CDFHandler())
+    test_data = TimeData(ts, handler=CDFHandler())
 
     # Add Custom Data to the Wrapper
     test_data.meta.update(input_attrs)
@@ -238,7 +238,7 @@ def test_science_data_generate_valid_cdf():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts, handler=CDFHandler())
+    test_data = TimeData(ts, handler=CDFHandler())
 
     # Add Custom Data to the Wrapper
     test_data.meta.update(input_attrs)
@@ -349,7 +349,7 @@ def test_science_data_from_cdf():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = ScienceData(ts, handler=CDFHandler())
+    test_data = TimeData(ts, handler=CDFHandler())
 
     # Add Custom Data to the Wrapper
     test_data.meta.update(input_attrs)
