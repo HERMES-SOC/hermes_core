@@ -2,17 +2,18 @@
 Container class for Measurement Data.
 """
 
-import os
+from pathlib import Path
 from typing import OrderedDict
+import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
+from astropy.table import vstack
 from astropy import units as u
 from hermes_core.util.validation import CDFValidator, NetCDFValidator, FITSValidator
-from hermes_core.util.io import ScienceDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
+from hermes_core.util.io import TimeDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
 
-__all__ = [
-    "TimeData", "CDFMeta"
-]
+__all__ = ["TimeData", "CDFMeta"]
+
 
 def read(filepath):
     """
@@ -101,7 +102,7 @@ class TimeData:
     Examples
     --------
     >>> from hermes_core.timedata import TimeData
-    >>> 
+    >>>
 
     References
     ----------
@@ -121,7 +122,7 @@ class TimeData:
 
         Raises
         ------
-        ValueError: If the number of columns is less than 2 or the required 'time' column is missing,
+        ValueError: If the number of columns is less than 2 or the required 'time' column is missing.
         TypeError: If any column, excluding 'time', is not an astropy.Quantity object with units.
         """
         # Verify TimeSeries compliance
@@ -139,7 +140,7 @@ class TimeData:
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
-        
+
         # Add any Metadata from the original TimeSeries
         self._data.time.meta = OrderedDict()
         if hasattr(data["time"], "meta"):
@@ -149,7 +150,7 @@ class TimeData:
                 self._data[col].meta = OrderedDict()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
-        
+
         # Add any Metadata from the original TimeSeries
         self.data.time.meta = OrderedDict()
         if hasattr(data["time"], "meta"):
@@ -165,14 +166,13 @@ class TimeData:
                 self.data[col].meta.update(meta[col])
 
         self.handler = handler
-        
+
         # Derive and add CDF metadata
         # the following is going to potentially overwrite metadata
         # we should just warn and just do it
         self._data.time.meta = CDFMeta.derive_time_attributes(self._data.time)
         for col in self._data.columns:
             self._data[col].meta.update(CDFMeta.derive_variable_attributes(self._data[col]))
-
 
     @property
     def data(self):
@@ -192,7 +192,6 @@ class TimeData:
         """
         return self._data.meta
 
-
     @meta.setter
     def meta(self, value):
         """
@@ -202,7 +201,6 @@ class TimeData:
             value (dict): The metadata to set.
         """
         self._data.meta = value
-
 
     @property
     def handler(self):
@@ -264,7 +262,7 @@ class TimeData:
         """
         t = Time(self._data.index)
         # Set time format to enable plotting with astropy.visualisation.time_support()
-        t.format = 'iso'
+        t.format = "iso"
         return t
 
     @property
@@ -290,7 +288,7 @@ class TimeData:
         """
         Returns a string representation of the CDFWriter class.
         """
-        str_repr = f"ScienceData() Object:\n"
+        str_repr = f"TimeData() Object:\n"
         # Global Attributes/Metedata
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self._data.meta.items():
@@ -322,7 +320,7 @@ class TimeData:
         var_data = self._data[name]
         return var_data
 
-    def __setitem__(self, name, data, meta):
+    def __setitem__(self, name, data):
         """
         Function to add a new measurement.
 
@@ -359,7 +357,7 @@ class TimeData:
 
         measure_meta: `dict`
             The metadata associated with the measurement.
-        
+
         Raises
         ------
         TypeError: If var_data is not of type Quantity.
@@ -443,6 +441,7 @@ class TimeData:
         """
         # code from SunPy
         import matplotlib.dates as mdates
+
         if isinstance(ax, np.ndarray):
             ax = ax[-1]
 
@@ -460,7 +459,6 @@ class TimeData:
         """
         return (self._data.index.min(), self._data.index.max())
 
-
     def to_cdf(self, filepath):
         """
         Write the data to a CDF.
@@ -471,7 +469,7 @@ class TimeData:
             Fully specificied filepath of the output file.
         """
         pass
-      
+
     def append(self, data):
         """
         Function to add TimeSeries data to the end of the current data containers TimeSeries table.
@@ -587,13 +585,13 @@ def CDFMeta():
         meta["UNITS"] = self._get_units(column)
         meta["VALIDMIN"] = self._get_validmin(column)
         meta["VALIDMAX"] = self._get_validmax(column)
-        
+
         return meta
 
     def derive_time_attributes(time_column):
         """
         Given a TimeSeries time column, derive CDF time variable attributes
-        
+
         Returns
         -------
         meta :  `dict`
