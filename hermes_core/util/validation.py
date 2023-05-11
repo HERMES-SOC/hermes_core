@@ -1,7 +1,38 @@
+from pathlib import Path
 from abc import ABC, abstractmethod
 from spacepy.pycdf import CDF
 from spacepy.pycdf.istp import FileChecks
 from hermes_core.util.schema import CDFSchema
+
+
+def validate(filepath):
+    """
+    Validate a data file such as a CDF.
+
+    Parameters
+    ----------
+    filepath : `str`
+        A fully specificed file path.
+
+    Returns
+    -------
+        result
+    """
+    # Determine the file type
+    file_extension = Path(filepath).suffix
+
+    # Create the appropriate validator object based on file type
+    if file_extension == ".cdf":
+        validator = CDFValidator()
+    elif file_extension == ".nc":
+        validator = NetCDFValidator()
+    elif file_extension == ".fits":
+        validator = FITSValidator()
+    else:
+        raise ValueError(f"Unsupported file type: {file_extension}")
+
+    # Call the validate method of the validator object
+    return validator.validate(filepath)
 
 
 class ScienceDataValidator(ABC):
