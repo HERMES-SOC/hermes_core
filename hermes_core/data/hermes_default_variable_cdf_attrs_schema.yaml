@@ -14,29 +14,41 @@
 attribute_key:
   # ===== EPOCH-ONLY VARIABLE ATTRIBUTES =====
   TIME_BASE:
+    derived: true
     required: true    # NOT Required in ISTP Guide
   RESOLUTION:
+    derived: true
     required: true    # NOT Required in ISTP Guide
   TIME_SCALE:
+    derived: true
     required: true    # NOT Required in ISTP Guide
   REFERENCE_POSITION:
+    derived: true
     required: true    # NOT Required in ISTP Guide
   LEAP_SECONDS_INCLUDED:
+    derived: false
     required: false   # NOT Required in ISTP Guide
   ABSOLUTE_ERROR:
+    derived: false
     required: false   # NOT Required in ISTP Guide
   RELATIVE_ERROR:
+    derived: false
     required: false   # NOT Required in ISTP Guide
   BIN_LOCATION:
+    derived: false
     required: false   # NOT Required in ISTP Guide
   # ===== DATA VARIABLE ATTRIBUTES =====
   CATDESC:
+    derived: false
     required: true
   DEPEND_0:
+    derived: true
     required: true
   DEPEND_i:         # For i'th dimensional data variables
-    required: true
+    derived: false
+    required: false
   DISPLAY_TYPE:
+    derived: false
     required: true
     valid_values:
       time_series
@@ -44,30 +56,42 @@ attribute_key:
       stack_plot
       image
   FIELDNAM:
+    derived: true
     required: true
   FILLVAL:
+    derived: true
     required: true
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
+    derived: true
     required: true
   FORM_PTR:
-    required: true
+    derived: false
+    required: false
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
+    derived: false
     required: true
   LABL_PTR_i:
-    required: true
+    derived: false
+    required: false
   SI_CONVERSION:
+    derived: true
     required: true  # NOT Required in ISTP Guide
     check:
       conditional_si_units: null
   UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
+    derived: true
     required: true
   UNIT_PTR:
-    required: true
+    derived: false
+    required: false
   VALIDMIN:
+    derived: true
     required: true
   VALIDMAX:
+    derived: true
     required: true
   VAR_TYPE:
+    derived: false
     required: true
     valid_values:
         data
@@ -75,12 +99,16 @@ attribute_key:
         metadata
         ignore_data
   COORDINATE_SYSTEM:
+    derived: false
     required: false   # NOT Required in HERMES Format Guide
   TENSOR_ORDER:
+    derived: false
     required: false   # NOT Required in HERMES Format Guide
   REPRESENTATION_i:
+    derived: false
     required: false   # NOT Required in HERMES Format Guide
   OPERATOR_TYPE:
+    derived: false
     required: false   # NOT Required in HERMES Format Guide
 time_series:
   - TIME_BASE
