@@ -11,13 +11,14 @@ from astropy.table import vstack
 from astropy import units as u
 from hermes_core.util.io import CDFHandler, NetCDFHandler, FITSHandler
 from hermes_core.util.schema import CDFSchema
+from hermes_core.util.exceptions import warn_user
 
 __all__ = ["TimeData"]
 
 
 class TimeData:
     """
-    A generic object for loading, storing, and manipulating time series data for cdf files.
+    A generic object for loading, storing, and manipulating time series data for CDF files.
 
     Parameters
     ----------
@@ -29,10 +30,20 @@ class TimeData:
 
     Attributes
     ----------
+    data :
+        A represntation of the undlerlying `astropy.timeseries.TimeSeries` object.
     meta : `dict`
         Metadata associated with the measurement data.
     units : `dict`
         A mapping from column names in ``data`` to the physical units of that measurement.
+    columns : `lsit`
+        A list of all the names of the columns in the data table.
+    time : `astropy.time.Time`
+        The times of the measurements.
+    time_range : `tuple`
+        The start and end times of the time axis.
+    shape: `tuple`
+        The shape of the data, a `tuple` `(nrows, ncols)`
 
     Examples
     --------
@@ -76,11 +87,6 @@ class TimeData:
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
 
-        # CDF Metadata and Validation Schema
-        self._schema = CDFSchema()
-
-        # Get Default Metadata
-        self._data.meta.update(self._schema.default_global_attributes)
         # Add Input Metadata
         if meta is not None and isinstance(meta, dict):
             self._data.meta.update(meta)
@@ -97,16 +103,8 @@ class TimeData:
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
 
-        # the following is going to potentially overwrite m0etadata
-        # we should just warn and just do it
-        # Global Attributes
-        self._data.meta.update(self._schema.derive_global_attributes(self._data))
-        # Time Measurement Attributes
-        self._data["time"].meta.update(self._schema.derive_time_attributes(self._data))
-        # Other Measurement Attributes
-        for col in self._data.columns:
-            if col != "time":
-                self._data[col].meta.update(self._schema.derive_measurement_attributes(data, col))
+        # Derive Metadata
+        self._derive_metadata()
 
     @property
     def data(self):
@@ -260,6 +258,58 @@ class TimeData:
         """
         return CDFSchema.measurement_attribute_template()
 
+    def _derive_metadata(self):
+        """
+        Funtion to derive global and measurement metadata based on a CDFSchema.
+        """
+        # CDF Metadata and Validation Schema
+        schema = CDFSchema()
+
+        # the following is going to potentially overwrite m0etadata
+        # we should just warn and just do it
+
+        # Get Default Metadata
+        for attr_name, attr_value in schema.default_global_attributes.items():
+            if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
+                warn_user(
+                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                )
+            self._data.meta[attr_name] = attr_value
+
+        # Global Attributes
+        for attr_name, attr_value in schema.derive_global_attributes(self._data).items():
+            if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
+                warn_user(
+                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                )
+            self._data.meta[attr_name] = attr_value
+
+        # Time Measurement Attributes
+        for attr_name, attr_value in schema.derive_time_attributes(self._data).items():
+            if (
+                attr_name in self._data["time"].meta
+                and self._data["time"].meta[attr_name] != attr_value
+            ):
+                warn_user(
+                    f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
+                )
+            self._data["time"].meta[attr_name] = attr_value
+
+        # Other Measurement Attributes
+        for col in self._data.columns:
+            if col != "time":
+                for attr_name, attr_value in schema.derive_measurement_attributes(
+                    self._data, col
+                ).items():
+                    if (
+                        attr_name in self._data[col].meta
+                        and self._data[col].meta[attr_name] != attr_value
+                    ):
+                        warn_user(
+                            f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
+                        )
+                    self._data[col].meta[attr_name] = attr_value
+
     def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):
         """
         Function to add a new measurement.
@@ -294,9 +344,7 @@ class TimeData:
         self._data[measure_name].meta.update(measure_meta)
 
         # Derive Metadata Attributes for the Measurement
-        self._data[measure_name].meta.update(
-            self._schema.derive_measurement_attributes(self._data, measure_name)
-        )
+        self._derive_metadata()
 
     def remove_measurement(self, measure_name):
         """
@@ -374,17 +422,6 @@ class TimeData:
             # but don't override any formatters pandas might have set
             ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
 
-    def to_cdf(self, filepath):
-        """
-        Write the data to a CDF.
-
-        Parameters
-        ----------
-        filepath : `str`
-            Fully specificied filepath of the output file.
-        """
-        pass
-
     def append(self, data):
         """
         Function to add TimeSeries data to the end of the current data containers TimeSeries table.
@@ -422,6 +459,9 @@ class TimeData:
         for col in self.columns:
             self.data[col].meta = metadata_holder[col]
 
+        # Re-Derive Metadata
+        self._derive_metadata()
+
     def save(self, output_path):
         """
         Save the data to a file using the specified handler.
@@ -446,7 +486,6 @@ class TimeData:
 
         Parameters:
             file_path (str): A fully specificed file path.
-            handler (TimeDataIOHandler): The handler for input/output operations.
 
         Returns:
             TimeData: A TimeData object containing the loaded data.
