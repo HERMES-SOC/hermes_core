@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import OrderedDict
-import yaml
 from copy import deepcopy
 import math
 import datetime
+import yaml
 from astropy import units as u
 import spacepy
-from spacepy.pycdf import CDF, _Hyperslice
+from spacepy.pycdf import _Hyperslice
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util
@@ -113,7 +113,7 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: The metadata associated with the science data.
+            `OrderedDict`: A template for required global attributes that must be provided.
         """
         template = OrderedDict()
         global_attribute_schema = CDFSchema._load_default_global_attr_schema()
@@ -135,7 +135,7 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: The metadata associated with the science data.
+            `OrderedDict`: A template for required variable attributes that must be provided.
         """
         template = OrderedDict()
         measurement_attribute_schema = CDFSchema._load_default_variable_attr_schema()
@@ -144,7 +144,7 @@ class CDFSchema(FileTypeSchema):
                 template[attr_name] = None
         return template
 
-    def derive_variable_attributes(self, data, var_name):
+    def derive_measurement_attributes(self, data, var_name):
         """
         Function to derive metadata for the given measurement.
 
@@ -153,7 +153,7 @@ class CDFSchema(FileTypeSchema):
         data : `hermes_core.timedata.TimeData`
             An instance of `TimeData` to derive metadata from
         var_name : `str`
-            The name of the measurement variable to derive metadata for
+            The name of the measurement to derive metadata for
 
         Returns
         -------
@@ -185,7 +185,7 @@ class CDFSchema(FileTypeSchema):
         -------
             `OrderedDict`: A dict containing `key: value` pairs of time metadata attributes.
         """
-        time_attributes = OrderedDict()
+        time_attributes = self.derive_measurement_attributes(data, "time")
         # Check the Attributes that can be derived
         time_attributes["REFERENCE_POSITION"] = self._get_reference_position(data)
         time_attributes["RESOLUTION"] = self._get_resolution(data)

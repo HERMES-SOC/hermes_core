@@ -9,9 +9,8 @@ from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
-from hermes_core.util.validation import CDFValidator, NetCDFValidator, FITSValidator
-from hermes_core.util.io import TimeDataIOHandler, CDFHandler, NetCDFHandler, FITSHandler
-from hermes_core.util.schema import FileTypeSchema, CDFSchema
+from hermes_core.util.io import CDFHandler, NetCDFHandler, FITSHandler
+from hermes_core.util.schema import CDFSchema
 
 __all__ = ["TimeData"]
 
@@ -33,7 +32,7 @@ class TimeData:
     meta : `dict`
         Metadata associated with the measurement data.
     units : `dict`
-        A mapping from column names in ``data`` to the physical units of that column.
+        A mapping from column names in ``data`` to the physical units of that measurement.
 
     Examples
     --------
@@ -65,9 +64,9 @@ class TimeData:
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
         if len(data.columns) < 2:
-            raise ValueError("Science data must have at least 2 columns")
+            raise ValueError("Data must have at least 2 columns")
         if "time" not in data.columns:
-            raise ValueError("Science data must have a 'time' column")
+            raise ValueError("Data must have a 'time' column")
 
         # Check individual Columns
         for colname in data.columns:
@@ -102,12 +101,12 @@ class TimeData:
         # we should just warn and just do it
         # Global Attributes
         self._data.meta.update(self._schema.derive_global_attributes(self._data))
-        # Time Variable Attributes
+        # Time Measurement Attributes
         self._data["time"].meta.update(self._schema.derive_time_attributes(self._data))
         # Other Measurement Attributes
         for col in self._data.columns:
             if col != "time":
-                self._data[col].meta.update(self._schema.derive_variable_attributes(data, col))
+                self._data[col].meta.update(self._schema.derive_measurement_attributes(data, col))
 
     @property
     def data(self):
@@ -123,7 +122,7 @@ class TimeData:
 
         Returns
         -------
-            dict: The metadata associated with the science data.
+            dict: The metadata associated with the data.
         """
         return self._data.meta
 
@@ -149,7 +148,7 @@ class TimeData:
     @property
     def columns(self):
         """
-        (List) A list of all the names of the columns in the data.
+        (List) A list of all the names of the columns in the data table.
         """
         return self._data.columns
 
@@ -175,12 +174,8 @@ class TimeData:
         """
         The shape of the data, a tuple (nrows, ncols)
         """
-        if "time" in self._data.columns:
-            nrows = self._data.time.shape[0]
-        else:
-            nrows = 0
+        nrows = self._data.time.shape[0]
         ncols = len(self._data.columns)
-
         return (nrows, ncols)
 
     def __repr__(self):
@@ -198,15 +193,8 @@ class TimeData:
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self._data.meta.items():
             str_repr += f"\t{attr_name}: {attr_value}\n"
-        # Variable Data
-        str_repr += f"Variable Data:\n{self._data}\n"
-        # Variable Attributes
-        str_repr += f"Variable Attributes:\n"
-        for col_name in self._data.columns:
-            str_repr += f"\tVar: {col_name}\n"
-            # for attr_name, attr_value in self._data[col_name].meta.items():
-
-            #     str_repr += f"\t\t{attr_name}: {attr_value}\n"
+        # Measurement Data
+        str_repr += f"Measurement Data:\n{self._data}\n"
         return str_repr
 
     def __len__(self):
@@ -221,7 +209,7 @@ class TimeData:
         """
         if name not in self._data.colnames:
             raise KeyError(f"Can't find data measurement {name}")
-        # Get the Data and Attrs for the named variable
+        # Get the Data and Attrs for the named measurement
         var_data = self._data[name]
         return var_data
 
@@ -230,18 +218,18 @@ class TimeData:
         Function to add a new measurement.
 
         """
-        # Set the Data for the named variable
+        # Set the Data for the named measurement
         self.add_measurement(measure_name=name, measure_data=data, measure_meta={})
 
     def __contains__(self, name):
         """
-        Function to see whether a variable is in the class.
+        Function to see whether a measurement is in the class.
         """
         return name in self._data.columns
 
     def __iter__(self):
         """
-        Function to iterate over data variables and attributes.
+        Function to iterate over data measurements and attributes.
         """
         for name in self._data.columns:
             var_data = self._data[name]
@@ -256,7 +244,7 @@ class TimeData:
 
         Returns
         -------
-            `OrderedDict`: The metadata associated with the science data.
+            `OrderedDict`: A template for required global attributes that must be provided.
         """
         return CDFSchema.global_attribute_template()
 
@@ -268,7 +256,7 @@ class TimeData:
 
         Returns
         -------
-            `OrderedDict`: The metadata associated with the science data.
+            `OrderedDict`: A template for required variable attributes that must be provided.
         """
         return CDFSchema.measurement_attribute_template()
 
@@ -298,12 +286,17 @@ class TimeData:
                 f"Measurement {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
             )
 
-        self.data[measure_name] = measure_data
+        self._data[measure_name] = measure_data
         # Add any Metadata from the original Quantity
-        self.data[measure_name].meta = OrderedDict()
+        self._data[measure_name].meta = OrderedDict()
         if hasattr(measure_data, "meta"):
-            self.data[measure_name].meta.update(measure_data.meta)
-        self.data[measure_name].meta.update(measure_meta)
+            self._data[measure_name].meta.update(measure_data.meta)
+        self._data[measure_name].meta.update(measure_meta)
+
+        # Derive Metadata Attributes for the Measurement
+        self._data[measure_name].meta.update(
+            self._schema.derive_measurement_attributes(self._data, measure_name)
+        )
 
     def remove_measurement(self, measure_name):
         """
@@ -397,15 +390,15 @@ class TimeData:
         Function to add TimeSeries data to the end of the current data containers TimeSeries table.
 
         Parameters:
-            data (TimeSeries): The science data appended as a TimeSeries object.
+            data (TimeSeries): The data to be appended as a TimeSeries object.
         """
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
         if len(data.columns) < 2:
-            raise ValueError("Science data must have at least 2 columns")
+            raise ValueError("Data must have at least 2 columns")
         if "time" not in data.columns:
-            raise ValueError("Science data must have a 'time' column")
+            raise ValueError("Data must have a 'time' column")
         if len(self.data.columns) != len(data.columns):
             raise ValueError(
                 (
@@ -431,7 +424,7 @@ class TimeData:
 
     def save(self, output_path):
         """
-        Save the science data to a file using the specified handler.
+        Save the data to a file using the specified handler.
 
         Parameters:
             output_path (str): A string path to the directory where file is to be saved.
@@ -449,7 +442,7 @@ class TimeData:
     @classmethod
     def load(cls, file_path):
         """
-        Load science data from a file using the specified handler.
+        Load data from a file using the specified handler.
 
         Parameters:
             file_path (str): A fully specificed file path.

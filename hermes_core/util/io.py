@@ -3,10 +3,7 @@ from pathlib import Path
 from typing import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-from astropy import units as u
-from spacepy.pycdf import CDF, _Hyperslice
-import hermes_core
-from hermes_core import log
+from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
 

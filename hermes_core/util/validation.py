@@ -35,7 +35,7 @@ def validate(filepath):
     return validator.validate(filepath)
 
 
-class ScienceDataValidator(ABC):
+class TimeDataValidator(ABC):
     """
     Abstract base class for heliophysics data validators.
     """
@@ -54,7 +54,7 @@ class ScienceDataValidator(ABC):
         pass
 
 
-class CDFValidator(ScienceDataValidator):
+class CDFValidator(TimeDataValidator):
     """
     Validator for CDF files.
     """
@@ -172,7 +172,7 @@ class CDFValidator(ScienceDataValidator):
         return variable_errors
 
 
-class NetCDFValidator(ScienceDataValidator):
+class NetCDFValidator(TimeDataValidator):
     """
     Validator for NetCDF files.
     """
@@ -191,7 +191,7 @@ class NetCDFValidator(ScienceDataValidator):
         pass
 
 
-class FITSValidator(ScienceDataValidator):
+class FITSValidator(TimeDataValidator):
     """
     Validator for FITS files.
     """
