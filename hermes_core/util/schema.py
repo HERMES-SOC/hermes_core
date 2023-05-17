@@ -770,23 +770,16 @@ class CDFSchema(FileTypeSchema):
         """
         Function to get the date that the CDF was generated.
         """
-        return datetime.datetime.now()
+        day = datetime.date.today()
+        return datetime.datetime(day.year, day.month, day.day)
 
     def _get_start_time(self, data):
         """
         Function to get the start time of the data contained in the CDF
         given in format `YYYYMMDD_hhmmss`
         """
-        gattr_name = "Start_time"
-        vattr_name = "time"
-        if (gattr_name in data.meta) and (data.meta[gattr_name]):
-            start_time = data.meta[gattr_name]
-        elif vattr_name not in data.columns:
-            start_time = None
-        else:
-            # Get the Start Time from the TimeSeries
-            start_time = data["time"].to_datetime()[0]
-        return start_time
+        # Get the Start Time from the TimeSeries
+        return data["time"].to_datetime()[0]
 
     def _get_version(self, data):
         """

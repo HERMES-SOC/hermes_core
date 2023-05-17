@@ -35,8 +35,8 @@ class TimeData:
     meta : `dict`
         Metadata associated with the measurement data.
     units : `dict`
-        A mapping from column names in ``data`` to the physical units of that measurement.
-    columns : `lsit`
+        A mapping from column names in `data` to the physical units of that measurement.
+    columns : `list`
         A list of all the names of the columns in the data table.
     time : `astropy.time.Time`
         The times of the measurements.
@@ -104,6 +104,7 @@ class TimeData:
                     self._data[col].meta.update(data[col].meta)
 
         # Derive Metadata
+        self.schema = CDFSchema()
         self._derive_metadata()
 
     @property
@@ -260,16 +261,11 @@ class TimeData:
 
     def _derive_metadata(self):
         """
-        Funtion to derive global and measurement metadata based on a CDFSchema.
+        Funtion to derive global and measurement metadata based on a CDFSchema
         """
-        # CDF Metadata and Validation Schema
-        schema = CDFSchema()
-
-        # the following is going to potentially overwrite m0etadata
-        # we should just warn and just do it
 
         # Get Default Metadata
-        for attr_name, attr_value in schema.default_global_attributes.items():
+        for attr_name, attr_value in self.schema.default_global_attributes.items():
             if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
                 warn_user(
                     f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
@@ -277,7 +273,7 @@ class TimeData:
             self._data.meta[attr_name] = attr_value
 
         # Global Attributes
-        for attr_name, attr_value in schema.derive_global_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
             if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
                 warn_user(
                     f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
@@ -285,7 +281,7 @@ class TimeData:
             self._data.meta[attr_name] = attr_value
 
         # Time Measurement Attributes
-        for attr_name, attr_value in schema.derive_time_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
             if (
                 attr_name in self._data["time"].meta
                 and self._data["time"].meta[attr_name] != attr_value
@@ -298,7 +294,7 @@ class TimeData:
         # Other Measurement Attributes
         for col in self._data.columns:
             if col != "time":
-                for attr_name, attr_value in schema.derive_measurement_attributes(
+                for attr_name, attr_value in self.schema.derive_measurement_attributes(
                     self._data, col
                 ).items():
                     if (
@@ -319,7 +315,7 @@ class TimeData:
         measure_name: `str`
             Name of the measurement to add.
 
-        measure_data: `Quantity` array
+        measure_data: `Quantity`
             The data to add.
 
         measure_meta: `dict`

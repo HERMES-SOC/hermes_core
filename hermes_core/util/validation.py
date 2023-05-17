@@ -16,7 +16,8 @@ def validate(filepath):
 
     Returns
     -------
-        result
+        list[str]: A list of validation errors returned.
+                A valid file will result in an emppty list being returned.
     """
     # Determine the file type
     file_extension = Path(filepath).suffix
