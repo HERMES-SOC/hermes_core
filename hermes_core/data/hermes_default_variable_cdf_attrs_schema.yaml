@@ -88,18 +88,22 @@ attribute_key:
     derived: true
     required: true
     override: false
+    alternate: FORM_PTR
   FORM_PTR:
     derived: false
     required: false
     override: false
+    alternate: FORMAT
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
     derived: false
     required: true
     override: false
+    alternate: LABL_PTR_1
   LABL_PTR_i:
     derived: false
     required: false
     override: false
+    alternate: LABLAXIS
   SI_CONVERSION:
     derived: true
     required: true  # NOT Required in ISTP Guide
@@ -110,10 +114,12 @@ attribute_key:
     derived: true
     required: true
     override: false
+    alternate: UNIT_PTR
   UNIT_PTR:
     derived: false
     required: false
     override: false
+    alternate: UNITS
   VALIDMIN:
     derived: true
     required: true
