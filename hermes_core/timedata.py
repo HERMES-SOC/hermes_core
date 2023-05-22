@@ -266,44 +266,62 @@ class TimeData:
 
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
-            if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
-                warn_user(
-                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                )
-            self._data.meta[attr_name] = attr_value
+            # If the attribute is set, check if we want to override it
+            if attr_name in self._data.meta:
+                # We want to override if:
+                #   1) The actual value is not the derived value
+                #   2) The schema marks this attribute to be overriden
+                if (
+                    self._data.meta[attr_name] != attr_value
+                    and self.schema.global_attribute_schema[attr_name]["override"]
+                ):
+                    warn_user(
+                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                    )
+                    self._data.meta[attr_name] = attr_value
+            # If the attribute is not set, set it
+            else:
+                self._data.meta[attr_name] = attr_value
 
         # Global Attributes
         for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
-            if attr_name in self._data.meta and self._data.meta[attr_name] != attr_value:
-                warn_user(
-                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                )
-            self._data.meta[attr_name] = attr_value
+            if attr_name in self._data.meta:
+                if (
+                    self._data.meta[attr_name] != attr_value
+                    and self.schema.global_attribute_schema[attr_name]["override"]
+                ):
+                    warn_user(
+                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                    )
+                    self._data.meta[attr_name] = attr_value
+            else:
+                self._data.meta[attr_name] = attr_value
 
         # Time Measurement Attributes
         for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
-            if (
-                attr_name in self._data["time"].meta
-                and self._data["time"].meta[attr_name] != attr_value
-            ):
-                warn_user(
-                    f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
-                )
-            self._data["time"].meta[attr_name] = attr_value
+            if attr_name in self._data["time"].meta:
+                attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
+                if self._data["time"].meta[attr_name] != attr_value and attr_schema["override"]:
+                    warn_user(
+                        f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
+                    )
+                    self._data["time"].meta[attr_name] = attr_value
+            else:
+                self._data["time"].meta[attr_name] = attr_value
 
         # Other Measurement Attributes
-        for col in self._data.columns:
-            if col != "time":
-                for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                    self._data, col
-                ).items():
-                    if (
-                        attr_name in self._data[col].meta
-                        and self._data[col].meta[attr_name] != attr_value
-                    ):
+        for col in [col for col in self._data.columns if col != "time"]:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self._data, col
+            ).items():
+                if attr_name in self._data[col].meta:
+                    attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
+                    if self._data[col].meta[attr_name] != attr_value and attr_schema["override"]:
                         warn_user(
                             f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
                         )
+                        self._data[col].meta[attr_name] = attr_value
+                else:
                     self._data[col].meta[attr_name] = attr_value
 
     def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):

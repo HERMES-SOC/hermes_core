@@ -1,72 +1,120 @@
 DOI:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: false
 Data_level:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  override: true
 Data_product_descriptor:
   derived: false
   required: false # NOT Required in ISTP Guide (Derived)
+  validate: false
+  override: true
 Data_type:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  override: true
 Data_version:
   derived: false
   required: true
+  validate: true
+  override: false
 Descriptor:
   derived: false
   required: true
+  validate: true
+  override: false
 Discipline:
   derived: false
   required: true
+  validate: true
+  override: false
 Generation_date:
   derived: true
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: true
 HTTP_LINK:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: false
 Instrument_mode:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  override: false
 Instrument_type:
   derived: false
   required: true
+  validate: true
+  override: false
 LINK_TEXT:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: false
 LINK_TITLE:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: false
 Logical_file_id:
   derived: true
   required: true
+  validate: true
+  override: true
 Logical_source:
   derived: true
   required: true
+  validate: true
+  override: true
 Logical_source_description:
   derived: true
   required: true
+  validate: true
+  override: true
 MODS:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
+  validate: true
+  override: false
 Mission_group:
   derived: false
   required: true
+  validate: true
+  override: false
 PI_affiliation:
   derived: false
   required: true
+  validate: true
+  override: false
 PI_name:
   derived: false
   required: true
+  validate: true
+  override: false
 Project:
   derived: false
   required: true
+  validate: true
+  override: false
 Source_name:
   derived: false
   required: true
+  validate: true
+  override: false
 Start_time:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  override: true
 TEXT:
   derived: false
   required: true
+  validate: true
+  override: false

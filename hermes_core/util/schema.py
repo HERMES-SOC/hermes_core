@@ -162,7 +162,8 @@ class CDFSchema(FileTypeSchema):
         measurement_attributes = OrderedDict()
 
         # Check the Attributes that can be derived
-        measurement_attributes["DEPEND_0"] = self._get_depend(data)
+        if not var_name == "time":
+            measurement_attributes["DEPEND_0"] = self._get_depend(data)
         measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
         measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
         measurement_attributes["FORMAT"] = self._get_format(data, var_name)
@@ -503,7 +504,7 @@ class CDFSchema(FileTypeSchema):
         unit = ""
         # Get the Unit from the TimeSeries Quantity if it exists
         if hasattr(var_data, "unit"):
-            unit = var_data.unit.name
+            unit = var_data.unit.to_string()
         return unit
 
     def _get_validmin(self, data, var_name):

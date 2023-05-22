@@ -110,7 +110,7 @@ class CDFValidator(TimeDataValidator):
         # Loop for each attribute in the schema
         for attr_name, attr_schema in self.schema.global_attribute_schema.items():
             # If it is a required attribute and not present
-            if attr_schema["required"] and (attr_name not in cdf_file.attrs):
+            if attr_schema["validate"] and (attr_name not in cdf_file.attrs):
                 global_attr_validation_errors.append(
                     f"Required attribute ({attr_name}) not present in global attributes.",
                 )
