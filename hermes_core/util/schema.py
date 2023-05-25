@@ -413,7 +413,7 @@ class CDFSchema(FileTypeSchema):
                 # OR we don't care because it's a 'big' number:
                 fmt = "G10.2E3"
         elif cdftype in (spacepy.pycdf.const.CDF_CHAR.value, spacepy.pycdf.const.CDF_UCHAR.value):
-            fmt = "A{}".format(len(var_data.value))
+            fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(
                 "Couldn't find FORMAT for {} of type {}".format(

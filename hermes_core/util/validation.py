@@ -160,13 +160,12 @@ class CDFValidator(TimeDataValidator):
                 # Check to see if there is an "alternate" attribute
                 if "alternate" not in attr_schema:
                     variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
+                # If there is an alternate, and the alternate is not in the metadata
                 if "alternate" in attr_schema and attr_schema["alternate"] not in var_data.attrs:
                     variable_errors.append(
-                        (
-                            f"Variable: {var_name} missing '{attr_name}' attribute",
-                            f"Alternative: {attr_schema['alternate']} not found.",
-                        )
+                        f"Variable: {var_name} missing '{attr_name}' attribute. Alternative: {attr_schema['alternate']} not found."
                     )
+            # Assume that the Attribue is Present in the metadata for the Variable
             else:
                 # If the Var Data can be Validated
                 if "valid_values" in attr_schema:
@@ -179,7 +178,26 @@ class CDFValidator(TimeDataValidator):
                                 f"Was {attr_value}, expected one of {attr_valid_values}",
                             )
                         )
+        # Validate `FORMAT` Attribute on the Variable
+        if "FORMAT" in var_type_attrs and "FORMAT" in var_data.meta:
+            format_errors = self._validate_format(cdf_file=cdf_file, var_name=var_name)
+            if format_errors:
+                variable_errors.append(format_errors)
+
         return variable_errors
+
+    def _validate_format(self, cdf_file: CDF, var_name: str):
+        # Save the Current Format
+        variable_format = cdf_file[var_name].meta["FORMAT"]
+        # Get the target Format for the Variable
+        target_format = self.schema._format_helper(
+            data=cdf_file, var_name=var_name, cdftype=cdf_file[var_name].type()
+        )
+
+        if variable_format != target_format:
+            return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format {target_format}"
+        else:
+            return None
 
 
 class NetCDFValidator(TimeDataValidator):
