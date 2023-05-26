@@ -52,11 +52,11 @@ attribute_key:
     override: false
   DELTA_MINUS_VAR:
     derived: false
-    required: false # NOT Requiored in ITSP Guide
+    required: false # NOT Required in ISTP Guide
     override: false
   DELTA_PLUS_VAR:
     derived: false
-    required: false # NOT Requiored in ITSP Guide
+    required: false # NOT Required in ISTP Guide
     override: false
   DEPEND_0:
     derived: true

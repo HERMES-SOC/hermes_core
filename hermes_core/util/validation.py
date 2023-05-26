@@ -195,7 +195,7 @@ class CDFValidator(TimeDataValidator):
         )
 
         if variable_format != target_format:
-            return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format {target_format}"
+            return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format '{target_format}'"
         else:
             return None
 
