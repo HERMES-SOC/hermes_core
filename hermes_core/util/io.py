@@ -80,12 +80,16 @@ class CDFHandler(TimeDataIOHandler):
         -------
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
+        nrv_data : `dict`
+            Non-record varying data contained in the file
         """
         if not Path(file_path).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
 
         # Create a new TimeSeries
         ts = TimeSeries()
+        # Create a Data Structure for Non-record Varying Data
+        nrv_data = {}
 
         # Open CDF file with context manager
         with CDF(file_path) as input_file:
@@ -115,19 +119,33 @@ class CDFHandler(TimeDataIOHandler):
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in input_file:
                 if var_name != "Epoch":  # Since we added this separately
+                    # Extract the Variable's Data and Metadata
                     var_data = input_file[var_name][:].copy()
                     var_attrs = {}
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
-                    # Create the Quantity object
-                    ts[var_name] = var_data
-                    ts[var_name].unit = var_attrs["UNITS"]
-                    # Create the Metadata
-                    ts[var_name].meta = OrderedDict()
-                    ts[var_name].meta.update(var_attrs)
 
-        # Return the given TimeSeries
-        return ts
+                    # Check if the Variable is a Record-Variing Variable
+                    if input_file[var_name].rv():
+                        print(var_name)
+                        # Add to the main TimeSeries Table
+                        # Create the Quantity object
+                        ts[var_name] = var_data
+                        ts[var_name].unit = var_attrs["UNITS"]
+                        # Create the Metadata
+                        ts[var_name].meta = OrderedDict()
+                        ts[var_name].meta.update(var_attrs)
+                    else:
+                        # Add to the non-record varying data dictionary
+                        # Create an empty dict entry for the variable
+                        nrv_data[var_name] = {}
+                        # Add the Variable Data
+                        nrv_data[var_name]["data"] = var_data
+                        # Add the Variable Metadata
+                        nrv_data[var_name]["meta"] = var_attrs
+
+        # Return the given TimeSeries, NRV Data
+        return ts, nrv_data
 
     def save_data(self, data, file_path):
         """

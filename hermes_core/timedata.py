@@ -56,7 +56,7 @@ class TimeData:
 
     """
 
-    def __init__(self, data, meta=None, **kwargs):
+    def __init__(self, data, nrv_data=None, meta=None, **kwargs):
         """
         Initialize a TimeData object.
 
@@ -102,6 +102,12 @@ class TimeData:
                 self._data[col].meta = OrderedDict()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
+
+        # Copy the Non-Record Varying Data
+        if nrv_data:
+            self.nrv_data = nrv_data
+        else:
+            self.nrv_data = {}
 
         # Derive Metadata
         self.schema = CDFSchema()
@@ -530,5 +536,5 @@ class TimeData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a TimeData object
-        data = handler.load_data(file_path)
-        return cls(data)
+        data, nrv_data = handler.load_data(file_path)
+        return cls(data=data, nrv_data=nrv_data)
