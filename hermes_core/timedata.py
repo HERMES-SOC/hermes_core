@@ -522,6 +522,5 @@ class TimeData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a TimeData object
-        handler = CDFHandler()
         data = handler.load_data(file_path)
         return cls(data)

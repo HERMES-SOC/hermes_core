@@ -1,7 +1,7 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 from spacepy.pycdf import CDF
-from spacepy.pycdf.istp import FileChecks
+from spacepy.pycdf.istp import FileChecks, VariableChecks
 from hermes_core.util.schema import CDFSchema
 
 
@@ -92,9 +92,9 @@ class CDFValidator(TimeDataValidator):
                 )
                 validation_errors.extend(variable_attr_validation_errors)
 
-                # Validate the CDF Using ISTP Module
-                istp_validation_errors = FileChecks.all(f=cdf_file, catch=True)
-                validation_errors.extend(istp_validation_errors)
+                # Validate the CDF Using ISTP Module `FileChecks` Class
+                file_checks_errors = self._file_checks(cdf_file=cdf_file)
+                validation_errors.extend(file_checks_errors)
 
         except IOError:
             validation_errors.append(f"Could not open CDF File at path: {file_path}")
@@ -184,6 +184,10 @@ class CDFValidator(TimeDataValidator):
             if format_errors:
                 variable_errors.append(format_errors)
 
+        # Validate Variable using ISTP Module `VariableChecks` class
+        variable_checks_errors = self._variable_checks(cdf_file=cdf_file, var_name=var_name)
+        variable_errors.extend(variable_checks_errors)
+
         return variable_errors
 
     def _validate_format(self, cdf_file: CDF, var_name: str):
@@ -198,6 +202,78 @@ class CDFValidator(TimeDataValidator):
             return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format '{target_format}'"
         else:
             return None
+
+    def _file_checks(self, cdf_file: CDF):
+        """
+        Function to call individual pieces of the `spacepy.pycdf.istp.FileChecks` Class.
+        We do not want to run all validation checks from this class using the `all()` function
+        so we break up the individual function calls here.
+        """
+        file_checks_errors = []
+
+        check_fns = [
+            FileChecks.empty_entry,
+            FileChecks.filename,
+            FileChecks.time_monoton,
+            FileChecks.times,
+        ]
+
+        # Loop through the Functions we want to check
+        for func in check_fns:
+            # Try to call the given function and report errors
+            try:
+                file_checks_errors.extend(func(cdf_file))
+            # If the function errors out or does not complete, report this an an error itself.
+            except:
+                file_checks_errors.append("Test {} did not complete.".format(func.__name__))
+
+        return file_checks_errors
+
+    def _variable_checks(self, cdf_file: CDF, var_name: str):
+        """
+        Function to call individual pieces of the `spacepy.pycdf.istp.VariableChecks` Class.
+        We do not want to run all validation checks from this class using the `all()` function
+        so we break up the individual function calls here.
+        """
+        variable_checks_errors = []
+
+        check_fns = [
+            # This function makes incorrect asumptions about the UNITS that must be placed on
+            # DELTA_PLUS_VAR and DELTA_MINUS var metadata attributes.
+            # VariableChecks.deltas,
+            VariableChecks.depends,
+            VariableChecks.depsize,
+            VariableChecks.empty_entry,
+            # This function makes incorrect assumptions that the variable name must exactly
+            # match the FILEDNAM metadata attribute.
+            # VariableChecks.fieldnam,
+            VariableChecks.fillval,
+            VariableChecks.recordcount,
+            # This function makes incorrect assumptions about the valid DISPLAY_TYPE options
+            # based on the shape of the variable data.
+            # VariableChecks.validdisplaytype,
+            VariableChecks.validrange,
+            VariableChecks.validscale,
+        ]
+
+        # Loop through the Functions we want to check
+        for func in check_fns:
+            # Try to call the given function and report errors
+            try:
+                variable_checks_errors.extend(
+                    ("{}: {}".format(var_name, e) for e in func(cdf_file[var_name]))
+                )
+            # If the function errors out or does not complete, report this an an error itself.
+            except:
+                variable_checks_errors.append(
+                    "{}: Test {} did not complete.".format(var_name, func.__name__)
+                )
+
+        # for v in f:
+        #     errors.extend(('{}: {}'.format(v, e)
+        #                    for e in VariableChecks.all(f[v], catch=catch)))
+
+        return variable_checks_errors
 
 
 class NetCDFValidator(TimeDataValidator):
