@@ -29,8 +29,8 @@ class TimeDataIOHandler(ABC):
 
         Returns
         -------
-        data : TimeData
-            An data container object containing the file data.
+        data : `~astropy.time.TimeSeries`
+            An instance of `TimeSeries` containing the loaded data.
         """
         pass
 
@@ -41,8 +41,8 @@ class TimeDataIOHandler(ABC):
 
         Parameters
         ----------
-        data : TimeData
-            An instance of TimeData containing the data to be saved.
+        data : `hermes_core.timedata.TimeData`
+            An instance of `TimeData` containing the data to be saved.
         file_path : `str`
             The fully specified file path to save into.
         """
@@ -71,11 +71,15 @@ class CDFHandler(TimeDataIOHandler):
         """
         Load heliophysics data from a CDF file.
 
-        Parameters:
-            file_path (str): The path to the CDF file.
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the CDF file.
 
-        Returns:
-            data (astropy.TimeSeries): An instance of astropy.TimeSeries containing the loaded data.
+        Returns
+        -------
+        data : `~astropy.time.TimeSeries`
+            An instance of `TimeSeries` containing the loaded data.
         """
         if not Path(file_path).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
@@ -129,12 +133,17 @@ class CDFHandler(TimeDataIOHandler):
         """
         Save heliophysics data to a CDF file.
 
-        Parameters:
-            data (TimeData): An instance of TimeData containing the data to be saved.
-            file_path (str): The path to save the CDF file.
+        Parameters
+        ----------
+        data : `hermes_core.timedata.TimeData`
+            An instance of `TimeData` containing the data to be saved.
+        file_path : `str`
+            The path to save the CDF file.
 
-        Returns:
-            str: A path to the saved file.
+        Returns
+        -------
+        path : `str`
+            A path to the saved file.
         """
 
         # Initialize a new CDF
@@ -192,11 +201,15 @@ class NetCDFHandler(TimeDataIOHandler):
         """
         Load heliophysics data from a NetCDF file.
 
-        Parameters:
-            file_path (str): The path to the NetCDF file.
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the NetCDF file.
 
-        Returns:
-            data (astropy.TimeSeries): An instance of astropy.TimeSeries containing the loaded data.
+        Returns
+        -------
+        data : `~astropy.time.TimeSeries`
+            An instance of `TimeSeries` containing the loaded data.
         """
         pass
 
@@ -204,38 +217,16 @@ class NetCDFHandler(TimeDataIOHandler):
         """
         Save heliophysics data to a NetCDF file.
 
-        Parameters:
-            data (TimeData): An instance of TimeData containing the data to be saved.
-            file_path (str): The path to save the NetCDF file.
-        """
-        pass
+        Parameters
+        ----------
+        data : `hermes_core.timedata.TimeData`
+            An instance of `TimeData` containing the data to be saved.
+        file_path : `str`
+            The path to save the NetCDF file.
 
-
-class FITSHandler(TimeDataIOHandler):
-    """
-    A concrete implementation of TimeDataIOHandler for handling heliophysics data in FITS format.
-
-    This class provides methods to load and save heliophysics data from/to a FITS file.
-    """
-
-    def load_data(self, file_path):
-        """
-        Load heliophysics data from a FITS file.
-
-        Parameters:
-            file_path (str): The path to the FITS file.
-
-        Returns:
-            data (astropy.TimeSeries): An instance of astropy.astropy.TimeSeries containing the loaded data.
-        """
-        pass
-
-    def save_data(self, data, file_path):
-        """
-        Save heliophysics data to a FITS file.
-
-        Parameters:
-            data (TimeData): An instance of TimeData containing the data to be saved.
-            file_path (str): The path to save the FITS file.
+        Returns
+        -------
+        path : `str`
+            A path to the saved file.
         """
         pass

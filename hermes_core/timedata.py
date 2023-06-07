@@ -9,7 +9,7 @@ from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
-from hermes_core.util.io import CDFHandler, NetCDFHandler, FITSHandler
+from hermes_core.util.io import CDFHandler, NetCDFHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
 
@@ -118,10 +118,6 @@ class TimeData:
     def meta(self):
         """
         Metadata associated with the measurement data.
-
-        Returns
-        -------
-            dict: The metadata associated with the data.
         """
         return self._data.meta
 
@@ -243,7 +239,8 @@ class TimeData:
 
         Returns
         -------
-            `OrderedDict`: A template for required global attributes that must be provided.
+        template : `OrderedDict`
+            A template for required global attributes that must be provided.
         """
         return CDFSchema.global_attribute_template()
 
@@ -255,7 +252,8 @@ class TimeData:
 
         Returns
         -------
-            `OrderedDict`: A template for required variable attributes that must be provided.
+        template : `OrderedDict`
+            A template for required variable attributes that must be provided.
         """
         return CDFSchema.measurement_attribute_template()
 
@@ -440,8 +438,10 @@ class TimeData:
         """
         Function to add TimeSeries data to the end of the current data containers TimeSeries table.
 
-        Parameters:
-            data (TimeSeries): The data to be appended as a TimeSeries object.
+        Parameters
+        ----------
+        data : `~astropy.time.TimeSeries`
+            The data to be appended as a TimeSeries object.
         """
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
@@ -480,14 +480,19 @@ class TimeData:
         """
         Save the data to a file using the specified handler.
 
-        Parameters:
-            output_path (str): A string path to the directory where file is to be saved.
+        Parameters
+        ----------
+        output_path : `str`
+            A string path to the directory where file is to be saved.
 
-        Returns:
-            str: A path to the saved file.
+        Returns
+        -------
+        path : `str`
+            A path to the saved file.
 
-        Raises:
-            ValueError: If no handler is specified for saving data.
+        Raises
+        ------
+        ValueError: If no handler is specified for saving data.
 
         """
         handler = CDFHandler()
@@ -498,14 +503,19 @@ class TimeData:
         """
         Load data from a file using the specified handler.
 
-        Parameters:
-            file_path (str): A fully specificed file path.
+        Parameters
+        ----------
+        file_path : `str`
+            A fully specificed file path.
 
-        Returns:
-            TimeData: A TimeData object containing the loaded data.
+        Returns
+        -------
+        data : `TimeData`
+            A `TimeData` object containing the loaded data.
 
-        Raises:
-            ValueError: If the handler is not an instance of TimeDataIOHandler.
+        Raises
+        ------
+        ValueError: If the handler is not an instance of TimeDataIOHandler.
 
         """
         # Determine the file type
@@ -516,8 +526,6 @@ class TimeData:
             handler = CDFHandler()
         elif file_extension == ".nc":
             handler = NetCDFHandler()
-        elif file_extension == ".fits":
-            handler = FITSHandler()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 

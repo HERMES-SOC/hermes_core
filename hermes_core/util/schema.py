@@ -51,10 +51,12 @@ class CDFSchema(FileTypeSchema):
 
     @property
     def global_attribute_schema(self):
+        """Schema for variable attributes of the file."""
         return self._global_attr_schema
 
     @property
     def variable_attribute_schema(self):
+        """Schema for variable attributes of the file."""
         return self._variable_attr_schema
 
     @staticmethod
@@ -113,7 +115,8 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: A template for required global attributes that must be provided.
+        template : `OrderedDict`
+            A template for required global attributes that must be provided.
         """
         template = OrderedDict()
         global_attribute_schema = CDFSchema._load_default_global_attr_schema()
@@ -135,7 +138,8 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: A template for required variable attributes that must be provided.
+        template: `OrderedDict`
+            A template for required variable attributes that must be provided.
         """
         template = OrderedDict()
         measurement_attribute_schema = CDFSchema._load_default_variable_attr_schema()
@@ -157,7 +161,8 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: A dict containing `key: value` pairs of metadata attributes.
+        attributes: `OrderedDict`
+            A dict containing `key: value` pairs of metadata attributes.
         """
         measurement_attributes = OrderedDict()
 
@@ -184,7 +189,8 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: A dict containing `key: value` pairs of time metadata attributes.
+        attributes : `OrderedDict`
+            A dict containing `key: value` pairs of time metadata attributes.
         """
         time_attributes = self.derive_measurement_attributes(data, "time")
         # Check the Attributes that can be derived
@@ -206,7 +212,8 @@ class CDFSchema(FileTypeSchema):
 
         Returns
         -------
-            `OrderedDict`: A dict containing `key: value` pairs of global metadata attributes.
+        attributes : `OrderedDict`
+            A dict containing `key: value` pairs of global metadata attributes.
         """
         global_attributes = OrderedDict()
         # Loop through Global Attributes
@@ -812,6 +819,7 @@ class NetCDFSchema(FileTypeSchema):
 
     @property
     def global_attribute_schema(self):
+        """Schema for global attributes of the file."""
         return {
             "attribute1": {"type": "string", "required": True},
             "attribute2": {"type": "int", "required": False},
@@ -820,34 +828,7 @@ class NetCDFSchema(FileTypeSchema):
 
     @property
     def variable_attribute_schema(self):
-        return {
-            "variable1": {
-                "attribute1": {"type": "float", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable1 and their schemas
-            },
-            "variable2": {
-                "attribute1": {"type": "int", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable2 and their schemas
-            },
-            # Define more variables and their attribute schemas
-        }
-
-
-class FITSSchema(FileTypeSchema):
-    """Schema for FITS files."""
-
-    @property
-    def global_attribute_schema(self):
-        return {
-            "attribute1": {"type": "string", "required": True},
-            "attribute2": {"type": "int", "required": False},
-            # Define more global attributes and their schemas
-        }
-
-    @property
-    def variable_attribute_schema(self):
+        """Schema for variable attributes of the file."""
         return {
             "variable1": {
                 "attribute1": {"type": "float", "required": True},

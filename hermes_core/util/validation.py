@@ -16,8 +16,8 @@ def validate(filepath):
 
     Returns
     -------
-        list[str]: A list of validation errors returned.
-                A valid file will result in an emppty list being returned.
+    errors : `list[str]`
+        A list of validation errors returned. A valid file will result in an emppty list being returned.
     """
     # Determine the file type
     file_extension = Path(filepath).suffix
@@ -27,8 +27,6 @@ def validate(filepath):
         validator = CDFValidator()
     elif file_extension == ".nc":
         validator = NetCDFValidator()
-    elif file_extension == ".fits":
-        validator = FITSValidator()
     else:
         raise ValueError(f"Unsupported file type: {file_extension}")
 
@@ -46,11 +44,15 @@ class TimeDataValidator(ABC):
         """
         Validate the heliophysics data file.
 
-        Parameters:
-            file_path (str): The path to the data file.
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the data file.
 
-        Returns:
-            bool: True if the file is valid, False otherwise.
+        Returns
+        -------
+        errors : `list[str]`
+            A list of validation errors returned. A valid file will result in an emppty list being returned.
         """
         pass
 
@@ -70,11 +72,15 @@ class CDFValidator(TimeDataValidator):
         """
         Validate the CDF file.
 
-        Parameters:
-            file_path (str): The path to the CDF file.
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the CDF file.
 
-        Returns:
-            bool: True if the file is a valid CDF, False otherwise.
+        Returns
+        -------
+        errors : `list[str]`
+            A list of validation errors returned. A valid file will result in an emppty list being returned.
         """
         # Initialize Validation Errrors
         validation_errors = []
@@ -285,30 +291,15 @@ class NetCDFValidator(TimeDataValidator):
         """
         Validate the NetCDF file.
 
-        Parameters:
-            file_path (str): The path to the NetCDF file.
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the NetCDF file.
 
-        Returns:
-            bool: True if the file is a valid NetCDF, False otherwise.
+        Returns
+        -------
+        errors : `list[str]`
+            A list of validation errors returned. A valid file will result in an emppty list being returned.
         """
         # Validation logic for NetCDF files
-        pass
-
-
-class FITSValidator(TimeDataValidator):
-    """
-    Validator for FITS files.
-    """
-
-    def validate(self, file_path):
-        """
-        Validate the FITS file.
-
-        Parameters:
-            file_path (str): The path to the FITS file.
-
-        Returns:
-            bool: True if the file is a valid FITS, False otherwise.
-        """
-        # Validation logic for FITS files
         pass
