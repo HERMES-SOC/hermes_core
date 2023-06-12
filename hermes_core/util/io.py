@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import OrderedDict
+from datetime import datetime
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+import astropy.units as u
 from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
@@ -88,6 +90,8 @@ class CDFHandler(TimeDataIOHandler):
 
         # Create a new TimeSeries
         ts = TimeSeries()
+        # Create a Data Structure for Support Data without Units
+        support_data = {}
         # Create a Data Structure for Non-record Varying Data
         nrv_data = {}
 
@@ -127,16 +131,27 @@ class CDFHandler(TimeDataIOHandler):
 
                     # Check if the Variable is a Record-Variing Variable
                     if input_file[var_name].rv():
-                        print(var_name)
-                        # Add to the main TimeSeries Table
-                        # Create the Quantity object
-                        ts[var_name] = var_data
-                        ts[var_name].unit = var_attrs["UNITS"]
-                        # Create the Metadata
-                        ts[var_name].meta = OrderedDict()
-                        ts[var_name].meta.update(var_attrs)
+                        # Test the the Variable has `UNITS`
+                        # If the variable has `UNITS` then it is likely a Measurement
+                        # and should be stored with Measurements
+                        if "UNITS" in var_attrs:
+                            # Add to the main TimeSeries Table
+                            ts[var_name] = var_data
+                            ts[var_name].unit = var_attrs["UNITS"]
+                            # Create the Metadata
+                            ts[var_name].meta = OrderedDict()
+                            ts[var_name].meta.update(var_attrs)
+                        # If the variable does not have `UNITS` then it is most likely Support
+                        # data and it should be stored with the Support Data
+                        else:
+                            # Create an empty dict entry for the variable
+                            support_data[var_name] = {}
+                            # Add the Variable Data
+                            support_data[var_name]["data"] = var_data
+                            # Add the Variable Metadata
+                            support_data[var_name]["meta"] = var_attrs
+                    # Add to the non-record varying data dictionary
                     else:
-                        # Add to the non-record varying data dictionary
                         # Create an empty dict entry for the variable
                         nrv_data[var_name] = {}
                         # Add the Variable Data
@@ -145,7 +160,7 @@ class CDFHandler(TimeDataIOHandler):
                         nrv_data[var_name]["meta"] = var_attrs
 
         # Return the given TimeSeries, NRV Data
-        return ts, nrv_data
+        return ts, support_data, nrv_data
 
     def save_data(self, data, file_path):
         """
@@ -204,8 +219,133 @@ class CDFHandler(TimeDataIOHandler):
 
 
 # ================================================================================================
-#                                   NET CDF HANDLER
+#                                   EPHEMERIS HANDLER
 # ================================================================================================
+
+
+class EphemDataHandler(TimeDataIOHandler):
+    """
+    A concrete implementation of TimeDataIOHandler for handling ephemeris data in `.txt` file format.
+    """
+
+    def load_data(self, file_path):
+        """
+        Load ephemeris data from a EphemData file.
+
+        Parameters:
+            file_path (str): The path to the EphemData file.
+
+        Returns:
+            data (astropy.TimeSeries): An instance of astropy.TimeSeries containing the loaded data.
+        """
+        if not Path(file_path).exists():
+            raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
+
+        file_name = Path(file_path).stem
+        mission_name, _, _, satellite, _, phase = file_name.split("_")
+
+        # Helpers
+        generation_date = None
+        title = None
+        header_parsed = False
+        separator_parsed = False
+
+        # Intermittent Format
+        columns = []
+        data = {}
+        units = {}
+
+        # Open EphemData with a context manager
+        with open(file_path) as input_file:
+            for i, line in enumerate(input_file):
+                if len(line) == 0:
+                    continue
+                # The Generation Date is the First line we're expecting from the EphemData
+                # If we haven't parsed out the Generation Date from the File
+                if len(line.strip()) > 0 and not generation_date:
+                    # Parse the Generation Data from the EphemData file.
+                    generation_date = datetime.strptime(line.strip(), "%d %b %Y %H:%M:%S")
+                # The EphemData Name is the Seconf line We're expecting from the EphemData
+                elif len(line.strip()) > 0 and not title:
+                    # Parse the Title from the EphemData file.
+                    title = line.strip()
+                elif len(line.strip()) > 0 and not header_parsed:
+                    # Parse the Header
+                    parts = line.strip().split()
+                    i = 0
+                    while i < len(parts):
+                        column_name = parts[i]
+                        if i + 1 < len(parts) and "(" in parts[i + 1]:
+                            column_unit = parts[i + 1].strip("()")
+                            if "/" in column_unit:
+                                column_unit = " / ".join(column_unit.split("/"))
+                            column_unit = column_unit.replace("sec", "s")
+                            i += 1
+                        else:
+                            column_unit = 1
+
+                        # Update Intermittent Structures
+                        columns.append(column_name)
+                        data[column_name] = []
+                        units[column_name] = column_unit
+                        i += 1
+                    header_parsed = True
+                elif len(line.strip()) > 0 and not separator_parsed:
+                    line = line.strip().replace(" ", "")
+                    if line == len(line) * line[0]:
+                        separator_parsed = True
+                # Now we're in the actual measurements part of the file
+                elif len(line.strip()) > 0:
+                    parts = line.strip().split()
+
+                    # Time
+                    time_str = " ".join(parts[:4])
+                    time = datetime.strptime(time_str, "%d %b %Y %H:%M:%S.%f")
+                    data[columns[0]].append(time)
+
+                    for i, part in enumerate(parts[4:]):
+                        # Float
+                        value = float(part.strip())
+                        data[columns[i + 1]].append(value)
+
+        # Create a new TimeSeries
+        ts = TimeSeries()
+
+        # Add Time to the TimeSeries
+        ts["time"] = data["Time"]
+
+        # Add Columns to the TimeSeries
+        for col in columns[1:]:
+            # Create the Quantity object
+            ts[col] = data[col]
+            ts[col].unit = units[col]
+            ts[col].meta = OrderedDict({"VAR_TYPE": "data"})
+
+        # Update the Metadata of the Data Container
+        ts.meta.update(
+            {
+                "Data_level": "L1>Level 1",
+                "Data_version": "0.0.1",
+                "Descriptor": "EEA>Electron Electrostatic Analyzer",
+                "Generation_date": generation_date,
+                "Mission_group": mission_name,
+                "Phase": phase,
+                "Satellite": satellite,
+            }
+        )
+
+        # Return the given TimeSeries
+        return ts
+
+    def save_data(self, data, file_path):
+        """
+        Save ephemeris data to a EphemData file.
+
+        Parameters:
+            data (TimeData): An instance of TimeData containing the data to be saved.
+            file_path (str): The path to save the EphemData file.
+        """
+        pass
 
 
 class NetCDFHandler(TimeDataIOHandler):

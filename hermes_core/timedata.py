@@ -9,7 +9,7 @@ from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
-from hermes_core.util.io import CDFHandler, NetCDFHandler
+from hermes_core.util.io import CDFHandler, NetCDFHandler, EphemDataHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
 
@@ -56,7 +56,7 @@ class TimeData:
 
     """
 
-    def __init__(self, data, nrv_data=None, meta=None, **kwargs):
+    def __init__(self, data, support_data=None, nrv_data=None, meta=None, **kwargs):
         """
         Initialize a TimeData object.
 
@@ -102,6 +102,12 @@ class TimeData:
                 self._data[col].meta = OrderedDict()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
+
+        # Copy the Support Data
+        if support_data:
+            self.support_data = support_data
+        else:
+            self.support_data = {}
 
         # Copy the Non-Record Varying Data
         if nrv_data:
@@ -532,9 +538,11 @@ class TimeData:
             handler = CDFHandler()
         elif file_extension == ".nc":
             handler = NetCDFHandler()
+        elif file_extension == ".txt":
+            handler = EphemDataHandler()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a TimeData object
-        data, nrv_data = handler.load_data(file_path)
-        return cls(data=data, nrv_data=nrv_data)
+        data, support_data, nrv_data = handler.load_data(file_path)
+        return cls(data=data, support_data=support_data, nrv_data=nrv_data)
