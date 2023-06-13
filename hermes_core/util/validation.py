@@ -4,6 +4,7 @@ from spacepy.pycdf import CDF
 from spacepy.pycdf.istp import FileChecks, VariableChecks
 from hermes_core.util.schema import CDFSchema
 
+__all__ = ["validate", "CDFValidator"]
 
 def validate(filepath):
     """

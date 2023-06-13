@@ -12,6 +12,7 @@ import hermes_core
 from hermes_core import log
 from hermes_core.util import util
 
+__all__ = ["CDFSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"

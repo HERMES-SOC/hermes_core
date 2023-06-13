@@ -18,37 +18,16 @@ __all__ = ["TimeData"]
 
 class TimeData:
     """
-    A generic object for loading, storing, and manipulating time series data for CDF files.
-
-    Parameters
-    ----------
-    data : `~astropy.time.TimeSeries`
-        A `astropy.time.TimeSeries` representing one or more measurements as a function of time.
-    meta : `dict`, optional
-        Meta data associated with the measurement data.
-        Defaults to `None`.
-
-    Attributes
-    ----------
-    data :
-        A represntation of the undlerlying `astropy.timeseries.TimeSeries` object.
-    meta : `dict`
-        Metadata associated with the measurement data.
-    units : `dict`
-        A mapping from column names in `data` to the physical units of that measurement.
-    columns : `list`
-        A list of all the names of the columns in the data table.
-    time : `astropy.time.Time`
-        The times of the measurements.
-    time_range : `tuple`
-        The start and end times of the time axis.
-    shape: `tuple`
-        The shape of the data, a `tuple` `(nrows, ncols)`
+    A generic object for loading, storing, and manipulating time series data for CDF files. This
+    Data Container uses the `astropy.timeseries.TimeSeries` data structure to hold measurement data
+    in addition to global and variable metadata for each masurement.
 
     Examples
     --------
     >>> from hermes_core.timedata import TimeData
-    >>>
+    >>> time_series = ... # Define your `TimeSeries` here
+    >>> global_meta = ... # Define your global metadata `dict` here
+    >>> time_data = TimeData(data=time_series, meta=global_meta)
 
     References
     ----------
@@ -62,7 +41,7 @@ class TimeData:
 
         Parameters
         ----------
-        data:  `astropy.time.TimeSeries`
+        data:  `astropy.timeseries.TimeSeries`
             The time series data.
         meta: `dict`
 
@@ -110,21 +89,21 @@ class TimeData:
     @property
     def data(self):
         """
-        A `astropy.time.TimeSeries` representing one or more measurements as a function of time.
+        (`astropy.timeseries.TimeSeries`) A `TimeSeries` representing one or more measurements as a function of time.
         """
         return self._data
 
     @property
     def meta(self):
         """
-        Metadata associated with the measurement data.
+        (`typing.OrderedDict`) Global metadata associated with the measurement data.
         """
         return self._data.meta
 
     @property
     def units(self):
         """
-        (OrderedDict) The units of the measurement for each column in the TimeSeries table.
+        (`typing.OrderedDict`) The units of the measurement for each column in the `TimeSeries` table.
         """
         units = {}
         for name in self._data.columns:
@@ -143,14 +122,14 @@ class TimeData:
     @property
     def columns(self):
         """
-        (List) A list of all the names of the columns in the data table.
+        (`list`) A list of all the names of the columns in the data table.
         """
         return self._data.columns
 
     @property
     def time(self):
         """
-        The times of the measurements.
+        (`astropy.time.Time`) The times of the measurements.
         """
         t = Time(self._data.time)
         # Set time format to enable plotting with astropy.visualisation.time_support()
@@ -160,14 +139,14 @@ class TimeData:
     @property
     def time_range(self):
         """
-        The start and end times of the time axis.
+        (`tuple`) The start and end times of the time axis.
         """
         return (self._data.time.min(), self._data.time.max())
 
     @property
     def shape(self):
         """
-        The shape of the data, a tuple (nrows, ncols)
+        (`tuple`) The shape of the data, a tuple (nrows, ncols)
         """
         nrows = self._data.time.shape[0]
         ncols = len(self._data.columns)
@@ -175,13 +154,13 @@ class TimeData:
 
     def __repr__(self):
         """
-        Returns a representation of the CDFWriter class.
+        Returns a representation of the `TimeData` class.
         """
         return self.__str__()
 
     def __str__(self):
         """
-        Returns a string representation of the CDFWriter class.
+        Returns a string representation of the `TimeData` class.
         """
         str_repr = f"TimeData() Object:\n"
         # Global Attributes/Metedata
@@ -235,11 +214,11 @@ class TimeData:
     def global_attribute_template():
         """
         Function to generate a template of the required global attributes
-        that must be set for a valid CDF file to be generated from the TimeData container.
+        that must be set for a valid CDF file to be generated from the `TimeData` container.
 
         Returns
         -------
-        template : `OrderedDict`
+        template : `typing.OrderedDict`
             A template for required global attributes that must be provided.
         """
         return CDFSchema.global_attribute_template()
@@ -248,11 +227,11 @@ class TimeData:
     def measurement_attribute_template():
         """
         Function to generate a template of the required measurement attributes
-        that must be set for a valid CDF file to be generated from the TimeData container.
+        that must be set for a valid CDF file to be generated from the `TimeData` container.
 
         Returns
         -------
-        template : `OrderedDict`
+        template : `typing.OrderedDict`
             A template for required variable attributes that must be provided.
         """
         return CDFSchema.measurement_attribute_template()
@@ -324,14 +303,14 @@ class TimeData:
 
     def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):
         """
-        Function to add a new measurement.
+        Function to add a new measurement (column) to the `TimeData` data container.
 
         Parameters
         ----------
         measure_name: `str`
             Name of the measurement to add.
 
-        measure_data: `Quantity`
+        measure_data: `astropy.units.Quantity`
             The data to add.
 
         measure_meta: `dict`
@@ -358,9 +337,14 @@ class TimeData:
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
-    def remove_measurement(self, measure_name):
+    def remove_measurement(self, measure_name: str):
         """
-        Remove a measuremt or measurement.
+        Function to remove a measurement (column).
+
+        Parameters
+        ----------
+        measure_name: `str`
+            Name of the measurement to remove.
         """
         self._data.remove_column(measure_name)
 
@@ -373,7 +357,7 @@ class TimeData:
         axes : `~matplotlib.axes.Axes`, optional
             If provided the image will be plotted on the given axes.
             Defaults to `None`, so the current axes will be used.
-        columns : list[str], optional
+        columns : `list[str]`, optional
             If provided, only plot the specified measurements.
         **plot_args : `dict`, optional
             Additional plot keyword arguments that are handed to
@@ -434,14 +418,14 @@ class TimeData:
             # but don't override any formatters pandas might have set
             ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
 
-    def append(self, data):
+    def append(self, data: TimeSeries):
         """
-        Function to add TimeSeries data to the end of the current data containers TimeSeries table.
+        Function to add `TimeSeries` data to the end of the current data containers `TimeSeries` table.
 
         Parameters
         ----------
-        data : `~astropy.time.TimeSeries`
-            The data to be appended as a TimeSeries object.
+        data : `astropy.timeseries.TimeSeries`
+            The data to be appended (rows) as a `TimeSeries` object.
         """
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
@@ -478,7 +462,7 @@ class TimeData:
 
     def save(self, output_path):
         """
-        Save the data to a file using the specified handler.
+        Save the data to a CDF file in the directory specified by the `output_path`.
 
         Parameters
         ----------
@@ -490,10 +474,6 @@ class TimeData:
         path : `str`
             A path to the saved file.
 
-        Raises
-        ------
-        ValueError: If no handler is specified for saving data.
-
         """
         handler = CDFHandler()
         return handler.save_data(data=self, file_path=output_path)
@@ -501,7 +481,7 @@ class TimeData:
     @classmethod
     def load(cls, file_path):
         """
-        Load data from a file using the specified handler.
+        Load data from a file using one of the provided I/O handlers for recognized file types.
 
         Parameters
         ----------
@@ -515,7 +495,7 @@ class TimeData:
 
         Raises
         ------
-        ValueError: If the handler is not an instance of TimeDataIOHandler.
+        ValueError: If the file type is not recognized as a file type that can be loaded.
 
         """
         # Determine the file type

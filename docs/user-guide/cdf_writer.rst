@@ -7,11 +7,12 @@ CDF File Writing and Interoperability
 Overview
 ========
 
-The ``TimeData`` class provides a convenient and efficient way to work with science data files, including CDF 
-files, by abstracting them as ``astropy.timeseries.TimeSeries`` tables with metadata attributes. This abstraction 
-simplifies data management, enhances data discovery, and facilitates adherence to ISTP compliance standards 
-when uploading CDF files to SPDF. By leveraging the ``TimeData`` class, scientists and researchers can 
-focus more on their data analysis and scientific exploration.
+The :py:class:`~hermes_core.timedata.TimeData` class provides a convenient and efficient way
+to work with science data files, including CDF files, by abstracting them as `~astropy.timeseries.TimeSeries` 
+tables with metadata attributes. This abstraction simplifies data management, enhances data discovery, 
+and facilitates adherence to compliance standards. By leveraging the 
+:py:class:`~hermes_core.timedata.TimeData` class, scientists and researchers can focus more 
+on their data analysis and scientific exploration.
 
 CDF (Common Data Format) files are a binary file format commonly used in scientific research to store and 
 exchange data. They provide a flexible structure for organizing and representing multidimensional datasets 
@@ -20,20 +21,20 @@ scientific disciplines. Despite their versatility, CDF files have certain limita
 directly with CDF files can be complex and require knowledge of the CDF specifications. Additionally, 
 managing metadata and accessing specific data elements can be cumbersome without proper abstractions.
 
-To overcome the limitations of working with CDF files, the ``TimeData`` class facilitates the abstraction
-of CDF files as ``astropy.timeseries.TimeSeries`` tables with metadata attributes. ``TimeSeries`` is a Python 
+To overcome the limitations of working with CDF files, the :py:class:`~hermes_core.timedata.TimeData` class facilitates the abstraction
+of CDF files as `~astropy.timeseries.TimeSeries` tables with metadata attributes. `~astropy.timeseries.TimeSeries` is a Python 
 class for handling time series data that provides a convenient and familiar interface for working with 
-tabular data. By representing a CDF file as an ``TimeSeries`` table, it becomes easier to manipulate, 
+tabular data. By representing a CDF file as an `~astropy.timeseries.TimeSeries` table, it becomes easier to manipulate, 
 analyze, and visualize the data. Additionally, metadata attributes can be associated with the table, allowing 
 for enhanced documentation and data discovery. It provides a simplified interface to write data and metadata 
-to CDF files while automatically handling the complexities of the underlying CDF file format. The ``TimeData`` 
-class encapsulates the necessary logic to convert the ``TimeSeries`` table into the appropriate CDF 
+to CDF files while automatically handling the complexities of the underlying CDF file format. The :py:class:`~hermes_core.timedata.TimeData` 
+class encapsulates the necessary logic to convert the `~astropy.timeseries.TimeSeries` table into the appropriate CDF 
 format, ensuring compatibility and data integrity.
 
-ISTP (International Solar-Terrestrial Physics) compliance is a set of standards defined by the Space Physics 
+International Solar-Terrestrial Physics (ISTP) compliance is a set of standards defined by the Space Physics 
 Data Facility (SPDF) for submitting and sharing space physics data. ISTP compliance ensures that the data 
 adheres to specific formatting requirements, quality control measures, and documentation standards. Uploading 
-CDF files to SPDF typically requires conforming to the ISTP guidelines. The ``TimeData`` class plays a crucial 
+CDF files to SPDF typically requires conforming to the ISTP guidelines. The :py:class:`~hermes_core.timedata.TimeData` class plays a crucial 
 role in ensuring ISTP compliance when uploading CDF files to SPDF. It handles the conversion of the data and 
 metadata into the required format specified by ISTP guidelines, simplifying the process of generating 
 compliant CDF files ready for upload to SPDF.
@@ -42,34 +43,35 @@ compliant CDF files ready for upload to SPDF.
 Creating a ``TimeData`` object from a ``TimeSeries``
 ====================================================
 
-A ``TimeData`` must be created from a ``TimeSeries`` object containing at least two columns:
-  1. `time` 
+A :py:class:`~hermes_core.timedata.TimeData` must be created from a `~astropy.timeseries.TimeSeries` object containing at least two columns:
+  1. ``time`` 
   2. at least one measurement
-The `TimeData` container must also take in an input of global metadata for the CDF File to be created.
 
-Import the required ``astropy`` dependencies and create an empty ``TimeSeries``::
+The :py:class:`~hermes_core.timedata.TimeData` container must also take in an input of global metadata for the CDF File to be created.
+
+Import the required `astropy` dependencies and create an empty `~astropy.timeseries.TimeSeries`::
 
     >>> from astropy.timeseries import TimeSeries
     >>> from astropy.time import Time
     >>> from astropy.units.quantity import Quantity
     >>> ts = TimeSeries()
 
-Create a ``Time`` object that containts the time dimension and add it to the ``TimeSeries``::
+Create a `~astropy.time.Time` object that containts the time dimension and add it to the `~astropy.timeseries.TimeSeries`::
 
     >>> import numpy as np
     >>> time_arr = np.arange(50)
     >>> time = Time(time_arr, format="unix")
     >>> ts["time"] = time
 
-Create a ``Quantity`` object that contsins measurement data and add it to the ``TimeSeries``::
+Create a `~astropy.units.Quantity` object that contsins measurement data and add it to the `~astropy.timeseries.TimeSeries`::
 
     >>> from numpy.random import random
     >>> data = random(size=(50))
     >>> quant = Quantity(value=data, unit="m")
     >>> ts["measurement"] = quant
 
-Create a ``dict`` or ``OrderedDict`` containing global metadata required for generating the ``TimeData``.
-To facilitate creating this dict see the notes for ``TimeData.global_attribute_template()`` below::
+Create a `dict` or `~typing.OrderedDict` containing global metadata required for generating the :py:class:`~hermes_core.timedata.TimeData`.
+To facilitate creating this dict see the notes for :py:func:`~hermes_core.timedata.TimeData.global_attribute_template`::
 
     >>> input_attrs = {
     ...     "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -106,36 +108,36 @@ To facilitate creating this dict see the notes for ``TimeData.global_attribute_t
     ...     "TEXT": "Valid Test Case",
     ... }
 
-You can now pass the ``TimeSeries`` and ``dict`` global metadata into a ``TimeData`` object,
+You can now pass the `~astropy.timeseries.TimeSeries` and `dict` global metadata into a :py:class:`~hermes_core.timedata.TimeData` object,
 
     >>> from hermes_core.timedata import TimeData
     >>> timedata = TimeData(data=ts, meta=input_attrs)
 
-The ``TimeData`` can the be updated, measurements added, metadata added, and written to a new CDF file. 
+The :py:class:`~hermes_core.timedata.TimeData` can the be updated, measurements added, metadata added, and written to a new CDF file. 
 
 
 Creating a ``TimeData`` from an existing CDF File
 ===================================================
 
-Given a current CDF File you can create a ``TimeData`` data container through passing a path to the CDF file::
+Given a current CDF File you can create a :py:class:`~hermes_core.timedata.TimeData` data container through passing a path to the CDF file::
 
     >>> from hermes_core.timedata import TimeData
     >>> timedata = TimeData.load("hermes_eea_default_ql_19700101_v0.0.1.cdf") # doctest: +SKIP  
 
-The ``TimeData`` can the be updated, measurements added, metadata added, and written to a new CDF file. 
+The :py:class:`~hermes_core.timedata.TimeData` can the be updated, measurements added, metadata added, and written to a new CDF file. 
 
 
 Adding data to a ``TimeData`` Container
 =======================================
 
-Data can be added to the ``TimeData`` using Astropy ``Quantity`` objects::
+Data can be added to the :py:class:`~hermes_core.timedata.TimeData` using `~astropy.units.Quantity` objects::
 
     >>> data = random(size=(50))
     >>> timedata["variable_name"] = Quantity(value=data, unit="m")
 
-Variable metadata is derived for for the given measuerment automatically when adding a new ``Quantity``.
+Variable metadata is derived for for the given measuerment automatically when adding a new `~astropy.units.Quantity`.
 
-Measurement data and metadata can be aded together though the ``add_measurement()`` function::
+Measurement data and metadata can be aded together though the :py:func:`~hermes_core.timedata.TimeData.add_measurement` function::
 
     >>> timedata.add_measurement(
     ...     measure_name=f"test_metadata",
@@ -152,16 +154,15 @@ Measurement data and metadata can be aded together though the ``add_measurement(
 Adding metadata attributes to a ``TimeData`` Container
 ======================================================
 
-CDF file global metadata and variable metadata can be added through the ``TimeData`` data container. 
+CDF file global metadata and variable metadata can be added through the :py:class:`~hermes_core.timedata.TimeData` data container. 
 
-**Variable Metadata** can be updated for a ``TimeData`` variable using its ``.meta`` property 
-which is an ``OrderdDict`` containing relevant information. The ``TimeData`` derives most
+**Variable Metadata** can be updated for a :py:class:`~hermes_core.timedata.TimeData` variable using its :py:attr:`~hermes_core.timedata.TimeData.meta` property 
+which is an `~typing.OrderedDict` containing relevant information. The :py:class:`~hermes_core.timedata.TimeData` derives most
 variable metadata required for ISTP compliance. However, there are a few pieces of metadaata
 that must be supplied by users to generate ISTP-compliant CDF files:
 
 * `CATDESC` : (Catalogue Description) This is a human readable desctiption of the data variable. 
-* `DISPLAY_TYPE` : This tells the automated software, such as CDAWeb how the data should be 
-    displayed.
+* `DISPLAY_TYPE` : This tells the automated software, such as CDAWeb how the data should be displayed.
 * `LABLAXIS` : Used to label a plot axis or to provide a heading for data listing. 
 * `VAR_TYPE` : Used in CDAWeb to indicate if the data should be used directly by users. 
 
@@ -174,27 +175,26 @@ For Example::
     ...     "LABLAXIS": "Measutement Label",
     ... })
 
-A template of the required metadata can be obtained using the `TimeData.measurement_attribute_template()` function::
+A template of the required metadata can be obtained using the :py:func:`~hermes_core.timedata.TimeData.measurement_attribute_template` function::
 
     >>> variable_attrs_template = TimeData.measurement_attribute_template()
     >>> variable_attrs_template
-    OrderedDict([('CATDESC', None), ('DISPLAY_TYPE', None), ('LABLAXIS', None), ('VAR_TYPE', None)])
+    OrderedDict([('CATDESC', None), 
+                ('DISPLAY_TYPE', None), 
+                ('LABLAXIS', None), 
+                ('VAR_TYPE', None)])
 
 This can make the definition of variable metadata easier since instrument teams or users only need to supply
 pieces of metadata that are in this template. Additional pieces of metadata can be added if desired.
 
-**Global Metadata** can be updated for a ```TimeData``` object using the object's ``.meta`` parameter
-which is an ``OrderdDict`` containing relevant information. The ``TimeData`` derives most global 
+**Global Metadata** can be updated for a :py:class:`~hermes_core.timedata.TimeData` object using the object's :py:attr:`~hermes_core.timedata.TimeData.meta` parameter
+which is an `~typing.OrderedDict` containing relevant information. The :py:class:`~hermes_core.timedata.TimeData` derives most global 
 metadata required for ISTP compliance. However, there are a few pieces of metadata that must be 
 supplied by users to successfuly generate ISTP-compliant CDF files:
 
-* `Descriptor` : This attribute identifies the name of the instrument or sensor that collected
-    the data. Both the a long name and a short name are given. For any data file, onle a
-    single value is allowed.
-* `Data_level` : This attribute identifies the level to which the data has been
-    processed. Ex. "ql>Quick Look"
-* `Data_version` : This attribute identifies the version (vX.Y.Z) of a particular CDF 
-    data file.
+* `Descriptor` : This attribute identifies the name of the instrument or sensor that collected the data. Both the a long name and a short name are given. For any data file, onle a single value is allowed.
+* `Data_level` : This attribute identifies the level to which the data has been processed. Ex. "ql>Quick Look"
+* `Data_version` : This attribute identifies the version (vX.Y.Z) of a particular CDF data file.
 
 For Example::
 
@@ -205,23 +205,23 @@ For Example::
     ... }
     >>> timedata.meta.update(input_attrs)
 
-A template of the required metadata can be obtained using the `TimeData.global_attribute_template()` function::
+A template of the required metadata can be obtained using the :py:func:`~hermes_core.timedata.TimeData.global_attribute_template` function::
 
     >>> global_attrs_template = TimeData.global_attribute_template()
     >>> global_attrs_template
     OrderedDict([('DOI', None),
-             ('Data_level', None),
-             ('Data_version', None),
-             ('Descriptor', None),
-             ('HTTP_LINK', None),
-             ('Instrument_mode', None),
-             ('Instrument_type', None),
-             ('LINK_TEXT', None),
-             ('LINK_TITLE', None),
-             ('MODS', None),
-             ('PI_affiliation', None),
-             ('PI_name', None),
-             ('TEXT', None)])
+                ('Data_level', None),
+                ('Data_version', None),
+                ('Descriptor', None),
+                ('HTTP_LINK', None),
+                ('Instrument_mode', None),
+                ('Instrument_type', None),
+                ('LINK_TEXT', None),
+                ('LINK_TITLE', None),
+                ('MODS', None),
+                ('PI_affiliation', None),
+                ('PI_name', None),
+                ('TEXT', None)])
 
 This can make the definition of global metadata easier since instrument teams or users only need to supply
 pieces of metadata that are in this template. Additional pieces of metadata can be added if desired.
@@ -229,8 +229,8 @@ pieces of metadata that are in this template. Additional pieces of metadata can 
 Using ``TimeData`` to Write a CDF File
 ========================================
 
-The ``TimeData`` class uses the ``spacepy.pycdf`` module to convert all variable data and metadata to 
-a CDF format. Data cen be written to a CDF file using the ``save(...)`` method and by passing, 
+The :py:class:`~hermes_core.timedata.TimeData` class uses the `~spacepy.pycdf` module to convert all variable data and metadata to 
+a CDF format. Data can be written to a CDF file using the :py:func:`~hermes_core.timedata.TimeData.save` method and by passing, 
 as a parameter, a path to the folder where the CDF file should be saved. 
 
 For example::
@@ -242,15 +242,15 @@ This returns the full path to the CDF file that was generated. From this you can
 distribute your data as a CDF file.
 
 
-Using ``TimeData`` to Validate a CDF File
+To Validate a CDF File
 ===========================================
 
-The ``TimeData`` uses the ``spacepy.pycdf.istp`` module for data validation, in addition to custom
-tests for additional metadata. A CDF file can be validated using the ``validate(...)`` method
+The :py:class:`~hermes_core.timedata.TimeData` uses the `~spacepy.pycdf.istp` module for data validation, in addition to custom
+tests for additional metadata. A CDF file can be validated using the :py:func:`~hermes_core.util.validation.validate` method
 and by passing, as a parameter, a full path to the CDF file to be validated::
 
     >>> from hermes_core.util.validation import validate
     >>> validation_errors = validate(cdf_file_path) # doctest: +SKIP 
 
-This returns a ``list[str]`` that contains any vlidation errors that were enountered when examining
+This returns a `list[str]` that contains any validation errors that were encountered when examining
 the CDF file. If no validation errors were found the method will return an empty list. 

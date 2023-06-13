@@ -7,6 +7,8 @@ from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
 
+__all__ = ["CDFHandler"]
+
 # ================================================================================================
 #                                   ABSTRACT HANDLER
 # ================================================================================================
