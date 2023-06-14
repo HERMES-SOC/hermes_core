@@ -60,8 +60,14 @@ class TimeData:
 
         # Check individual Columns
         for colname in data.columns:
+            # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+            # Verify that the Column is only a single dimension
+            if len(data[colname].shape) > 1:  # If there is more than 1 Dimension
+                raise ValueError(
+                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
+                )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
@@ -124,7 +130,7 @@ class TimeData:
         """
         (`list`) A list of all the names of the columns in the data table.
         """
-        return self._data.columns
+        return self._data.colnames
 
     @property
     def time(self):
@@ -326,6 +332,11 @@ class TimeData:
             raise TypeError(
                 f"Measurement {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
             )
+        # Verify that the Column is only a single dimension
+        if len(measure_data.shape) > 1:  # If there is more than 1 Dimension
+            raise ValueError(
+                f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
+            )
 
         self._data[measure_name] = measure_data
         # Add any Metadata from the original Quantity
@@ -368,9 +379,11 @@ class TimeData:
         `~matplotlib.axes.Axes`
             The plot axes.
         """
+        # Set up the plot axes based on the number of columns to plot
         axes, columns = self._setup_axes_columns(axes, columns)
 
-        axes = self._data[columns].plot(ax=axes, **plot_args)
+        # Create a Plot through Pandas
+        axes = self._data[columns].to_pandas().plot(ax=axes, **plot_args)
 
         units = set([self.units[col] for col in columns])
         if len(units) == 1:
@@ -379,7 +392,9 @@ class TimeData:
             unit = u.Unit(list(units)[0])
             axes.set_ylabel(unit.to_string())
 
+        # Setup the Time Axis
         self._setup_x_axis(axes)
+
         return axes
 
     def _setup_axes_columns(self, axes, columns, *, subplots=False):
@@ -387,11 +402,12 @@ class TimeData:
         Validate data for plotting, and get default axes/columns if not passed
         by the user.
         """
-        # code from SunPy
         import matplotlib.pyplot as plt
 
+        # If no individual columns were input, try to plot all columns
         if columns is None:
             columns = self.columns
+        # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:
                 axes = plt.gca()
@@ -405,7 +421,6 @@ class TimeData:
         """
         Shared code to set x-axis properties.
         """
-        # code from SunPy
         import matplotlib.dates as mdates
 
         if isinstance(ax, np.ndarray):
