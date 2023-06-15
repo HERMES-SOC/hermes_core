@@ -11,7 +11,7 @@ The logging system is an adapted version of `~astropy.logger.AstropyLogger`.
 Its purpose is to provide users the ability to decide which log and warning messages to show,
 to capture them, and to send them to a file.
 
-All messages provided by sunpy use this logging facility which is based
+All messages provided by HERMES use this logging facility which is based
 on the Python `logging` module rather than print statements.
 
 Messages can have one of several levels, in increasing order of importance:
@@ -54,7 +54,7 @@ This will display DEBUG and all messages with that level and above. If you'd lik
 relevant messages you'd set the logging level to WARNING or above.
 
 For other options such as whether to log to a file or what level of messages the log file should
-contain, see the the Sunpy configuration file (:doc:`config </user-guide/customization>`).
+contain, see the the HERMES configuration file (:doc:`config </user-guide/customization>`).
 
 Context managers
 ================
@@ -69,7 +69,7 @@ Once your code is executed, ``log_list`` will be a Python list containing all of
 This does not divert the messages from going to a file or to the screen.
 It is also possible to send the messages to a custom file with::
 
-    >>> from sunpy import log
+    >>> from hermes_core import log
     >>> with log.log_to_file('myfile.log'):  #doctest: +SKIP
     ...     # your code here  #doctest: +SKIP
 
