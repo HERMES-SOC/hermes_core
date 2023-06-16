@@ -108,18 +108,14 @@ def test_hermes_warnings_logging():
     log._showwarning_orig, previous = None, log._showwarning_orig
 
     # Without warnings logging
-    with pytest.warns(
-        HERMESUserWarning, match="This warning should not be captured"
-    ) as warn_list:
+    with pytest.warns(HERMESUserWarning, match="This warning should not be captured") as warn_list:
         with log.log_to_list() as log_list:
             warnings.warn("This warning should not be captured", HERMESUserWarning)
     assert len(log_list) == 0
     assert len(warn_list) == 1
 
     # With warnings logging, making sure that Astropy warnings are not intercepted
-    with pytest.warns(
-        AstropyUserWarning, match="This warning should not be captured"
-    ) as warn_list:
+    with pytest.warns(AstropyUserWarning, match="This warning should not be captured") as warn_list:
         log.enable_warnings_logging()
         with log.log_to_list() as log_list:
             warnings.warn("This warning should be captured", HERMESUserWarning)
@@ -128,9 +124,7 @@ def test_hermes_warnings_logging():
     assert len(log_list) == 1
     assert len(warn_list) == 1
     assert log_list[0].levelname == "WARNING"
-    assert log_list[0].message.startswith(
-        "HERMESUserWarning: This warning should be captured"
-    )
+    assert log_list[0].message.startswith("HERMESUserWarning: This warning should be captured")
     # assert log_list[0].origin == "hermes_core.util.tests.test_logger"
 
     # Restore the state of warnings logging prior to this test
