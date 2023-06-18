@@ -9,9 +9,11 @@ from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
+import hermes_core
 from hermes_core.util.io import CDFHandler, NetCDFHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
+
 
 __all__ = ["TimeData"]
 
@@ -84,7 +86,11 @@ class TimeData:
         # Add Measurement Metadata
         for col in self._data.columns:
             if col != "time":
-                self._data[col].meta = OrderedDict()
+                # TODO the following may belong in _derive_metadata
+                self._data[col].meta = self.measurement_attribute_template()
+                self._data[col].meta['LABLAXIS'] = f'{col} [{self._data[col].unit}]'
+                self._data[col].meta['DISPLAY_TYPE'] = 'time_series'
+                self._data[col].meta['VAR_TYPE'] = 'data'
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
 
@@ -102,14 +108,14 @@ class TimeData:
     @property
     def meta(self):
         """
-        (`typing.OrderedDict`) Global metadata associated with the measurement data.
+        (`collections.OrderedDict`) Global metadata associated with the measurement data.
         """
         return self._data.meta
 
     @property
     def units(self):
         """
-        (`typing.OrderedDict`) The units of the measurement for each column in the `TimeSeries` table.
+        (`collections.OrderedDict`) The units of the measurement for each column in the `TimeSeries` table.
         """
         units = {}
         for name in self._data.columns:
@@ -217,17 +223,34 @@ class TimeData:
             yield (name, var_data)
 
     @staticmethod
-    def global_attribute_template():
+    def global_attribute_template(instr_name, data_level, version):
         """
         Function to generate a template of the required global attributes
         that must be set for a valid CDF file to be generated from the `TimeData` container.
 
+        Parameters
+        ----------
+        instr_name : str
+            The instrument name. Must be "eea", "nemisis", "merit" or "spani".
+        data_level : str
+            The data level of the data. Must be "l1", "ql", "l3", "l4"
+        version : str
+            Must be of the form X.Y.Z.
+
         Returns
         -------
-        template : `typing.OrderedDict`
+        template : `collections.OrderedDict`
             A template for required global attributes that must be provided.
         """
-        return CDFSchema.global_attribute_template()
+        meta = CDFSchema.global_attribute_template()
+
+        meta['Descriptor'] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+        if data_level != 'ql':
+            meta['Data_level'] = f"{data_level.upper()}>Level {data_level[1]}"
+        else:
+            meta['Data_level'] = f"{data_level.upper()}>Quicklook"
+        meta['Data_version'] = version
+        return meta
 
     @staticmethod
     def measurement_attribute_template():
@@ -237,7 +260,7 @@ class TimeData:
 
         Returns
         -------
-        template : `typing.OrderedDict`
+        template : `collections.OrderedDict`
             A template for required variable attributes that must be provided.
         """
         return CDFSchema.measurement_attribute_template()
@@ -340,7 +363,11 @@ class TimeData:
 
         self._data[measure_name] = measure_data
         # Add any Metadata from the original Quantity
-        self._data[measure_name].meta = OrderedDict()
+        self._data[measure_name].meta = self.measurement_attribute_template()
+        # TODO the following may belong in _derive_metadata
+        self._data[measure_name].meta['LABLAXIS'] = f'{measure_name} [{measure_data.unit}]'
+        self._data[measure_name].meta['DISPLAY_TYPE'] = 'time_series'
+        self._data[measure_name].meta['VAR_TYPE'] = 'data'
         if hasattr(measure_data, "meta"):
             self._data[measure_name].meta.update(measure_data.meta)
         self._data[measure_name].meta.update(measure_meta)
@@ -369,11 +396,10 @@ class TimeData:
             If provided the image will be plotted on the given axes.
             Defaults to `None`, so the current axes will be used.
         columns : `list[str]`, optional
-            If provided, only plot the specified measurements.
+            If provided, only plot the specified measurements otherwise try to plot them all.
         **plot_args : `dict`, optional
             Additional plot keyword arguments that are handed to
-            :meth:`pandas.DataFrame.plot`.
-
+            `~matplotlib.axes.Axes`.
         Returns
         -------
         `~matplotlib.axes.Axes`
@@ -381,16 +407,17 @@ class TimeData:
         """
         # Set up the plot axes based on the number of columns to plot
         axes, columns = self._setup_axes_columns(axes, columns)
+        from astropy.visualization import quantity_support
+        with quantity_support():
+            for col in columns:
+                axes.plot(self.time, self._data[columns], **plot_args)
 
-        # Create a Plot through Pandas
-        axes = self._data[columns].to_pandas().plot(ax=axes, **plot_args)
-
-        units = set([self.units[col] for col in columns])
-        if len(units) == 1:
+        #units = set([self.units[col] for col in columns])
+        #if len(units) == 1:
             # If units of all columns being plotted are the same, add a unit
             # label to the y-axis.
-            unit = u.Unit(list(units)[0])
-            axes.set_ylabel(unit.to_string())
+        #    unit = u.Unit(list(units)[0])
+        #    axes.set_ylabel(unit.to_string())
 
         # Setup the Time Axis
         self._setup_x_axis(axes)
@@ -475,22 +502,26 @@ class TimeData:
         # Re-Derive Metadata
         self._derive_metadata()
 
-    def save(self, output_path):
+    def save(self, output_path=None, overwrite=False):
         """
         Save the data to a CDF file in the directory specified by the `output_path`.
 
         Parameters
         ----------
-        output_path : `str`
-            A string path to the directory where file is to be saved.
-
+        output_path : `str`, optional
+            A string path to the directory where file is to be saved. If not provided, saves to the current directory.
+        overwrite : `bool`
+            If set, overwrite existing file of the same name.
         Returns
         -------
         path : `str`
             A path to the saved file.
-
         """
         handler = CDFHandler()
+        if not output_path:
+            output_path = str(Path.cwd())
+        if overwrite:
+            (Path(output_path) / (self.meta['Logical_file_id'] + '.cdf')).unlink()
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod
