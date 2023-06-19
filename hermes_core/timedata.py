@@ -13,7 +13,7 @@ import hermes_core
 from hermes_core.util.io import CDFHandler, NetCDFHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
-
+from hermes_core.util.util import VALID_DATA_LEVELS
 
 __all__ = ["TimeData"]
 
@@ -86,11 +86,7 @@ class TimeData:
         # Add Measurement Metadata
         for col in self._data.columns:
             if col != "time":
-                # TODO the following may belong in _derive_metadata
                 self._data[col].meta = self.measurement_attribute_template()
-                self._data[col].meta['LABLAXIS'] = f'{col} [{self._data[col].unit}]'
-                self._data[col].meta['DISPLAY_TYPE'] = 'time_series'
-                self._data[col].meta['VAR_TYPE'] = 'data'
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
 
@@ -223,18 +219,18 @@ class TimeData:
             yield (name, var_data)
 
     @staticmethod
-    def global_attribute_template(instr_name, data_level, version):
+    def global_attribute_template(instr_name="", data_level="", version=""):
         """
         Function to generate a template of the required global attributes
         that must be set for a valid CDF file to be generated from the `TimeData` container.
 
         Parameters
         ----------
-        instr_name : str
+        instr_name : `str`
             The instrument name. Must be "eea", "nemisis", "merit" or "spani".
-        data_level : str
-            The data level of the data. Must be "l1", "ql", "l3", "l4"
-        version : str
+        data_level : `str`
+            The data level of the data. Must be "l0", "l1", "ql", "l2", "l3", "l4"
+        version : `str`
             Must be of the form X.Y.Z.
 
         Returns
@@ -244,12 +240,33 @@ class TimeData:
         """
         meta = CDFSchema.global_attribute_template()
 
-        meta['Descriptor'] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
-        if data_level != 'ql':
-            meta['Data_level'] = f"{data_level.upper()}>Level {data_level[1]}"
-        else:
-            meta['Data_level'] = f"{data_level.upper()}>Quicklook"
-        meta['Data_version'] = version
+        # Check the Optional Instrument Name
+        if instr_name:
+            if instr_name not in hermes_core.INST_NAMES:
+                raise ValueError(
+                    f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
+                )
+            # Set the Property
+            meta["Descriptor"] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+
+        # Check the Optional Data Level
+        if data_level:
+            if data_level not in VALID_DATA_LEVELS:
+                raise ValueError(
+                    f"Level, {data_level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
+                )
+            # Set the Property
+            if data_level != "ql":
+                meta["Data_level"] = f"{data_level.upper()}>Level {data_level[1]}"
+            else:
+                meta["Data_level"] = f"{data_level.upper()}>Quicklook"
+
+        # Check the Optional Data Version
+        if version:
+            # check that version is in the right format with three parts
+            if len(version.split(".")) != 3:
+                raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
+            meta["Data_version"] = version
         return meta
 
     @staticmethod
@@ -273,7 +290,7 @@ class TimeData:
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
             # If the attribute is set, check if we want to override it
-            if attr_name in self._data.meta:
+            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 # We want to override if:
                 #   1) The actual value is not the derived value
                 #   2) The schema marks this attribute to be overriden
@@ -291,7 +308,7 @@ class TimeData:
 
         # Global Attributes
         for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
-            if attr_name in self._data.meta:
+            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 if (
                     self._data.meta[attr_name] != attr_value
                     and self.schema.global_attribute_schema[attr_name]["override"]
@@ -305,7 +322,10 @@ class TimeData:
 
         # Time Measurement Attributes
         for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
-            if attr_name in self._data["time"].meta:
+            if (
+                attr_name in self._data["time"].meta
+                and self._data["time"].meta[attr_name] is not None
+            ):
                 attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
                 if self._data["time"].meta[attr_name] != attr_value and attr_schema["override"]:
                     warn_user(
@@ -320,7 +340,10 @@ class TimeData:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
                 self._data, col
             ).items():
-                if attr_name in self._data[col].meta:
+                if (
+                    attr_name in self._data[col].meta
+                    and self._data[col].meta[attr_name] is not None
+                ):
                     attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
                     if self._data[col].meta[attr_name] != attr_value and attr_schema["override"]:
                         warn_user(
@@ -364,10 +387,6 @@ class TimeData:
         self._data[measure_name] = measure_data
         # Add any Metadata from the original Quantity
         self._data[measure_name].meta = self.measurement_attribute_template()
-        # TODO the following may belong in _derive_metadata
-        self._data[measure_name].meta['LABLAXIS'] = f'{measure_name} [{measure_data.unit}]'
-        self._data[measure_name].meta['DISPLAY_TYPE'] = 'time_series'
-        self._data[measure_name].meta['VAR_TYPE'] = 'data'
         if hasattr(measure_data, "meta"):
             self._data[measure_name].meta.update(measure_data.meta)
         self._data[measure_name].meta.update(measure_meta)
@@ -408,14 +427,15 @@ class TimeData:
         # Set up the plot axes based on the number of columns to plot
         axes, columns = self._setup_axes_columns(axes, columns)
         from astropy.visualization import quantity_support
+
         with quantity_support():
             for col in columns:
                 axes.plot(self.time, self._data[columns], **plot_args)
 
-        #units = set([self.units[col] for col in columns])
-        #if len(units) == 1:
-            # If units of all columns being plotted are the same, add a unit
-            # label to the y-axis.
+        # units = set([self.units[col] for col in columns])
+        # if len(units) == 1:
+        # If units of all columns being plotted are the same, add a unit
+        # label to the y-axis.
         #    unit = u.Unit(list(units)[0])
         #    axes.set_ylabel(unit.to_string())
 
@@ -521,7 +541,9 @@ class TimeData:
         if not output_path:
             output_path = str(Path.cwd())
         if overwrite:
-            (Path(output_path) / (self.meta['Logical_file_id'] + '.cdf')).unlink()
+            cdf_file_path = Path(output_path) / (self.meta["Logical_file_id"] + ".cdf")
+            if cdf_file_path.exists():
+                cdf_file_path.unlink()
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod

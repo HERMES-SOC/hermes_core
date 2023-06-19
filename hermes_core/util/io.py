@@ -165,7 +165,7 @@ class CDFHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if not attr_value:
-                warn_user(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+                raise ValueError(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
@@ -184,7 +184,13 @@ class CDFHandler(TimeDataIOHandler):
                 cdf_file[var_name] = var_data.value
                 # Add the Variable Attributes
                 for var_attr_name, var_attr_val in var_data.meta.items():
-                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+                    if not var_attr_val:
+                        raise ValueError(
+                            f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                        )
+                    else:
+                        # Add the Attribute to the CDF File
+                        cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
 
 # ================================================================================================

@@ -67,7 +67,7 @@ attribute_key:
     required: false
     override: false
   DISPLAY_TYPE:
-    derived: false
+    derived: true
     required: true
     override: false
     valid_values:
@@ -95,7 +95,7 @@ attribute_key:
     override: false
     alternate: FORMAT
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
-    derived: false
+    derived: true
     required: true
     override: false
     alternate: LABL_PTR_1
@@ -129,7 +129,7 @@ attribute_key:
     required: true
     override: false
   VAR_TYPE:
-    derived: false
+    derived: true
     required: true
     override: false
     valid_values:
