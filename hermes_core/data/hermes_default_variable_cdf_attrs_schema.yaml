@@ -83,11 +83,11 @@ attribute_key:
   FILLVAL:
     derived: true
     required: true
-    override: false
+    override: true
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     derived: true
     required: true
-    override: false
+    override: true
     alternate: FORM_PTR
   FORM_PTR:
     derived: false
@@ -123,11 +123,11 @@ attribute_key:
   VALIDMIN:
     derived: true
     required: true
-    override: false
+    override: true
   VALIDMAX:
     derived: true
     required: true
-    override: false
+    override: true
   VAR_TYPE:
     derived: true
     required: true
