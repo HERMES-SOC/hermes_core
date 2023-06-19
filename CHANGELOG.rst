@@ -5,7 +5,7 @@ Latest
 * Added data class to hold measurements and to save to CDF files
 
 0.2.0 (2023-03-22)
-========
+==================
 This release includes improvements tested in the second dataflow test. Since the last release, the improvements are as follows:
 
 - Uses fstrings instead of the format syntax

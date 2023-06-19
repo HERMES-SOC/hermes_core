@@ -11,6 +11,6 @@ For more details checkout the :ref:`reference`.
    :maxdepth: 2
 
    Brief Tour <tour>
+   reading_writing_data
    customization
    logger
-   cdf_writer

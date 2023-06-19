@@ -1,4 +1,4 @@
-.. _cdf_writer:
+.. _reading_writing_data:
 
 *******************************
 Opening and Writing HERMES Data
@@ -38,11 +38,11 @@ There are many ways to initialize one but here is one example:
                         data={'Bx': u.Quantity([1, 2, 3, 4], 'nanoTesla', dtype=np.uint16)})
 
 Be mindful to set the right number of bits per measurement, in this case 16 bits.
-If you do not, it will likely default to float64 and if you write a CDF file it will be larger than expected or needed.
+If you do not, it will likely default to float64 and if you write a CDF file, it will be larger than expected or needed.
 The valid `~numpy.dtype` choices are uint8, uint16, uint32, uint64, int8, int16, int32, int64, float16, float32, float64, float164.
 You can also create your time array directly
 
-    >>> from astropy.time import Time
+    >>> from astropy.time import Time, TimeDelta
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> times = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
@@ -105,11 +105,12 @@ Be careful when editing metadata that was automatically generated as you might m
 
 Putting it all together here is complete example
 
+    >>> from hermes_core.timedata import TimeData
+    >>> import astropy.units as u
     >>> ts = TimeSeries(
         time_start="2016-03-22T12:30:31",
         time_delta=3 * u.s,
-        data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=bitlength)},
-    >>> )
+        data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)})
     >>> input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
     >>> timedata = TimeData(data=ts, meta=input_attrs)
     >>> timedata['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
@@ -132,13 +133,8 @@ Remember that these new measurements must have the same time stamps as the exist
 You can add the new column in one of two ways.
 The more explicit approach is to use :py:func:`~hermes_core.timedata.TimeData.add_measurement` function::
 
-    >>> timedata.add_measurement(
-    ...     measure_name=f"By",
-    ...     measure_data=u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16),
-    ...     measure_meta={
-    ...         "CATDESC": "Test Metadata",
-    ...     }
-    ... )
+    >>> data = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
+    >>> timedata.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
 
 Or you can just add the column directly.
 
@@ -151,7 +147,27 @@ Remember that you'll then have to fill in the meta data afterwards.
 Visualizing data in a ``TimeData`` Container
 ============================================
 The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot`.
+By default, a plot will be generated with each measurement in its own plot panel.
 
+.. plot::
+    :include-source:
+
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> import astropy.units as u
+    >>> from astropy.timeseries import TimeSeries
+    >>> from hermes_core.timedata import TimeData
+    >>> bx = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
+    >>> by = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
+    >>> bz = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
+    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": u.Quantity(bx, "nanoTesla", dtype=np.int16)})
+    >>> input_attrs = TimeData.global_attribute_template("nemisis", "l1", "1.0.0")
+    >>> timedata = TimeData(data=ts, meta=input_attrs)
+    >>> timedata.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
+    >>> timedata.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
+    >>> fig = plt.figure()
+    >>> timedata.plot()
+    >>> plt.show()
 
 Writing a CDF File
 ==================
