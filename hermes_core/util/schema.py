@@ -170,13 +170,16 @@ class CDFSchema(FileTypeSchema):
         # Check the Attributes that can be derived
         if not var_name == "time":
             measurement_attributes["DEPEND_0"] = self._get_depend(data)
+        measurement_attributes["DISPLAY_TYPE"] = self._get_display_type(data, var_name)
         measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
         measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
         measurement_attributes["FORMAT"] = self._get_format(data, var_name)
+        measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
         measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(data, var_name)
         measurement_attributes["UNITS"] = self._get_units(data, var_name)
         measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
         measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
+        measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
         return measurement_attributes
 
     def derive_time_attributes(self, data):
@@ -244,8 +247,15 @@ class CDFSchema(FileTypeSchema):
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
 
+    # =============================================================================================
+    #                             VARIABLE METADATA DERIVATIONS
+    # =============================================================================================
+
     def _get_depend(self, data):
         return "Epoch"
+
+    def _get_display_type(self, data, var_name):
+        return "time_series"
 
     def _get_fieldnam(self, data, var_name):
         if var_name != "time":
@@ -430,6 +440,10 @@ class CDFSchema(FileTypeSchema):
             )
         return fmt
 
+    def _get_lablaxis(self, data, var_name):
+        # return f"{var_name} [{data[var_name].unit}]"
+        return f"{var_name} [{self._get_units(data, var_name)}]"
+
     def _get_reference_position(self, data):
         # Get the Variable Data
         var_data = data.time
@@ -546,6 +560,13 @@ class CDFSchema(FileTypeSchema):
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval
+
+    def _get_var_type(self, data, var_name):
+        return "data"
+
+    # =============================================================================================
+    #                             GLOBAL METADATA DERIVATIONS
+    # =============================================================================================
 
     def _get_logical_file_id(self, data):
         """

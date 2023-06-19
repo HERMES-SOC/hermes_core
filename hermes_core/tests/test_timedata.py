@@ -66,7 +66,7 @@ def get_test_timedata():
     )
     input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
     timedata = TimeData(data=ts, meta=input_attrs)
-    timedata['Bx'].meta.update({"CATDESC": "Test"})
+    timedata["Bx"].meta.update({"CATDESC": "Test"})
     return timedata
 
 
@@ -244,11 +244,11 @@ def test_time_data_generate_valid_cdf():
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache)
+    test_file_output_path = test_data.save(output_path=test_cache, overwrite=True)
 
     # Validate the generated CDF File
     result = validate(filepath=test_file_output_path)
-    assert len(result) <= 2  # TODO Logical Source and File ID Do not Agree
+    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
@@ -352,12 +352,12 @@ def test_time_data_from_cdf():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-
         test_file_output_path = test_data.save(output_path=tmpdirname)
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        assert len(result) <= 6  # TODO Logical Source and File ID Do not Agree
+        print(result)
+        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
         new_writer = TimeData.load(test_file_output_path)
@@ -371,11 +371,26 @@ def test_time_data_from_cdf():
 
         # Validate the generated CDF File
         result2 = validate(test_file_output_path2)
-        assert len(result2) <= 6  # TODO Logical Source and File ID Do not Agree
+        print(result2)
+        assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
 
 
-@pytest.mark.parametrize("bitlength", [np.uint8, np.uint16, np.uint32, np.uint64, np.int8, np.int16, np.int32, np.int64, np.float16, np.float32])
+@pytest.mark.parametrize(
+    "bitlength",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float16,
+        np.float32,
+    ],
+)
 def test_bitlength_save_cdf(bitlength):
     """Check that it is possible to create a CDF file for all measurement bitlengths"""
     ts = TimeSeries(
@@ -383,9 +398,45 @@ def test_bitlength_save_cdf(bitlength):
         time_delta=3 * u.s,
         data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=bitlength)},
     )
-    input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+
     timedata = TimeData(data=ts, meta=input_attrs)
-    timedata['Bx'].meta.update({"CATDESC": "Test"})
+    timedata["Bx"].meta.update({"CATDESC": "Test"})
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = timedata.save(output_path=tmpdirname)
 
@@ -396,7 +447,44 @@ def test_bitlength_save_cdf(bitlength):
 
 def test_overwrite_save():
     """Test that when overwrite is set on save no error is generated when trying to create the same file twice"""
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
     td = get_test_timedata()
+    td.meta.update(input_attrs)
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = Path(td.save(output_path=tmpdirname))
         # Test the File Exists
