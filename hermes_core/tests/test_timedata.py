@@ -234,16 +234,17 @@ def test_time_data_generate_valid_cdf():
         )
 
     # Convert the Wrapper to a CDF File
-    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache, overwrite=True)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # print out rights 
+        test_file_output_path = test_data.save(output_path=tmpdirname, overwrite=True)
 
-    # Validate the generated CDF File
-    result = validate(filepath=test_file_output_path)
-    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+        # Validate the generated CDF File
+        result = validate(filepath=test_file_output_path)
+        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
-    # Remove the File
-    test_file_cache_path = Path(test_file_output_path)
-    test_file_cache_path.unlink()
+        # Remove the File
+        test_file_cache_path = Path(test_file_output_path)
+        test_file_cache_path.unlink()
 
 
 def test_time_data_from_cdf():
