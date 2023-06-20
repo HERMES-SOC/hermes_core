@@ -3,7 +3,7 @@ Container class for Measurement Data.
 """
 
 from pathlib import Path
-from typing import OrderedDict
+from collections import OrderedDict
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
