@@ -51,8 +51,6 @@ def get_test_timeseries():
         {
             "VAR_TYPE": "metadata",
             "CATDESC": "Test Metadata",
-            "DISPLAY_TYPE": "time_series",
-            "LABLAXIS": "Label Axis",
         }
     )
     return ts
@@ -203,12 +201,9 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_var{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
-                "VAR_TYPE": "data",
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "CATDESC": "Test Data",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -218,12 +213,10 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_support{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Support",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -233,12 +226,10 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_metadata{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Metadata",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -311,12 +302,9 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_var{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
-                "VAR_TYPE": "data",
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "CATDESC": "Test Data",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -326,12 +314,10 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_support{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Support",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -341,12 +327,10 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_metadata{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Metadata",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -356,7 +340,6 @@ def test_time_data_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        print(result)
         assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
@@ -371,7 +354,6 @@ def test_time_data_from_cdf():
 
         # Validate the generated CDF File
         result2 = validate(test_file_output_path2)
-        print(result2)
         assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
 

@@ -353,7 +353,7 @@ class TimeData:
                 else:
                     self._data[col].meta[attr_name] = attr_value
 
-    def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict=None):
+    def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
         Add a new measurement (column).
 
@@ -384,11 +384,6 @@ class TimeData:
         self._data[measure_name] = data
         # Add any Metadata from the original Quantity
         self._data[measure_name].meta = self.measurement_attribute_template()
-        # TODO the following may belong in _derive_metadata
-        self._data[measure_name].meta['LABLAXIS'] = f'{measure_name} [{data.unit}]'
-        self._data[measure_name].meta['DISPLAY_TYPE'] = 'time_series'
-        self._data[measure_name].meta['VAR_TYPE'] = 'data'
-        self._data[measure_name].meta['CATDESC'] = ''
         if hasattr(data, "meta"):
             self._data[measure_name].meta.update(data.meta)
         if meta:

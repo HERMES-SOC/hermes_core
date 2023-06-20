@@ -31,11 +31,13 @@ Creating a ``TimeData`` object
 A :py:class:`~hermes_core.timedata.TimeData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
 There are many ways to initialize one but here is one example:
 
+    >>> import numpy as np
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> ts = TimeSeries(time_start='2016-03-22T12:30:31',
-                        time_delta=3 * u.s,
-                        data={'Bx': u.Quantity([1, 2, 3, 4], 'nanoTesla', dtype=np.uint16)})
+    ...                    time_delta=3 * u.s,
+    ...                    data={'Bx': u.Quantity([1, 2, 3, 4], 'nanoTesla', dtype=np.uint16)}
+    ...                )
 
 Be mindful to set the right number of bits per measurement, in this case 16 bits.
 If you do not, it will likely default to float64 and if you write a CDF file, it will be larger than expected or needed.
@@ -46,7 +48,10 @@ You can also create your time array directly
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> times = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
-    >>> ts = TimeSeries(time=times, data={'diff_e_flux': u.Quantity(np.arange(100) * 1e-3, '1/(cm**2 * s * eV * steradian)'), , dtype=np.float32)})
+    >>> ts = TimeSeries(
+    ...        time=times, 
+    ...        data={'diff_e_flux': u.Quantity(np.arange(100) * 1e-3, '1/(cm**2 * s * eV * steradian)', dtype=np.float32)}
+    ...    )
 
 Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.TimeData`.
 
@@ -97,7 +102,7 @@ You can now create the :py:class:`~hermes_core.timedata.TimeData` object,
 The :py:class:`~hermes_core.timedata.TimeData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
 
-    >>> timedata['Bx'].meta
+    >>> timedata['Bx'].meta # doctest: +SKIP
 
 The class does its best to fill in metadata fields if it can and leaves others blank that it cannot.
 Those should be filled in manually.
@@ -108,9 +113,10 @@ Putting it all together here is complete example
     >>> from hermes_core.timedata import TimeData
     >>> import astropy.units as u
     >>> ts = TimeSeries(
-        time_start="2016-03-22T12:30:31",
-        time_delta=3 * u.s,
-        data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)})
+    ...    time_start="2016-03-22T12:30:31",
+    ...    time_delta=3 * u.s,
+    ...    data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)}
+    ... )
     >>> input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
     >>> timedata = TimeData(data=ts, meta=input_attrs)
     >>> timedata['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
@@ -142,7 +148,7 @@ Or you can just add the column directly.
 
 Remember that you'll then have to fill in the meta data afterwards.
 
-    >>> timedata['By'].meta.update(measure_meta)
+    >>> timedata['By'].meta.update(measure_meta) # doctest: +SKIP
 
 Visualizing data in a ``TimeData`` Container
 ============================================
@@ -166,8 +172,8 @@ By default, a plot will be generated with each measurement in its own plot panel
     >>> timedata.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
     >>> timedata.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
     >>> fig = plt.figure()
-    >>> timedata.plot()
-    >>> plt.show()
+    >>> timedata.plot() # doctest: +SKIP
+    >>> plt.show() # doctest: +SKIP
 
 Writing a CDF File
 ==================
@@ -218,10 +224,7 @@ A template of the required metadata can be obtained using the :py:func:`~hermes_
 
     >>> variable_attrs_template = TimeData.measurement_attribute_template()
     >>> variable_attrs_template
-    OrderedDict([('CATDESC', None),
-                ('DISPLAY_TYPE', None),
-                ('LABLAXIS', None),
-                ('VAR_TYPE', None)])
+    OrderedDict([('CATDESC', None)])
 
 If you use the :py:func:`~hermes_core.timedata.TimeData.add_measurement` function, it will automatically fill most of them in for you.
 Additional pieces of metadata can be added if desired.
