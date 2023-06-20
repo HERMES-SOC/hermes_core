@@ -66,7 +66,9 @@ class TimeData:
         for colname in data.columns:
             # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
-                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+                raise TypeError(
+                    f"Column '{colname}' must be an astropy.Quantity object"
+                )
             # Verify that the Column is only a single dimension
             if len(data[colname].shape) > 1:  # If there is more than 1 Dimension
                 raise ValueError(
@@ -248,7 +250,9 @@ class TimeData:
                     f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
                 )
             # Set the Property
-            meta["Descriptor"] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+            meta[
+                "Descriptor"
+            ] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
 
         # Check the Optional Data Level
         if data_level:
@@ -266,7 +270,9 @@ class TimeData:
         if version:
             # check that version is in the right format with three parts
             if len(version.split(".")) != 3:
-                raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
+                raise ValueError(
+                    f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
+                )
             meta["Data_version"] = version
         return meta
 
@@ -307,7 +313,9 @@ class TimeData:
                 self._data.meta[attr_name] = attr_value
 
         # Global Attributes
-        for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_global_attributes(
+            self._data
+        ).items():
             if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 if (
                     self._data.meta[attr_name] != attr_value
@@ -321,13 +329,20 @@ class TimeData:
                 self._data.meta[attr_name] = attr_value
 
         # Time Measurement Attributes
-        for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_time_attributes(
+            self._data
+        ).items():
             if (
                 attr_name in self._data["time"].meta
                 and self._data["time"].meta[attr_name] is not None
             ):
-                attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
-                if self._data["time"].meta[attr_name] != attr_value and attr_schema["override"]:
+                attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                    attr_name
+                ]
+                if (
+                    self._data["time"].meta[attr_name] != attr_value
+                    and attr_schema["override"]
+                ):
                     warn_user(
                         f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
                     )
@@ -344,8 +359,13 @@ class TimeData:
                     attr_name in self._data[col].meta
                     and self._data[col].meta[attr_name] is not None
                 ):
-                    attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
-                    if self._data[col].meta[attr_name] != attr_value and attr_schema["override"]:
+                    attr_schema = self.schema.variable_attribute_schema[
+                        "attribute_key"
+                    ][attr_name]
+                    if (
+                        self._data[col].meta[attr_name] != attr_value
+                        and attr_schema["override"]
+                    ):
                         warn_user(
                             f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
                         )
@@ -428,6 +448,7 @@ class TimeData:
         # Set up the plot axes based on the number of columns to plot
         axes, columns = self._setup_axes_columns(axes, columns, subplots=subplots)
         from astropy.visualization import quantity_support, time_support
+
         quantity_support()
         time_support()
         axes, columns = self._setup_axes_columns(axes, columns)
@@ -438,14 +459,23 @@ class TimeData:
                 axes = [axes]
             for this_ax, this_col in zip(axes, columns):
                 if i == 0:
-                    this_ax.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+                    this_ax.set_title(
+                        f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
+                    )
                     i += 1
                 this_ax.plot(self.time, self.data[this_col], **plot_args)
-                this_ax.set_ylabel(self.data[this_col].meta['LABLAXIS'])
+                this_ax.set_ylabel(self.data[this_col].meta["LABLAXIS"])
         else:
-            axes.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+            axes.set_title(
+                f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
+            )
             for this_col in columns:
-                axes.plot(self.time, self.data[this_col], label=self.data[this_col].meta['LABLAXIS'], **plot_args)
+                axes.plot(
+                    self.time,
+                    self.data[this_col],
+                    label=self.data[this_col].meta["LABLAXIS"],
+                    **plot_args,
+                )
             axes.legend()
         # Setup the Time Axis
         self._setup_x_axis(axes)
@@ -464,7 +494,7 @@ class TimeData:
         # If no individual columns were input, try to plot all columns
         if columns is None:
             columns = self.columns.copy()
-            columns.remove('time')
+            columns.remove("time")
         # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:
@@ -488,7 +518,7 @@ class TimeData:
 
         locator = ax.xaxis.get_major_locator()
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-        
+
     def append(self, data: TimeSeries):
         """
         Add additional measurements to an existing column.
@@ -516,7 +546,9 @@ class TimeData:
         # Check individual Columns
         for colname in self.data.columns:
             if colname != "time" and not isinstance(self.data[colname], u.Quantity):
-                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+                raise TypeError(
+                    f"Column '{colname}' must be an astropy.Quantity object"
+                )
 
         # Save Metadata since it is not carried over with vstack
         metadata_holder = {col: self.data[col].meta for col in self.columns}

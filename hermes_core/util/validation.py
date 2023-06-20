@@ -6,6 +6,7 @@ from hermes_core.util.schema import CDFSchema
 
 __all__ = ["validate", "CDFValidator"]
 
+
 def validate(filepath):
     """
     Validate a data file such as a CDF.
@@ -90,7 +91,9 @@ class CDFValidator(TimeDataValidator):
             # Open CDF file with context manager
             with CDF(file_path) as cdf_file:
                 # Verify that all `required` global attributes in the schema are present
-                global_attr_validation_errors = self._validate_global_attr_schema(cdf_file=cdf_file)
+                global_attr_validation_errors = self._validate_global_attr_schema(
+                    cdf_file=cdf_file
+                )
                 validation_errors.extend(global_attr_validation_errors)
 
                 # Verify that all `required` variable attributes in the schema are present
@@ -161,14 +164,21 @@ class CDFValidator(TimeDataValidator):
 
         # Loop for each Variable Attribute in the schema
         for attr_name in var_type_attrs:
-            attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                attr_name
+            ]
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 # Check to see if there is an "alternate" attribute
                 if "alternate" not in attr_schema:
-                    variable_errors.append(f"Variable: {var_name} missing '{attr_name}' attribute.")
+                    variable_errors.append(
+                        f"Variable: {var_name} missing '{attr_name}' attribute."
+                    )
                 # If there is an alternate, and the alternate is not in the metadata
-                if "alternate" in attr_schema and attr_schema["alternate"] not in var_data.attrs:
+                if (
+                    "alternate" in attr_schema
+                    and attr_schema["alternate"] not in var_data.attrs
+                ):
                     variable_errors.append(
                         f"Variable: {var_name} missing '{attr_name}' attribute. Alternative: {attr_schema['alternate']} not found."
                     )
@@ -192,7 +202,9 @@ class CDFValidator(TimeDataValidator):
                 variable_errors.append(format_errors)
 
         # Validate Variable using ISTP Module `VariableChecks` class
-        variable_checks_errors = self._variable_checks(cdf_file=cdf_file, var_name=var_name)
+        variable_checks_errors = self._variable_checks(
+            cdf_file=cdf_file, var_name=var_name
+        )
         variable_errors.extend(variable_checks_errors)
 
         return variable_errors
@@ -231,8 +243,10 @@ class CDFValidator(TimeDataValidator):
             try:
                 file_checks_errors.extend(func(cdf_file))
             # If the function errors out or does not complete, report this an an error itself.
-            except:
-                file_checks_errors.append("Test {} did not complete.".format(func.__name__))
+            except:  # noqa: E722
+                file_checks_errors.append(
+                    "Test {} did not complete.".format(func.__name__)
+                )
 
         return file_checks_errors
 
@@ -271,14 +285,10 @@ class CDFValidator(TimeDataValidator):
                     ("{}: {}".format(var_name, e) for e in func(cdf_file[var_name]))
                 )
             # If the function errors out or does not complete, report this an an error itself.
-            except:
+            except:  # noqa: E722
                 variable_checks_errors.append(
                     "{}: Test {} did not complete.".format(var_name, func.__name__)
                 )
-
-        # for v in f:
-        #     errors.extend(('{}: {}'.format(v, e)
-        #                    for e in VariableChecks.all(f[v], catch=catch)))
 
         return variable_checks_errors
 

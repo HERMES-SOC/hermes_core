@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies, run tests, run linting, and test building docs
+# This workflow will install Python dependencies, run tests, run linting, and build docs
 name: Building Docs
 
 on:
@@ -8,14 +8,16 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   build:
+    runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/w5r9l1c8/swsoc-docker-lambda-base:latest
 
-    runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest]
         python-version: [3.8]
 
     steps:

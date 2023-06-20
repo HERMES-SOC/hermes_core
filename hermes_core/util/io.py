@@ -165,7 +165,9 @@ class CDFHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
-                raise ValueError(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+                raise ValueError(
+                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
+                )
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value

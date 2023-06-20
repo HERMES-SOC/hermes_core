@@ -31,7 +31,9 @@ def get_bad_timeseries():
     ts.add_column(col)
 
     # Add Measurement
-    col = Column(data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"})
+    col = Column(
+        data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"}
+    )
     ts.add_column(col)
     return ts
 
@@ -133,7 +135,9 @@ def test_time_data_single_measurement():
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update({"test_attr1": "test_value1", "CATDESC": "Test data"})
+    test_data["test_var1"].meta.update(
+        {"test_attr1": "test_value1", "CATDESC": "Test data"}
+    )
 
     # Convert the Wrapper to a CDF File
 
@@ -235,7 +239,7 @@ def test_time_data_generate_valid_cdf():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # print out rights 
+        # print out rights
         test_file_output_path = test_data.save(output_path=tmpdirname, overwrite=True)
 
         # Validate the generated CDF File
