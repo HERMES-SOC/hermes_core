@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import OrderedDict
+from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from spacepy.pycdf import CDF

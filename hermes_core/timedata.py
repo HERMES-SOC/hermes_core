@@ -3,7 +3,7 @@ Container class for Measurement Data.
 """
 
 from pathlib import Path
-from typing import OrderedDict
+from collections import OrderedDict
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
@@ -428,6 +428,7 @@ class TimeData:
         # Set up the plot axes based on the number of columns to plot
         axes, columns = self._setup_axes_columns(axes, columns, subplots=subplots)
         from astropy.visualization import quantity_support, time_support
+
         quantity_support()
         time_support()
         axes, columns = self._setup_axes_columns(axes, columns)
@@ -438,14 +439,23 @@ class TimeData:
                 axes = [axes]
             for this_ax, this_col in zip(axes, columns):
                 if i == 0:
-                    this_ax.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+                    this_ax.set_title(
+                        f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
+                    )
                     i += 1
                 this_ax.plot(self.time, self.data[this_col], **plot_args)
-                this_ax.set_ylabel(self.data[this_col].meta['LABLAXIS'])
+                this_ax.set_ylabel(self.data[this_col].meta["LABLAXIS"])
         else:
-            axes.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+            axes.set_title(
+                f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
+            )
             for this_col in columns:
-                axes.plot(self.time, self.data[this_col], label=self.data[this_col].meta['LABLAXIS'], **plot_args)
+                axes.plot(
+                    self.time,
+                    self.data[this_col],
+                    label=self.data[this_col].meta["LABLAXIS"],
+                    **plot_args,
+                )
             axes.legend()
         # Setup the Time Axis
         self._setup_x_axis(axes)
@@ -464,7 +474,7 @@ class TimeData:
         # If no individual columns were input, try to plot all columns
         if columns is None:
             columns = self.columns.copy()
-            columns.remove('time')
+            columns.remove("time")
         # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:
@@ -488,7 +498,7 @@ class TimeData:
 
         locator = ax.xaxis.get_major_locator()
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-        
+
     def append(self, data: TimeSeries):
         """
         Add additional measurements to an existing column.

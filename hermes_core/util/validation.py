@@ -6,6 +6,7 @@ from hermes_core.util.schema import CDFSchema
 
 __all__ = ["validate", "CDFValidator"]
 
+
 def validate(filepath):
     """
     Validate a data file such as a CDF.
