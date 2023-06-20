@@ -99,7 +99,7 @@ Push to open pull request
 
 Now you need to push the changes you have made to the code to the open pull request::
 
-    $ git push git@github.com:<username>/sunpy.git HEAD:<name of branch>
+    $ git push git@github.com:<username>/hermes_core.git HEAD:<name of branch>
 
 You might have to add ``--force`` if you rebased instead of adding new commits.
 
@@ -122,7 +122,7 @@ Current labelling guidelines:
 Updating and Maintaining the Changelog
 ======================================
 
-The changelog will be read by users, so this description should be aimed at sunpy users instead of describing internal changes which are only relevant to the developers.
+The changelog will be read by users, so this description should be aimed at HERMES users instead of describing internal changes which are only relevant to the developers.
 
 The current changelog is kept in the file "CHANGELOG.rst" at the root of the repository.
 

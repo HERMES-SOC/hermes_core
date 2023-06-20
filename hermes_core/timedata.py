@@ -9,68 +9,51 @@ from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
+import hermes_core
 from hermes_core.util.io import CDFHandler, NetCDFHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
+from hermes_core.util.util import VALID_DATA_LEVELS
 
 __all__ = ["TimeData"]
 
 
 class TimeData:
     """
-    A generic object for loading, storing, and manipulating time series data for CDF files.
+    A generic object for loading, storing, and manipulating HERMES time series data.
 
     Parameters
     ----------
-    data : `~astropy.time.TimeSeries`
-        A `astropy.time.TimeSeries` representing one or more measurements as a function of time.
+    data :  `astropy.timeseries.TimeSeries`
+        The time series of data. Columns must be `~astropy.units.Quantity` arrays.
     meta : `dict`, optional
-        Meta data associated with the measurement data.
-        Defaults to `None`.
-
-    Attributes
-    ----------
-    data :
-        A represntation of the undlerlying `astropy.timeseries.TimeSeries` object.
-    meta : `dict`
-        Metadata associated with the measurement data.
-    units : `dict`
-        A mapping from column names in `data` to the physical units of that measurement.
-    columns : `list`
-        A list of all the names of the columns in the data table.
-    time : `astropy.time.Time`
-        The times of the measurements.
-    time_range : `tuple`
-        The start and end times of the time axis.
-    shape: `tuple`
-        The shape of the data, a `tuple` `(nrows, ncols)`
+        The metadata describing the time series in an ISTP-compliant format.
 
     Examples
     --------
+    >>> import astropy.units as u
+    >>> from astropy.timeseries import TimeSeries
     >>> from hermes_core.timedata import TimeData
-    >>>
+    >>> data = u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)
+    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": data})
+    >>> input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
+    >>> timedata = TimeData(data=ts, meta=input_attrs)
+
+    Raises
+    ------
+    ValueError: If the number of columns is less than 2 or the required 'time' column is missing.
+    TypeError: If any column, excluding 'time', is not an astropy.Quantity object with units.
+    ValueError: If the elements of a column are multidimensional
 
     References
     ----------
     * `Astropy TimeSeries <https://docs.astropy.org/en/stable/timeseries/index.html/>`_
-
+    * `Astropy Quantity and Units <https://docs.astropy.org/en/stable/units/index.html>`_
+    * `Astropy Time <https://docs.astropy.org/en/stable/time/index.html>`_
+    * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, data, meta=None, **kwargs):
-        """
-        Initialize a TimeData object.
-
-        Parameters
-        ----------
-        data:  `astropy.time.TimeSeries`
-            The time series data.
-        meta: `dict`
-
-        Raises
-        ------
-        ValueError: If the number of columns is less than 2 or the required 'time' column is missing.
-        TypeError: If any column, excluding 'time', is not an astropy.Quantity object with units.
-        """
+    def __init__(self, data, meta=None):
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
@@ -81,8 +64,14 @@ class TimeData:
 
         # Check individual Columns
         for colname in data.columns:
+            # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+            # Verify that the Column is only a single dimension
+            if len(data[colname].shape) > 1:  # If there is more than 1 Dimension
+                raise ValueError(
+                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
+                )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
@@ -99,7 +88,7 @@ class TimeData:
         # Add Measurement Metadata
         for col in self._data.columns:
             if col != "time":
-                self._data[col].meta = OrderedDict()
+                self._data[col].meta = self.measurement_attribute_template()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
 
@@ -110,21 +99,21 @@ class TimeData:
     @property
     def data(self):
         """
-        A `astropy.time.TimeSeries` representing one or more measurements as a function of time.
+        (`astropy.timeseries.TimeSeries`) A `TimeSeries` representing one or more measurements as a function of time.
         """
         return self._data
 
     @property
     def meta(self):
         """
-        Metadata associated with the measurement data.
+        (`collections.OrderedDict`) Global metadata associated with the measurement data.
         """
         return self._data.meta
 
     @property
     def units(self):
         """
-        (OrderedDict) The units of the measurement for each column in the TimeSeries table.
+        (`collections.OrderedDict`) The units of the measurement for each column in the `TimeSeries` table.
         """
         units = {}
         for name in self._data.columns:
@@ -143,14 +132,14 @@ class TimeData:
     @property
     def columns(self):
         """
-        (List) A list of all the names of the columns in the data table.
+        (`list`) A list of all the names of the columns in data.
         """
-        return self._data.columns
+        return self._data.colnames
 
     @property
     def time(self):
         """
-        The times of the measurements.
+        (`astropy.time.Time`) The times of the measurements.
         """
         t = Time(self._data.time)
         # Set time format to enable plotting with astropy.visualisation.time_support()
@@ -160,14 +149,14 @@ class TimeData:
     @property
     def time_range(self):
         """
-        The start and end times of the time axis.
+        (`tuple`) The start and end times of the times.
         """
         return (self._data.time.min(), self._data.time.max())
 
     @property
     def shape(self):
         """
-        The shape of the data, a tuple (nrows, ncols)
+        (`tuple`) The shape of the data, a tuple (nrows, ncols) including time
         """
         nrows = self._data.time.shape[0]
         ncols = len(self._data.columns)
@@ -175,13 +164,13 @@ class TimeData:
 
     def __repr__(self):
         """
-        Returns a representation of the CDFWriter class.
+        Returns a representation of the `TimeData` class.
         """
         return self.__str__()
 
     def __str__(self):
         """
-        Returns a string representation of the CDFWriter class.
+        Returns a string representation of the `TimeData` class.
         """
         str_repr = f"TimeData() Object:\n"
         # Global Attributes/Metedata
@@ -214,7 +203,7 @@ class TimeData:
 
         """
         # Set the Data for the named measurement
-        self.add_measurement(measure_name=name, measure_data=data, measure_meta={})
+        self.add_measurement(measure_name=name, data=data, meta={})
 
     def __contains__(self, name):
         """
@@ -232,27 +221,63 @@ class TimeData:
             yield (name, var_data)
 
     @staticmethod
-    def global_attribute_template():
+    def global_attribute_template(instr_name="", data_level="", version=""):
         """
-        Function to generate a template of the required global attributes
-        that must be set for a valid CDF file to be generated from the TimeData container.
+        Function to generate a template of the required ISTP-compliant global attributes.
+
+        Parameters
+        ----------
+        instr_name : `str`
+            The instrument name. Must be "eea", "nemisis", "merit" or "spani".
+        data_level : `str`
+            The data level of the data. Must be "l0", "l1", "ql", "l2", "l3", "l4"
+        version : `str`
+            Must be of the form X.Y.Z.
 
         Returns
         -------
-        template : `OrderedDict`
-            A template for required global attributes that must be provided.
+        template : `collections.OrderedDict`
+            A template for required global attributes.
         """
-        return CDFSchema.global_attribute_template()
+        meta = CDFSchema.global_attribute_template()
+
+        # Check the Optional Instrument Name
+        if instr_name:
+            if instr_name not in hermes_core.INST_NAMES:
+                raise ValueError(
+                    f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
+                )
+            # Set the Property
+            meta["Descriptor"] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+
+        # Check the Optional Data Level
+        if data_level:
+            if data_level not in VALID_DATA_LEVELS:
+                raise ValueError(
+                    f"Level, {data_level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
+                )
+            # Set the Property
+            if data_level != "ql":
+                meta["Data_level"] = f"{data_level.upper()}>Level {data_level[1]}"
+            else:
+                meta["Data_level"] = f"{data_level.upper()}>Quicklook"
+
+        # Check the Optional Data Version
+        if version:
+            # check that version is in the right format with three parts
+            if len(version.split(".")) != 3:
+                raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
+            meta["Data_version"] = version
+        return meta
 
     @staticmethod
     def measurement_attribute_template():
         """
-        Function to generate a template of the required measurement attributes
-        that must be set for a valid CDF file to be generated from the TimeData container.
+        Function to generate a template of the required measurement attributes.
 
         Returns
         -------
-        template : `OrderedDict`
+        template : `collections.OrderedDict`
             A template for required variable attributes that must be provided.
         """
         return CDFSchema.measurement_attribute_template()
@@ -265,7 +290,7 @@ class TimeData:
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
             # If the attribute is set, check if we want to override it
-            if attr_name in self._data.meta:
+            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 # We want to override if:
                 #   1) The actual value is not the derived value
                 #   2) The schema marks this attribute to be overriden
@@ -283,7 +308,7 @@ class TimeData:
 
         # Global Attributes
         for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
-            if attr_name in self._data.meta:
+            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 if (
                     self._data.meta[attr_name] != attr_value
                     and self.schema.global_attribute_schema[attr_name]["override"]
@@ -297,7 +322,10 @@ class TimeData:
 
         # Time Measurement Attributes
         for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
-            if attr_name in self._data["time"].meta:
+            if (
+                attr_name in self._data["time"].meta
+                and self._data["time"].meta[attr_name] is not None
+            ):
                 attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
                 if self._data["time"].meta[attr_name] != attr_value and attr_schema["override"]:
                     warn_user(
@@ -312,7 +340,10 @@ class TimeData:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
                 self._data, col
             ).items():
-                if attr_name in self._data[col].meta:
+                if (
+                    attr_name in self._data[col].meta
+                    and self._data[col].meta[attr_name] is not None
+                ):
                     attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
                     if self._data[col].meta[attr_name] != attr_value and attr_schema["override"]:
                         warn_user(
@@ -322,92 +353,119 @@ class TimeData:
                 else:
                     self._data[col].meta[attr_name] = attr_value
 
-    def add_measurement(self, measure_name: str, measure_data: u.Quantity, measure_meta: dict):
+    def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
-        Function to add a new measurement.
+        Add a new measurement (column).
 
         Parameters
         ----------
         measure_name: `str`
             Name of the measurement to add.
-
-        measure_data: `Quantity`
-            The data to add.
-
-        measure_meta: `dict`
+        data: `astropy.units.Quantity`
+            The data to add. Must have the same time stamps as the existing data.
+        meta: `dict`, optional
             The metadata associated with the measurement.
 
         Raises
         ------
         TypeError: If var_data is not of type Quantity.
-
         """
         # Verify that all Measurements are `Quantity`
-        if (not isinstance(measure_data, u.Quantity)) or (not measure_data.unit):
+        if (not isinstance(data, u.Quantity)) or (not data.unit):
             raise TypeError(
                 f"Measurement {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
             )
+        # Verify that the Column is only a single dimension
+        if len(data.shape) > 1:  # If there is more than 1 Dimension
+            raise ValueError(
+                f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
+            )
 
-        self._data[measure_name] = measure_data
+        self._data[measure_name] = data
         # Add any Metadata from the original Quantity
-        self._data[measure_name].meta = OrderedDict()
-        if hasattr(measure_data, "meta"):
-            self._data[measure_name].meta.update(measure_data.meta)
-        self._data[measure_name].meta.update(measure_meta)
+        self._data[measure_name].meta = self.measurement_attribute_template()
+        if hasattr(data, "meta"):
+            self._data[measure_name].meta.update(data.meta)
+        if meta:
+            self._data[measure_name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
-    def remove_measurement(self, measure_name):
+    def remove_measurement(self, measure_name: str):
         """
-        Remove a measuremt or measurement.
+        Remove an existing measurement (column).
+
+        Parameters
+        ----------
+        measure_name: `str`
+            Name of the measurement to remove.
         """
         self._data.remove_column(measure_name)
 
-    def plot(self, axes=None, columns=None, **plot_args):
+    def plot(self, axes=None, columns=None, subplots=True, **plot_args):
         """
-        Plot a plot of the data.
+        Plot the data.
 
         Parameters
         ----------
         axes : `~matplotlib.axes.Axes`, optional
             If provided the image will be plotted on the given axes.
-            Defaults to `None`, so the current axes will be used.
-        columns : list[str], optional
-            If provided, only plot the specified measurements.
+            Defaults to `None` and creates a new axis.
+        columns : `list[str]`, optional
+            If provided, only plot the specified measurements otherwise try to plot them all.
+        subplots : `bool`
+            If set, all columns are plotted in their own plot panel.
         **plot_args : `dict`, optional
             Additional plot keyword arguments that are handed to
-            :meth:`pandas.DataFrame.plot`.
+            `~matplotlib.axes.Axes`.
 
         Returns
         -------
         `~matplotlib.axes.Axes`
             The plot axes.
         """
+        # Set up the plot axes based on the number of columns to plot
+        axes, columns = self._setup_axes_columns(axes, columns, subplots=subplots)
+        from astropy.visualization import quantity_support, time_support
+        quantity_support()
+        time_support()
         axes, columns = self._setup_axes_columns(axes, columns)
 
-        axes = self._data[columns].plot(ax=axes, **plot_args)
-
-        units = set([self.units[col] for col in columns])
-        if len(units) == 1:
-            # If units of all columns being plotted are the same, add a unit
-            # label to the y-axis.
-            unit = u.Unit(list(units)[0])
-            axes.set_ylabel(unit.to_string())
-
+        if subplots:
+            i = 0
+            if len(axes) == 1:  # subplots is true but only one column given
+                axes = [axes]
+            for this_ax, this_col in zip(axes, columns):
+                if i == 0:
+                    this_ax.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+                    i += 1
+                this_ax.plot(self.time, self.data[this_col], **plot_args)
+                this_ax.set_ylabel(self.data[this_col].meta['LABLAXIS'])
+        else:
+            axes.set_title(f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}')
+            for this_col in columns:
+                axes.plot(self.time, self.data[this_col], label=self.data[this_col].meta['LABLAXIS'], **plot_args)
+            axes.legend()
+        # Setup the Time Axis
         self._setup_x_axis(axes)
+
         return axes
 
-    def _setup_axes_columns(self, axes, columns, *, subplots=False):
+    def _setup_axes_columns(self, axes, columns, subplots=False):
         """
         Validate data for plotting, and get default axes/columns if not passed
         by the user.
+
+        Code courtesy of sunpy.
         """
-        # code from SunPy
         import matplotlib.pyplot as plt
 
+        # If no individual columns were input, try to plot all columns
         if columns is None:
-            columns = self.columns
+            columns = self.columns.copy()
+            columns.remove('time')
+        # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:
                 axes = plt.gca()
@@ -420,28 +478,25 @@ class TimeData:
     def _setup_x_axis(ax):
         """
         Shared code to set x-axis properties.
+
+        Code courtesy of sunpy.
         """
-        # code from SunPy
         import matplotlib.dates as mdates
 
         if isinstance(ax, np.ndarray):
             ax = ax[-1]
 
         locator = ax.xaxis.get_major_locator()
-        formatter = ax.xaxis.get_major_formatter()
-        if isinstance(formatter, mdates.AutoDateFormatter):
-            # Override Matplotlib default date formatter (concise one is better)
-            # but don't override any formatters pandas might have set
-            ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-
-    def append(self, data):
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
+        
+    def append(self, data: TimeSeries):
         """
-        Function to add TimeSeries data to the end of the current data containers TimeSeries table.
+        Add additional measurements to an existing column.
 
         Parameters
         ----------
-        data : `~astropy.time.TimeSeries`
-            The data to be appended as a TimeSeries object.
+        data : `astropy.timeseries.TimeSeries`
+            The data to be appended (rows) as a `TimeSeries` object.
         """
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
@@ -476,32 +531,35 @@ class TimeData:
         # Re-Derive Metadata
         self._derive_metadata()
 
-    def save(self, output_path):
+    def save(self, output_path=None, overwrite=False):
         """
-        Save the data to a file using the specified handler.
+        Save the data to a HERMES CDF file.
 
         Parameters
         ----------
-        output_path : `str`
+        output_path : `str`, optional
             A string path to the directory where file is to be saved.
-
+            If not provided, saves to the current directory.
+        overwrite : `bool`
+            If set, overwrites existing file of the same name.
         Returns
         -------
         path : `str`
             A path to the saved file.
-
-        Raises
-        ------
-        ValueError: If no handler is specified for saving data.
-
         """
         handler = CDFHandler()
+        if not output_path:
+            output_path = str(Path.cwd())
+        if overwrite:
+            cdf_file_path = Path(output_path) / (self.meta["Logical_file_id"] + ".cdf")
+            if cdf_file_path.exists():
+                cdf_file_path.unlink()
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod
     def load(cls, file_path):
         """
-        Load data from a file using the specified handler.
+        Load data from a file.
 
         Parameters
         ----------
@@ -515,7 +573,7 @@ class TimeData:
 
         Raises
         ------
-        ValueError: If the handler is not an instance of TimeDataIOHandler.
+        ValueError: If the file type is not recognized as a file type that can be loaded.
 
         """
         # Determine the file type

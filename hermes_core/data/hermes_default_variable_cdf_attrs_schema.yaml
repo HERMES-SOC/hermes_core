@@ -67,7 +67,7 @@ attribute_key:
     required: false
     override: false
   DISPLAY_TYPE:
-    derived: false
+    derived: true
     required: true
     override: false
     valid_values:
@@ -83,11 +83,11 @@ attribute_key:
   FILLVAL:
     derived: true
     required: true
-    override: false
+    override: true
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     derived: true
     required: true
-    override: false
+    override: true
     alternate: FORM_PTR
   FORM_PTR:
     derived: false
@@ -95,7 +95,7 @@ attribute_key:
     override: false
     alternate: FORMAT
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
-    derived: false
+    derived: true
     required: true
     override: false
     alternate: LABL_PTR_1
@@ -123,13 +123,13 @@ attribute_key:
   VALIDMIN:
     derived: true
     required: true
-    override: false
+    override: true
   VALIDMAX:
     derived: true
     required: true
-    override: false
+    override: true
   VAR_TYPE:
-    derived: false
+    derived: true
     required: true
     override: false
     valid_values:

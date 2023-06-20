@@ -1,16 +1,20 @@
 """Tests for CDF Files to and from data containers"""
 
-from typing import OrderedDict
+from collections import OrderedDict
 from pathlib import Path
 import datetime
 import pytest
 import numpy as np
 from numpy.random import random
+import tempfile
 
 from astropy.timeseries import TimeSeries
 from astropy.table import Column
 from astropy.time import Time
 from astropy.units import Quantity
+import astropy.units as u
+
+from spacepy.pycdf import CDFError
 
 import hermes_core
 from hermes_core.timedata import TimeData
@@ -41,17 +45,27 @@ def get_test_timeseries():
     ts["time"] = time_col
 
     # Add Measurement
-    quant = Quantity(value=random(size=(10)), unit="m")
+    quant = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
     ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
             "VAR_TYPE": "metadata",
             "CATDESC": "Test Metadata",
-            "DISPLAY_TYPE": "time_series",
-            "LABLAXIS": "Label Axis",
         }
     )
     return ts
+
+
+def get_test_timedata():
+    ts = TimeSeries(
+        time_start="2016-03-22T12:30:31",
+        time_delta=3 * u.s,
+        data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)},
+    )
+    input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
+    timedata = TimeData(data=ts, meta=input_attrs)
+    timedata["Bx"].meta.update({"CATDESC": "Test"})
+    return timedata
 
 
 def test_time_data_empty_ts():
@@ -97,18 +111,11 @@ def test_time_data_valid_attrs():
     test_data = TimeData(ts, meta=input_attrs)
 
     # Convert the Wrapper to a CDF File
-    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache)
-
-    test_file_cache_path = Path(test_file_output_path)
-    # Test the File Exists
-    assert test_file_cache_path.exists()
-
-    # Remove the Test File from Cache
-    test_file_cache_path.unlink()
-
-    # Test the File was Deleted
-    assert not test_file_cache_path.exists()
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = test_data.save(output_path=tmpdirname)
+        test_file_cache_path = Path(test_file_output_path)
+        # Test the File Exists
+        assert test_file_cache_path.exists()
 
 
 def test_time_data_single_measurement():
@@ -126,21 +133,16 @@ def test_time_data_single_measurement():
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update({"test_attr1": "test_value1"})
+    test_data["test_var1"].meta.update({"test_attr1": "test_value1", "CATDESC": "Test data"})
 
     # Convert the Wrapper to a CDF File
-    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache)
 
-    test_file_cache_path = Path(test_file_output_path)
-    # Test the File Exists
-    assert test_file_cache_path.exists()
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = test_data.save(output_path=tmpdirname)
 
-    # Remove the Test File from Cache
-    test_file_cache_path.unlink()
-
-    # Test the File was Deleted
-    assert not test_file_cache_path.exists()
+        test_file_cache_path = Path(test_file_output_path)
+        # Test the File Exists
+        assert test_file_cache_path.exists()
 
 
 def test_time_data_generate_valid_cdf():
@@ -199,12 +201,9 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_var{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
-                "VAR_TYPE": "data",
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "CATDESC": "Test Data",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -214,12 +213,10 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_support{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Support",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -229,22 +226,20 @@ def test_time_data_generate_valid_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_metadata{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Metadata",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
     # Convert the Wrapper to a CDF File
     test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache)
+    test_file_output_path = test_data.save(output_path=test_cache, overwrite=True)
 
     # Validate the generated CDF File
     result = validate(filepath=test_file_output_path)
-    assert len(result) <= 2  # TODO Logical Source and File ID Do not Agree
+    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
     # Remove the File
     test_file_cache_path = Path(test_file_output_path)
@@ -307,12 +302,9 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_var{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
-                "VAR_TYPE": "data",
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "CATDESC": "Test Data",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -322,12 +314,10 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_support{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "support_data",
                 "CATDESC": "Test Support",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
@@ -337,41 +327,153 @@ def test_time_data_from_cdf():
         # Add Measurement
         test_data.add_measurement(
             measure_name=f"test_metadata{i}",
-            measure_data=Quantity(value=random(size=(10)), unit="km"),
-            measure_meta={
+            data=Quantity(value=random(size=(10)), unit="km"),
+            meta={
                 "VAR_TYPE": "metadata",
                 "CATDESC": "Test Metadata",
-                "DISPLAY_TYPE": "time_series",
-                "LABLAXIS": "Label Axis",
             },
         )
 
     # Convert the Wrapper to a CDF File
-    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path = test_data.save(output_path=test_cache)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = test_data.save(output_path=tmpdirname)
 
-    # Validate the generated CDF File
-    result = validate(test_file_output_path)
-    assert len(result) <= 2  # TODO Logical Source and File ID Do not Agree
+        # Validate the generated CDF File
+        result = validate(test_file_output_path)
+        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
-    # Try to Load the CDF File in a new CDFWriter
-    new_writer = TimeData.load(test_file_output_path)
+        # Try to Load the CDF File in a new CDFWriter
+        new_writer = TimeData.load(test_file_output_path)
 
-    # Remove the Original File
-    test_file_cache_path = Path(test_file_output_path)
-    test_file_cache_path.unlink()
+        # Remove the Original File
+        test_file_cache_path = Path(test_file_output_path)
+        test_file_cache_path.unlink()
 
-    # Convert the Wrapper to a CDF File
-    test_cache = Path(hermes_core.__file__).parent.parent / ".pytest_cache"
-    test_file_output_path2 = new_writer.save(output_path=test_cache)
-    assert test_file_output_path == test_file_output_path2
+        test_file_output_path2 = new_writer.save(output_path=tmpdirname)
+        assert test_file_output_path == test_file_output_path2
 
-    # Validate the generated CDF File
-    result2 = validate(test_file_output_path2)
-    assert len(result2) <= 2  # TODO Logical Source and File ID Do not Agree
-    assert len(result) == len(result2)
+        # Validate the generated CDF File
+        result2 = validate(test_file_output_path2)
+        assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result) == len(result2)
 
-    # Remove the Second File
-    test_file_cache_path2 = Path(test_file_output_path2)
-    test_file_cache_path2.unlink()
-    assert (not test_file_cache_path.exists()) and (not test_file_cache_path2.exists())
+
+@pytest.mark.parametrize(
+    "bitlength",
+    [
+        np.uint8,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.float16,
+        np.float32,
+    ],
+)
+def test_bitlength_save_cdf(bitlength):
+    """Check that it is possible to create a CDF file for all measurement bitlengths"""
+    ts = TimeSeries(
+        time_start="2016-03-22T12:30:31",
+        time_delta=3 * u.s,
+        data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=bitlength)},
+    )
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+
+    timedata = TimeData(data=ts, meta=input_attrs)
+    timedata["Bx"].meta.update({"CATDESC": "Test"})
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = timedata.save(output_path=tmpdirname)
+
+        test_file_cache_path = Path(test_file_output_path)
+        # Test the File Exists
+        assert test_file_cache_path.exists()
+
+
+def test_overwrite_save():
+    """Test that when overwrite is set on save no error is generated when trying to create the same file twice"""
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+    td = get_test_timedata()
+    td.meta.update(input_attrs)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = Path(td.save(output_path=tmpdirname))
+        # Test the File Exists
+        assert test_file_output_path.exists()
+        # without overwrite set trying to create the file again should lead to an error
+        with pytest.raises(CDFError):
+            test_file_output_path = td.save(output_path=tmpdirname, overwrite=False)
+
+        # with overwrite set there should be no error
+        assert Path(td.save(output_path=tmpdirname, overwrite=True)).exists()
