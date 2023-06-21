@@ -7,15 +7,13 @@ import pytest
 import numpy as np
 from numpy.random import random
 import tempfile
-
 from astropy.timeseries import TimeSeries
 from astropy.table import Column
 from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
-
 from spacepy.pycdf import CDFError
-
+from matplotlib.axes import Axes
 import hermes_core
 from hermes_core.timedata import TimeData
 from hermes_core.util.validation import validate
@@ -31,9 +29,7 @@ def get_bad_timeseries():
     ts.add_column(col)
 
     # Add Measurement
-    col = Column(
-        data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"}
-    )
+    col = Column(data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"})
     ts.add_column(col)
     return ts
 
@@ -70,22 +66,27 @@ def get_test_timedata():
     return timedata
 
 
-def test_time_data_empty_ts():
+def get_test_global_meta():
+    global_attrs_template = TimeData.global_attribute_template()
+
+
+def test_non_timeseries():
+    with pytest.raises(TypeError):
+        _ = TimeData(data=[], meta={})
+
+
+def test_timedata_empty_ts():
     with pytest.raises(ValueError):
         _ = TimeData(data=TimeSeries())
 
 
-def test_time_data_bad_ts():
+def test_timedata_bad_ts():
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
         _ = TimeData(data=ts)
 
 
-def get_test_global_meta():
-    global_attrs_template = TimeData.global_attribute_template()
-
-
-def test_time_data_default():
+def test_timedata_default():
     ts = get_test_timeseries()
 
     with pytest.raises(ValueError) as e:
@@ -98,7 +99,15 @@ def test_time_data_default():
     del ts
 
 
-def test_time_data_valid_attrs():
+def test_multidimensional_data():
+    ts = get_test_timeseries()
+    ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
+
+    with pytest.raises(ValueError):
+        _ = TimeData(ts)
+
+
+def test_timedata_valid_attrs():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -120,7 +129,76 @@ def test_time_data_valid_attrs():
         assert test_file_cache_path.exists()
 
 
-def test_time_data_single_measurement():
+def test_global_attribute_template():
+    # default
+    assert isinstance(TimeData.global_attribute_template(), OrderedDict)
+
+    # bad instrument
+    with pytest.raises(ValueError):
+        _ = TimeData.global_attribute_template(instr_name="test instrument")
+
+    # bad Data Level
+    with pytest.raises(ValueError):
+        _ = TimeData.global_attribute_template(data_level="data level")
+
+    # bad version
+    with pytest.raises(ValueError):
+        _ = TimeData.global_attribute_template(version="000")
+
+    # good inputs
+    template = TimeData.global_attribute_template(
+        instr_name="eea", data_level="l2", version="1.3.6"
+    )
+    assert template["Descriptor"] == "EEA>Electron Electrostatic Analyzer"
+    assert template["Data_level"] == "L2>Level 2"
+    assert template["Data_version"] == "1.3.6"
+
+
+def test_default_properties():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+        "Start_time": datetime.datetime.now()
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+
+    # data
+    assert isinstance(test_data.data, TimeSeries)
+
+    # units
+    assert isinstance(test_data.units, OrderedDict)
+
+    # columns
+    assert isinstance(test_data.columns, list)
+
+    # time
+    assert isinstance(test_data.time, Time)
+
+    # time_range
+    assert isinstance(test_data.time_range, tuple)
+
+    # shape
+    assert isinstance(test_data.shape, tuple)
+
+    # __repr__
+    assert isinstance(test_data.__repr__(), str)
+
+    # __len__
+    assert len(test_data) == test_data.shape[-1]
+
+    # __contains__
+    assert "time" in test_data
+    with pytest.raises(KeyError):
+        _ = test_data["test"]
+
+
+def test_timedata_single_measurement():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -135,12 +213,9 @@ def test_time_data_single_measurement():
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update(
-        {"test_attr1": "test_value1", "CATDESC": "Test data"}
-    )
+    test_data["test_var1"].meta.update({"test_attr1": "test_value1", "CATDESC": "Test data"})
 
     # Convert the Wrapper to a CDF File
-
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = test_data.save(output_path=tmpdirname)
 
@@ -149,7 +224,115 @@ def test_time_data_single_measurement():
         assert test_file_cache_path.exists()
 
 
-def test_time_data_generate_valid_cdf():
+def test_timedata_add_measurement():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+    data_len = len(test_data)
+
+    # Add non-Quantity
+    with pytest.raises(TypeError):
+        test_data.add_measurement(measure_name="test", data=[], meta={})
+
+    # Add multi-domensional data
+    with pytest.raises(ValueError):
+        q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
+        test_data.add_measurement(measure_name="test", data=q, meta={})
+
+    # Good measurement
+    q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
+    q.meta = OrderedDict({"CATDESC": "Test Variable"})
+    test_data.add_measurement(measure_name="test", data=q)
+    assert len(test_data) == 1 + data_len
+
+    # test remove_measurement
+    test_data.remove_measurement("test")
+    assert len(test_data) == data_len
+
+
+def test_timedata_plot():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+    q = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    q.meta = OrderedDict({"CATDESC": "Test Variable"})
+    test_data.add_measurement(measure_name="test", data=q)
+
+    # Plot All Columns
+    ax = test_data.plot(subplots=True)
+    assert isinstance(ax, np.ndarray)
+    ax = test_data.plot(subplots=False)
+    assert isinstance(ax, Axes)
+    # Plot Single Column
+    ax = test_data.plot(columns=["test"], subplots=True)
+    assert isinstance(ax, Axes)
+    ax = test_data.plot(columns=["test"], subplots=False)
+    assert isinstance(ax, Axes)
+
+
+def test_timedata_append():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+
+    # Append Non-TimeSeries
+    with pytest.raises(TypeError):
+        test_data.append([])
+
+    # Append Not-Enough Columns
+    ts = TimeSeries()
+    time = np.arange(start=10, stop=20)
+    time_col = Time(time, format="unix").to_datetime()
+    col = Column(data=time_col, name="time", meta={})
+    ts.add_column(col)
+    with pytest.raises(ValueError):
+        test_data.append(ts)
+
+    # Append Too-Many Columns
+    ts = TimeSeries()
+    time = np.arange(start=10, stop=20)
+    time_col = Time(time, format="unix").to_datetime()
+    col = Column(data=time_col, name="time", meta={})
+    ts.add_column(col)
+    ts["test1"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    ts["test2"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    with pytest.raises(ValueError):
+        test_data.append(ts)
+
+    # Append Good
+    ts = TimeSeries()
+    time = np.arange(start=10, stop=20)
+    ts["time"] = Time(time, format="unix")
+    ts["measurement"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    test_data.append(ts)
+    assert test_data.shape[0] == 20
+
+
+def test_timedata_generate_valid_cdf():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -251,7 +434,7 @@ def test_time_data_generate_valid_cdf():
         test_file_cache_path.unlink()
 
 
-def test_time_data_from_cdf():
+def test_timedata_from_cdf():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
