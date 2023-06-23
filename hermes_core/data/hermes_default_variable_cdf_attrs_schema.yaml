@@ -1,0 +1,193 @@
+# Based on :  https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html
+#             HERMES CDF Format Guide
+# Check Types: The key 'check' for any attribute can be followed by the
+# the method by whick the attribute should be checked during vaildation. 
+#   valid_values: 
+#     contains a list of `string` values which the attibute can take. 
+#   conditional_data_type:
+#     contains a nested list of lists, where each outer list element is
+#       a 2-element list of key-value pairs. The Key being the data type
+#       of the variable and the value being the resultant value based on
+#       the conditional data type.
+#   conditional_si_units:
+#       TODO
+attribute_key:
+  # ===== EPOCH-ONLY VARIABLE ATTRIBUTES =====
+  TIME_BASE:
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    override: false
+  RESOLUTION:
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    override: false
+  TIME_SCALE:
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    override: false
+  REFERENCE_POSITION:
+    derived: true
+    required: true    # NOT Required in ISTP Guide
+    override: false
+  LEAP_SECONDS_INCLUDED:
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    override: false
+  ABSOLUTE_ERROR:
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    override: false
+  RELATIVE_ERROR:
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    override: false
+  BIN_LOCATION:
+    derived: false
+    required: false   # NOT Required in ISTP Guide
+    override: false
+  # ===== DATA VARIABLE ATTRIBUTES =====
+  CATDESC:
+    derived: false
+    required: true
+    override: false
+  DELTA_MINUS_VAR:
+    derived: false
+    required: false # NOT Required in ISTP Guide
+    override: false
+  DELTA_PLUS_VAR:
+    derived: false
+    required: false # NOT Required in ISTP Guide
+    override: false
+  DEPEND_0:
+    derived: true
+    required: true
+    override: false
+  DEPEND_i:         # For i'th dimensional data variables
+    derived: false
+    required: false
+    override: false
+  DISPLAY_TYPE:
+    derived: true
+    required: true
+    override: false
+    valid_values:
+      time_series
+      time_series>noerrorbars
+      spectrogram
+      stack_plot
+      image
+  FIELDNAM:
+    derived: true
+    required: true
+    override: false
+  FILLVAL:
+    derived: true
+    required: true
+    override: true
+  FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
+    derived: true
+    required: true
+    override: true
+    alternate: FORM_PTR
+  FORM_PTR:
+    derived: false
+    required: false
+    override: false
+    alternate: FORMAT
+  LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
+    derived: true
+    required: true
+    override: false
+    alternate: LABL_PTR_1
+  LABL_PTR_i:
+    derived: false
+    required: false
+    override: false
+    alternate: LABLAXIS
+  SI_CONVERSION:
+    derived: true
+    required: true  # NOT Required in ISTP Guide
+    override: false
+    check:
+      conditional_si_units: null
+  UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
+    derived: true
+    required: true
+    override: false
+    alternate: UNIT_PTR
+  UNIT_PTR:
+    derived: false
+    required: false
+    override: false
+    alternate: UNITS
+  VALIDMIN:
+    derived: true
+    required: true
+    override: true
+  VALIDMAX:
+    derived: true
+    required: true
+    override: true
+  VAR_TYPE:
+    derived: true
+    required: true
+    override: false
+    valid_values:
+        data
+        support_data
+        metadata
+        ignore_data
+  COORDINATE_SYSTEM:
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    override: false
+  TENSOR_ORDER:
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    override: false
+  REPRESENTATION_i:
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    override: false
+  OPERATOR_TYPE:
+    derived: false
+    required: false   # NOT Required in HERMES Format Guide
+    override: false
+time_series:
+  - TIME_BASE
+  - RESOLUTION
+  - TIME_SCALE
+  - REFERENCE_POSITION
+  - LEAP_SECONDS_INCLUDED
+  - ABSOLUTE_ERROR
+  - RELATIVE_ERROR
+  - BIN_LOCATION
+  - VAR_TYPE
+data:
+  - CATDESC
+  - DEPEND_0
+  - DISPLAY_TYPE
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  - LABLAXIS
+  - SI_CONVERSION
+  - UNITS
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE 
+support_data:
+  - CATDESC
+  - FIELDNAM
+  - FILLVAL
+  - FORMAT
+  - SI_CONVERSION
+  - UNITS
+  - VALIDMIN
+  - VALIDMAX
+  - VAR_TYPE
+metadata:
+  - CATDESC
+  - FIELDNAM
+  - FORMAT
+  - VAR_TYPE

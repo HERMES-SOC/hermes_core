@@ -10,7 +10,8 @@ description = "A Python package to support the HERMES instrument packages."
 readme = "README.rst"
 dynamic = ["version"]
 authors = [{name = "Steven Christe", email="steven.d.christe@nasa.gov"},
-           {name = "Damian Barrous Dumme", email="damianbarrous@gmail.com"}]
+           {name = "Damian Barrous Dumme", email="damianbarrous@gmail.com"},
+           {name = "Andrew Robbertz", email="a.robbertz@gmail.com"}]
 license = {file = "LICENSE.rst"}
 requires-python = ">=3.7"
 keywords = ["hermes", "nasa mission", "space weather"]
@@ -31,6 +32,7 @@ dependencies = [
   'astropy>=4.1.0',
   'numpy>=1.16.0',
   'sunpy>=3.1.4',
+  'spacepy>=0.4.1',
 ]
 
 [project.optional-dependencies]
