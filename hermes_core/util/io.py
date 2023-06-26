@@ -5,7 +5,6 @@ from datetime import datetime
 import numpy as np
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
 
@@ -85,6 +84,8 @@ class CDFHandler(TimeDataIOHandler):
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
         """
+        from spacepy.pycdf import CDF
+
         if not Path(file_path).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
 
@@ -149,6 +150,7 @@ class CDFHandler(TimeDataIOHandler):
         path : `str`
             A path to the saved file.
         """
+        from spacepy.pycdf import CDF
 
         # Initialize a new CDF
         cdf_filename = f"{data.meta['Logical_file_id']}.cdf"
@@ -161,7 +163,7 @@ class CDFHandler(TimeDataIOHandler):
             self._convert_variable_attributes_to_cdf(data, cdf_file)
         return output_cdf_filepath
 
-    def _convert_global_attributes_to_cdf(self, data, cdf_file: CDF):
+    def _convert_global_attributes_to_cdf(self, data, cdf_file):
         # Loop though Global Attributes in target_dict
         for attr_name, attr_value in data.meta.items():
             # Make sure the Value is not None
@@ -172,7 +174,7 @@ class CDFHandler(TimeDataIOHandler):
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
 
-    def _convert_variable_attributes_to_cdf(self, data, cdf_file: CDF):
+    def _convert_variable_attributes_to_cdf(self, data, cdf_file):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in data.__iter__():
             if var_name == "time":
@@ -401,7 +403,8 @@ class JSONDataHandler(TimeDataIOHandler):
             else:
                 # Add the Attribute to the JSON File
                 if isinstance(attr_value, datetime):
-                    json_file[attr_name] = attr_value.strftime("%Y-%m-%d %H:%M:%S")
+                    # json_file[attr_name] = attr_value.strftime("%Y-%m-%d %H:%M:%S")
+                    json_file[attr_name] = attr_value.isoformat()
                 else:
                     json_file[attr_name] = attr_value
 
@@ -412,7 +415,8 @@ class JSONDataHandler(TimeDataIOHandler):
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 json_file["EPOCH_"] = {}
                 # `DAT` Appears to be the hardcoded Data Array
-                json_file["EPOCH_"]["DAT"] = var_data.strftime("%Y-%m-%d %H:%M:%S").tolist()
+                # json_file["EPOCH_"]["DAT"] = var_data.strftime("%Y-%m-%d %H:%M:%S").tolist()
+                json_file["EPOCH_"]["DAT"] = var_data.to_value("isot").tolist()
                 # json_file["EPOCH_"]["DAT"] = var_data
                 # Add the Variable Attributes
                 for var_attr_name, var_attr_val in var_data.meta.items():
