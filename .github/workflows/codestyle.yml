@@ -30,8 +30,8 @@ jobs:
         python -m pip install -e '.[style]'
     - name: Lint with Black
       run: |
-        black --check --diff --line-length 100 hermes_core
+        black --check --diff hermes_core
     - name: flake8
       run: |
-        flake8 --count --max-line-length=100 hermes_core
+        flake8 --count hermes_core
 
