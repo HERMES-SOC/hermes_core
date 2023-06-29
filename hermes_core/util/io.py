@@ -6,7 +6,6 @@ import numpy as np
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from hermes_core.util.exceptions import warn_user
-from hermes_core.util.schema import CDFSchema
 
 __all__ = ["CDFHandler"]
 
@@ -66,9 +65,6 @@ class CDFHandler(TimeDataIOHandler):
 
     def __init__(self):
         super().__init__()
-
-        # CDF Schema
-        self.schema = CDFSchema()
 
     def load_data(self, file_path):
         """
