@@ -97,7 +97,10 @@ class CDFHandler(TimeDataIOHandler):
             # Add Global Attributes from the CDF file to TimeSeries
             input_global_attrs = {}
             for attr_name in input_file.attrs:
-                if len(input_file.attrs[attr_name]) > 1:
+                if len(input_file.attrs[attr_name]) == 0:
+                    # gAttr is not set
+                    input_global_attrs[attr_name] = ""
+                elif len(input_file.attrs[attr_name]) > 1:
                     # gAttr is a List
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][:]
                 else:
@@ -117,19 +120,38 @@ class CDFHandler(TimeDataIOHandler):
                 ts["time"].meta = OrderedDict()
                 ts["time"].meta.update(time_attrs)
 
+            # Get all the Keys for Measurement Variable Data
+            # These are Keys where the underlying object is a `dict` that contains
+            # additional data, and is not the `EPOCH` variable
+            variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
             # Add Variable Attributtes from the CDF file to TimeSeries
-            for var_name in input_file:
-                if var_name != "Epoch":  # Since we added this separately
-                    var_data = input_file[var_name][:].copy()
-                    var_attrs = {}
-                    for attr_name in input_file[var_name].attrs:
-                        var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
-                    # Create the Quantity object
-                    ts[var_name] = var_data
-                    ts[var_name].unit = var_attrs["UNITS"]
-                    # Create the Metadata
-                    ts[var_name].meta = OrderedDict()
-                    ts[var_name].meta.update(var_attrs)
+            for var_name in variable_keys:
+                # Make sure the Variable is record-varying
+                if len(input_file[var_name]) != len(ts["time"]):
+                    warn_user(
+                        f"Measurement Variable {var_name} does not match the length of the EPOCH variable. Cannot add {var_name} to the TimeSeries"
+                    )
+                    # Skip to the next Variable
+                    continue
+                # Make sure the Variable is one-dimensional
+                if isinstance(input_file[var_name][0], np.ndarray):
+                    warn_user(
+                        f"Measurement Variable {var_name} is Multi-Dimensional. Cannot add {var_name} to the TimeSeries"
+                    )
+                    # Skip to the next Variable
+                    continue
+
+                # If all checks pass, then add to the TimeSeries
+                var_data = input_file[var_name][:].copy()
+                var_attrs = {}
+                for attr_name in input_file[var_name].attrs:
+                    var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+                # Create the Quantity object
+                ts[var_name] = var_data
+                ts[var_name].unit = var_attrs["UNITS"]
+                # Create the Metadata
+                ts[var_name].meta = OrderedDict()
+                ts[var_name].meta.update(var_attrs)
 
         # Return the given TimeSeries
         return ts
@@ -178,23 +200,21 @@ class CDFHandler(TimeDataIOHandler):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in data.__iter__():
             if var_name == "time":
+                var_name = "Epoch"
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 cdf_file["Epoch"] = var_data.to_datetime()
-                # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    cdf_file["Epoch"].attrs[var_attr_name] = var_attr_val
             else:
                 # Add the Variable to the CDF File
                 cdf_file[var_name] = var_data.value
-                # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    if var_attr_val is None:
-                        raise ValueError(
-                            f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                        )
-                    else:
-                        # Add the Attribute to the CDF File
-                        cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                    )
+                else:
+                    # Add the Attribute to the CDF File
+                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
 
 # ================================================================================================
@@ -273,7 +293,7 @@ class JSONDataHandler(TimeDataIOHandler):
         import json
 
         if not Path(file_path).exists():
-            raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
+            raise FileNotFoundError(f"JSON Data Could not be loaded from path: {file_path}")
 
         # Create a new TimeSeries
         ts = TimeSeries()
@@ -288,9 +308,8 @@ class JSONDataHandler(TimeDataIOHandler):
                 data = data[0]
 
             if "EPOCH_" in data:
-                variable = data["EPOCH_"]
                 # `DAT` Appears to be the hardcoded Data Array
-                time_data = Time(variable["DAT"])
+                time_data = Time(data["EPOCH_"]["DAT"])
 
                 # Create the Time object
                 ts["time"] = time_data
@@ -299,10 +318,9 @@ class JSONDataHandler(TimeDataIOHandler):
 
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
-                metadata_attrs = list(variable.keys())
-                metadata_attrs.remove("DAT")
+                metadata_attrs = filter(lambda key: key != "DAT", list(data["EPOCH_"].keys()))
                 for attr_name in metadata_attrs:
-                    ts["time"].meta[attr_name] = variable[attr_name]
+                    ts["time"].meta[attr_name] = data["EPOCH_"][attr_name]
 
             # Get all the Keys for Measurement Variable Data
             # These are Keys where the underlying object is a `dict` that contains
@@ -382,10 +400,10 @@ class JSONDataHandler(TimeDataIOHandler):
         # Create a New JSON Object (dict) to Write to a JSON File
         output_json_data = {}
 
-        # Add Global Attriubtes to the CDF File
+        # Add Global Attriubtes to the JSON File
         self._convert_global_attributes_to_json(data, output_json_data)
 
-        # Add Measurement Data and Attributes to the CDF File
+        # Add Measurement Data and Attributes to the JSON File
         self._convert_variable_attributes_to_json(data, output_json_data)
 
         with open(output_json_filepath, "w") as json_file:
@@ -403,7 +421,6 @@ class JSONDataHandler(TimeDataIOHandler):
             else:
                 # Add the Attribute to the JSON File
                 if isinstance(attr_value, datetime):
-                    # json_file[attr_name] = attr_value.strftime("%Y-%m-%d %H:%M:%S")
                     json_file[attr_name] = attr_value.isoformat()
                 else:
                     json_file[attr_name] = attr_value
@@ -412,42 +429,25 @@ class JSONDataHandler(TimeDataIOHandler):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in data.__iter__():
             if var_name == "time":
-                # Add 'time' in the TimeSeries as 'Epoch' within the CDF
+                var_name = "EPOCH_"
+                # Add 'time' in the TimeSeries as 'Epoch' within the JSON
                 json_file["EPOCH_"] = {}
                 # `DAT` Appears to be the hardcoded Data Array
-                # json_file["EPOCH_"]["DAT"] = var_data.strftime("%Y-%m-%d %H:%M:%S").tolist()
                 json_file["EPOCH_"]["DAT"] = var_data.to_value("isot").tolist()
-                # json_file["EPOCH_"]["DAT"] = var_data
-                # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    if var_attr_val is None:
-                        raise ValueError(
-                            f"Variable EPOCH: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                        )
-                    else:
-                        # Add the Attribute to the JSON File
-                        if isinstance(var_attr_val, datetime):
-                            json_file["EPOCH_"][var_attr_name] = var_attr_val.strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            )
-                        else:
-                            json_file["EPOCH_"][var_attr_name] = var_attr_val
             else:
-                # Add the Variable to the CDF File
+                # Add the Variable to the JSON File
                 json_file[var_name] = {}
                 # `DAT` Appears to be the hardcoded Data Array
                 json_file[var_name]["DAT"] = var_data.value.tolist()
-                # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    if var_attr_val is None:
-                        raise ValueError(
-                            f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                        )
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                    )
+                else:
+                    # Add the Attribute to the JSON File
+                    if isinstance(var_attr_val, datetime):
+                        json_file[var_name][var_attr_name] = var_attr_val.isoformat()
                     else:
-                        # Add the Attribute to the JSON File
-                        if isinstance(var_attr_val, datetime):
-                            json_file[var_name][var_attr_name] = var_attr_val.strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            )
-                        else:
-                            json_file[var_name][var_attr_name] = var_attr_val
+                        json_file[var_name][var_attr_name] = var_attr_val
