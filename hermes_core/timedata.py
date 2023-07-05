@@ -10,7 +10,7 @@ from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy import units as u
 import hermes_core
-from hermes_core.util.io import CDFHandler, NetCDFHandler, JSONDataHandler
+from hermes_core.util.io import CDFHandler, NetCDFHandler, JSONDataHandler, CSVDataHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
@@ -550,6 +550,8 @@ class TimeData:
             handler = NetCDFHandler()
         elif file_extension == ".json":
             handler = JSONDataHandler()
+        elif file_extension == ".csv":
+            handler = CSVDataHandler()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
         return handler
@@ -579,7 +581,7 @@ class TimeData:
         if not output_path:
             output_path = str(Path.cwd())
         if overwrite:
-            cdf_file_path = Path(output_path) / (self.meta["Logical_file_id"] + ".cdf")
+            cdf_file_path = Path(output_path) / (self.meta["Logical_file_id"] + file_extension)
             if cdf_file_path.exists():
                 cdf_file_path.unlink()
         return handler.save_data(data=self, file_path=output_path)

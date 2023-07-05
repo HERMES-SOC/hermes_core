@@ -7,7 +7,7 @@ from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from hermes_core.util.exceptions import warn_user
 
-__all__ = ["CDFHandler"]
+__all__ = ["CDFHandler", "JSONDataHandler", "CSVDataHandler"]
 
 # ================================================================================================
 #                                   ABSTRACT HANDLER
@@ -447,3 +447,218 @@ class JSONDataHandler(TimeDataIOHandler):
                         json_file[var_name][var_attr_name] = var_attr_val.isoformat()
                     else:
                         json_file[var_name][var_attr_name] = var_attr_val
+
+
+# ================================================================================================
+#                                   CSV DATA HANDLER
+# ================================================================================================
+
+
+class CSVDataHandler(TimeDataIOHandler):
+    """
+    A concrete implementation of TimeDataIOHandler for handling heliophysics data in CSV format.
+
+    This class provides methods to load and save heliophysics data from/to a CSV file.
+    """
+
+    def load_data(self, file_path):
+        """
+        Load heliophysics data from a CSV file.
+
+        Parameters
+        ----------
+        file_path : `str`
+            The path to the CSV file.
+
+        Returns
+        -------
+        data : `~astropy.time.TimeSeries`
+            An instance of `TimeSeries` containing the loaded data.
+        """
+
+        if not Path(file_path).exists():
+            raise FileNotFoundError(f"CSV Data Could not be loaded from path: {file_path}")
+
+        # Initialize empty lists for the Header and Table of the CSV input
+        header, table = [], []
+
+        # Start Reading in the CSV Data
+        with open(file_path, "rb") as f:
+            line = f.readline()
+            while line:
+                # Decode the current line
+                decoded_line = line.decode(encoding="utf-8", errors="ignore")
+                # Append to struct
+                if decoded_line.startswith("#"):
+                    header.append(decoded_line)
+                else:
+                    table.append(decoded_line)
+                # Read in the next Line
+                line = f.readline()
+
+        # Create a new TimeSeries
+        ts = TimeSeries()
+
+        # Convert the Table Contents to a TimeSeries
+        self._convert_table_contents(table, ts)
+
+        # Add the Metadata from the header to the TimeSeries
+        self._convert_header_metadata(header, ts)
+
+        # Return the given TimeSeries
+        return ts
+
+    def _convert_table_contents(self, table_contents, ts):
+        """
+        Function to convert table contents of the CSV to an `~astropy.timeseries.TimeSeries`
+        """
+        import csv
+        from astropy import units as u
+
+        # Use csv.reader to parse the CSV data
+        reader = csv.reader(table_contents)
+        # Extract the header row
+        header = next(reader)
+
+        # Intermittent Format
+        columns = []
+        data = {}
+
+        # Parse Column Information
+        columns.append("Time")
+        data["Time"] = []
+        columns.extend(header[1:])
+        for column_name in columns[1:]:
+            data[column_name] = []
+
+        # Parse Time and Measurement Information
+        for i, line in enumerate(reader):
+            # Time
+            data["Time"].append(line[0])
+
+            # Remaining Measurement Columns
+            for i, measurement in enumerate(line[1:]):
+                # Try Convert to Float
+                try:
+                    value = float(measurement)
+                except ValueError:
+                    value = measurement
+                data[columns[i + 1]].append(value)
+
+        # Add Time to the TimeSeries
+        ts["time"] = data["Time"]
+
+        # Add Columns to the TimeSeries
+        for column_name in columns[1:]:
+            # Add Data to the TimeSeries
+            ts[column_name] = data[column_name]
+
+            # Convert to a Quantity column by setting the `units`
+            unit_str = column_name.split("__")[-1]
+            try:
+                ts[column_name].unit = u.Unit(unit_str)
+            except ValueError:
+                warn_user(f"Cannot identify unit for column {column_name}.")
+                ts.remove_column(column_name)
+
+    def _convert_header_metadata(self, header, ts):
+        """
+        Function to Parse Global and Variable metadata information from
+        the header of the CSV file and add to the TimeSeries meta attributes
+        """
+        from random import randrange
+        from hermes_core import INST_NAMES, INST_FULLNAMES
+        from hermes_core.util.util import VALID_DATA_LEVELS
+
+        # Initialize Global Metadata Dict
+        if not hasattr(ts, "meta"):
+            ts.meta = OrderedDict()
+
+        # Add the the Header Information
+        ts.meta["Header"] = "".join(header)
+
+        # Initialize Variable Metadata Dicts
+        for column_name in ts.columns:
+            if not hasattr(ts[column_name], "meta"):
+                ts[column_name].meta = OrderedDict({"VAR_TYPE": "data"})
+
+        # Add Dummy Meta
+        # TODO Add "Real" Metadata Parsing
+        random_inst_id = randrange(len(INST_NAMES))
+        random_inst_shortname = INST_NAMES[random_inst_id]
+        random_inst_longname = INST_FULLNAMES[random_inst_id]
+
+        random_data_level_id = randrange(len(VALID_DATA_LEVELS))
+        random_data_level_shortname = VALID_DATA_LEVELS[random_data_level_id]
+        if random_data_level_shortname != "ql":
+            random_data_level_longname = f"Level {random_data_level_shortname[1]}"
+        else:
+            random_data_level_longname = f"Quicklook"
+
+        ts.meta.update(
+            {
+                "Descriptor": f"{random_inst_shortname}>{random_inst_longname}",
+                "Data_level": f"{random_data_level_shortname}>{random_data_level_longname}",
+                "Data_version": "v0.0.1",
+            }
+        )
+
+    def save_data(self, data, file_path):
+        """
+        Save heliophysics data to a CSV file.
+
+        Parameters
+        ----------
+        data : `hermes_core.timedata.TimeData`
+            An instance of `TimeData` containing the data to be saved.
+        file_path : `str`
+            The path to save the CSV file.
+
+        Returns
+        -------
+        path : `str`
+            A path to the saved file.
+        """
+
+        # Initialize a new CSV File
+        csv_filename = f"{data.meta['Logical_file_id']}.csv"
+        output_csv_filepath = str(Path(file_path) / csv_filename)
+
+        if Path(output_csv_filepath).exists():
+            raise FileExistsError(
+                f"Cannot Save CSV Data to path: {output_csv_filepath}. File alrady exists!"
+            )
+
+        with open(output_csv_filepath, "w") as csv_file:
+            # Add Global Attriubtes to the CSV File
+            self._convert_metadata_to_csv(data, csv_file)
+
+            # Add Measurement Data to the CSV File
+            self._convert_measurement_data_to_csv(data, csv_file)
+
+        return output_csv_filepath
+
+    def _convert_metadata_to_csv(self, data, csv_file):
+        # Loop though Global Attributes in target_dict
+        for attr_name, attr_value in data.meta.items():
+            # Add the Attribute to the CSV File
+            if isinstance(attr_value, datetime):
+                csv_file.write(f"#{attr_name},{attr_value.isoformat()}\n")
+            elif attr_value[-1] == "\n":
+                csv_file.write(f"#{attr_name},{attr_value}")
+            else:
+                csv_file.write(f"#{attr_name},{attr_value}\n")
+
+    def _convert_measurement_data_to_csv(self, data, csv_file):
+        # Write a Header Row with the Column Names from the TimeSeries
+        csv_file.write(",".join(data.columns) + "\n")
+
+        # Loop through the Rows of the TimeSeries Data
+        for row in data.data.iterrows():
+            vals = []
+            # Each of the Rows is represnted as a `tuple[Quantity]` so we want to
+            # convert this into a list of values
+            for item in row:
+                vals.append(str(item.value))
+            # Write the row to the CSV File
+            csv_file.write(",".join(vals) + "\n")
