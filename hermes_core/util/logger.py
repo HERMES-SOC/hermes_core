@@ -17,20 +17,20 @@ class MyLogger(AstropyLogger):
 
     This inherits the logging enhancements of `~astropy.logger.AstropyLogger`.
     This logger is able to capture and log warnings that are based on
-    `~sunpy.util.exceptions.SunpyWarning`.  Other warnings will be ignored and
+    `~hermes_core.util.exceptions.HERMESWarning`.  Other warnings will be ignored and
     passed on to other loggers (e.g., from Astropy).
     """
 
-    # Override the existing _showwarning() to capture SunpyWarning instead of AstropyWarning
+    # Override the existing _showwarning() to capture HERMESWarning instead of AstropyWarning
     def _showwarning(self, *args, **kwargs):
-        # Bail out if we are not catching a warning from SunPy
+        # Bail out if we are not catching a warning from HERMES
         if not isinstance(args[0], HERMESWarning):
             return self._showwarning_orig(*args, **kwargs)
 
         warning = args[0]
         # Deliberately not using isinstance here: We want to display
         # the class name only when it's not the default class,
-        # SunpyWarning.  The name of subclasses of SunpyWarning should
+        # HERMESWarning.  The name of subclasses of HERMESWarning should
         # be displayed.
         if type(warning) not in (HERMESWarning,):
             message = f"{warning.__class__.__name__}: {args[0]}"
