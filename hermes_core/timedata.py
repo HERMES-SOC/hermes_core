@@ -64,7 +64,9 @@ class TimeData:
         for colname in data.columns:
             # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
-                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+                raise TypeError(
+                    f"Column '{colname}' must be an astropy.Quantity object"
+                )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
@@ -241,7 +243,9 @@ class TimeData:
                     f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
                 )
             # Set the Property
-            meta["Descriptor"] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+            meta[
+                "Descriptor"
+            ] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
 
         # Check the Optional Data Level
         if data_level:
@@ -259,7 +263,9 @@ class TimeData:
         if version:
             # check that version is in the right format with three parts
             if len(version.split(".")) != 3:
-                raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
+                raise ValueError(
+                    f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
+                )
             meta["Data_version"] = version
         return meta
 
@@ -300,7 +306,9 @@ class TimeData:
                 self._data.meta[attr_name] = attr_value
 
         # Global Attributes
-        for attr_name, attr_value in self.schema.derive_global_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_global_attributes(
+            self._data
+        ).items():
             if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 if (
                     self._data.meta[attr_name] != attr_value
@@ -314,13 +322,20 @@ class TimeData:
                 self._data.meta[attr_name] = attr_value
 
         # Time Measurement Attributes
-        for attr_name, attr_value in self.schema.derive_time_attributes(self._data).items():
+        for attr_name, attr_value in self.schema.derive_time_attributes(
+            self._data
+        ).items():
             if (
                 attr_name in self._data["time"].meta
                 and self._data["time"].meta[attr_name] is not None
             ):
-                attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
-                if self._data["time"].meta[attr_name] != attr_value and attr_schema["override"]:
+                attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                    attr_name
+                ]
+                if (
+                    self._data["time"].meta[attr_name] != attr_value
+                    and attr_schema["override"]
+                ):
                     warn_user(
                         f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
                     )
@@ -337,8 +352,13 @@ class TimeData:
                     attr_name in self._data[col].meta
                     and self._data[col].meta[attr_name] is not None
                 ):
-                    attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
-                    if self._data[col].meta[attr_name] != attr_value and attr_schema["override"]:
+                    attr_schema = self.schema.variable_attribute_schema[
+                        "attribute_key"
+                    ][attr_name]
+                    if (
+                        self._data[col].meta[attr_name] != attr_value
+                        and attr_schema["override"]
+                    ):
                         warn_user(
                             f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
                         )
@@ -514,7 +534,9 @@ class TimeData:
         # Check individual Columns
         for colname in self.data.columns:
             if colname != "time" and not isinstance(self.data[colname], u.Quantity):
-                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
+                raise TypeError(
+                    f"Column '{colname}' must be an astropy.Quantity object"
+                )
 
         # Save Metadata since it is not carried over with vstack
         metadata_holder = {col: self.data[col].meta for col in self.columns}
