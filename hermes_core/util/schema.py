@@ -64,7 +64,9 @@ class CDFSchema(FileTypeSchema):
     def _load_default_global_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent
+            / "data"
+            / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return CDFSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -73,7 +75,9 @@ class CDFSchema(FileTypeSchema):
     def _load_default_variable_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent / "data" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent
+            / "data"
+            / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return CDFSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -144,7 +148,9 @@ class CDFSchema(FileTypeSchema):
         """
         template = OrderedDict()
         measurement_attribute_schema = CDFSchema._load_default_variable_attr_schema()
-        for attr_name, attr_schema in measurement_attribute_schema["attribute_key"].items():
+        for attr_name, attr_schema in measurement_attribute_schema[
+            "attribute_key"
+        ].items():
             if attr_schema["required"] and not attr_schema["derived"]:
                 template[attr_name] = None
         return template
@@ -175,7 +181,9 @@ class CDFSchema(FileTypeSchema):
         measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
         measurement_attributes["FORMAT"] = self._get_format(data, var_name)
         measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
-        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(data, var_name)
+        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
+            data, var_name
+        )
         measurement_attributes["UNITS"] = self._get_units(data, var_name)
         measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
         measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
@@ -268,14 +276,18 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.to_datetime()
+            )
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             # guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return spacepy.pycdf.lib.v_tt2000_to_datetime(fillval)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.value
+            )
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             return fillval
@@ -290,7 +302,9 @@ class CDFSchema(FileTypeSchema):
             )
             if i == 8:
                 continue
-            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = 2 ** (8 * i) - 1
+            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = (
+                2 ** (8 * i) - 1
+            )
         fillvals[spacepy.pycdf.const.CDF_EPOCH16.value] = (-1e31, -1e31)
         fillvals[spacepy.pycdf.const.CDF_REAL8.value] = -1e31
         fillvals[spacepy.pycdf.const.CDF_REAL4.value] = -1e31
@@ -313,11 +327,15 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.to_datetime()
+            )
             return self._format_helper(data, var_name, guess_types[0])
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.value
+            )
             return self._format_helper(data, var_name, guess_types[0])
 
     def _format_helper(self, data, var_name, cdftype):
@@ -351,7 +369,8 @@ class CDFSchema(FileTypeSchema):
                     (
                         i
                         for i in (1, 2, 4, 8)
-                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value == cdftype
+                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
+                        == cdftype
                     )
                 )
                 minval = -(2 ** (8 * size - 1))
@@ -364,7 +383,8 @@ class CDFSchema(FileTypeSchema):
                     (
                         8 * i
                         for i in (1, 2, 4)
-                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value == cdftype
+                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value
+                        == cdftype
                     ),
                     None,
                 )
@@ -374,7 +394,9 @@ class CDFSchema(FileTypeSchema):
                             (
                                 8 * i
                                 for i in (1, 2, 4, 8)
-                                if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
+                                if getattr(
+                                    spacepy.pycdf.const, "CDF_INT{}".format(i)
+                                ).value
                                 == cdftype
                             )
                         )
@@ -386,7 +408,9 @@ class CDFSchema(FileTypeSchema):
             # powers of 10 (log10(10) = 1 but needs two digits)
             # -Make sure not taking log of zero
             if minval < 0:  # Need an extra space for the negative sign
-                fmt = "I{}".format(int(math.log10(max(abs(maxval), abs(minval), 1))) + 2)
+                fmt = "I{}".format(
+                    int(math.log10(max(abs(maxval), abs(minval), 1))) + 2
+                )
             else:
                 fmt = "I{}".format(int(math.log10(maxval) if maxval != 0 else 1) + 1)
         elif cdftype == spacepy.pycdf.const.CDF_TIME_TT2000.value:
@@ -410,14 +434,18 @@ class CDFSchema(FileTypeSchema):
             # (Use maxx-minn for this...effectively uses VALIDMIN/MAX for most
             # cases.)
             if range and (minn in var_data.meta and maxx in var_data.meta):
-                if len(str(int(var_data.meta[maxx]))) >= len(str(int(var_data.meta[minn]))):
+                if len(str(int(var_data.meta[maxx]))) >= len(
+                    str(int(var_data.meta[minn]))
+                ):
                     ln = str(int(var_data.meta[maxx]))
                 else:
                     ln = str(int(var_data.meta[minn]))
             if range and ln and range < 0:  # Cover all our bases:
                 range = None
             # Switch on Range
-            if range and ln and range <= 11:  # If range <= 11, we want 2 decimal places:
+            if (
+                range and ln and range <= 11
+            ):  # If range <= 11, we want 2 decimal places:
                 # Need extra for '.', and 3 decimal places (4 extra)
                 fmt = "F{}.3".format(len([i for i in ln]) + 4)
             elif range and ln and 11 < range <= 101:
@@ -451,18 +479,24 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            var_data.to_datetime()
+        )
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "rotating Earth geoid"
         else:
-            raise TypeError(f"Reference Position for Time type ({guess_types[0]}) not found.")
+            raise TypeError(
+                f"Reference Position for Time type ({guess_types[0]}) not found."
+            )
 
     def _get_resolution(self, data):
         # Get the Variable Data
         var_data = data.time
         times = len(var_data)
         if times < 2:
-            raise ValueError(f"Can not derive Time Resolution, need 2 samples, found {times}.")
+            raise ValueError(
+                f"Can not derive Time Resolution, need 2 samples, found {times}."
+            )
         # Calculate the Timedelta between two datetimes
         times = var_data.to_datetime()
         delta = times[1] - times[0]
@@ -493,7 +527,9 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            var_data.to_datetime()
+        )
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "J2000"
         else:
@@ -503,7 +539,9 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            var_data.to_datetime()
+        )
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "Terrestrial Time (TT)"
         else:
@@ -513,7 +551,9 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            var_data.to_datetime()
+        )
         if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH.value:
             return "ms"
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
@@ -537,13 +577,17 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.to_datetime()
+            )
             # Get the Min Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return minval + datetime.timedelta(seconds=1)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.value
+            )
             # Get the Min Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return minval
@@ -553,13 +597,17 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.to_datetime()
+            )
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval - datetime.timedelta(seconds=1)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+                var_data.value
+            )
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval

@@ -187,7 +187,9 @@ class CDFHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
-                raise ValueError(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+                raise ValueError(
+                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
+                )
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
@@ -289,7 +291,9 @@ class JSONDataHandler(TimeDataIOHandler):
         import json
 
         if not Path(file_path).exists():
-            raise FileNotFoundError(f"JSON Data Could not be loaded from path: {file_path}")
+            raise FileNotFoundError(
+                f"JSON Data Could not be loaded from path: {file_path}"
+            )
 
         # Create a new TimeSeries
         ts = TimeSeries()
@@ -314,7 +318,9 @@ class JSONDataHandler(TimeDataIOHandler):
 
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
-                metadata_attrs = filter(lambda key: key != "DAT", list(data["EPOCH_"].keys()))
+                metadata_attrs = filter(
+                    lambda key: key != "DAT", list(data["EPOCH_"].keys())
+                )
                 for attr_name in metadata_attrs:
                     ts["time"].meta[attr_name] = data["EPOCH_"][attr_name]
 
@@ -322,7 +328,8 @@ class JSONDataHandler(TimeDataIOHandler):
             # These are Keys where the underlying object is a `dict` that contains
             # additional data, and is not the `EPOCH` variable
             variable_keys = filter(
-                lambda key: key != "EPOCH_" and isinstance(data[key], dict), list(data.keys())
+                lambda key: key != "EPOCH_" and isinstance(data[key], dict),
+                list(data.keys()),
             )
             # Loop Through the Variable Keys
             for key in variable_keys:
@@ -353,7 +360,9 @@ class JSONDataHandler(TimeDataIOHandler):
 
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
-                metadata_attrs = filter(lambda key: key != "DAT", list(measurement_variable.keys()))
+                metadata_attrs = filter(
+                    lambda key: key != "DAT", list(measurement_variable.keys())
+                )
                 # Loop through the Metadata Attributes
                 for attr_name in metadata_attrs:
                     # Add the Variable attribute to the Variable's Metadata in the TimeSeries
@@ -413,7 +422,9 @@ class JSONDataHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
-                raise ValueError(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+                raise ValueError(
+                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
+                )
             else:
                 # Add the Attribute to the JSON File
                 if isinstance(attr_value, datetime):
@@ -477,7 +488,9 @@ class CSVDataHandler(TimeDataIOHandler):
         """
 
         if not Path(file_path).exists():
-            raise FileNotFoundError(f"CSV Data Could not be loaded from path: {file_path}")
+            raise FileNotFoundError(
+                f"CSV Data Could not be loaded from path: {file_path}"
+            )
 
         # Initialize empty lists for the Header and Table of the CSV input
         header, table = [], []
