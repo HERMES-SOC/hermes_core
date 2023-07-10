@@ -29,9 +29,7 @@ def get_bad_timeseries():
     ts.add_column(col)
 
     # Add Measurement
-    col = Column(
-        data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"}
-    )
+    col = Column(data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"})
     ts.add_column(col)
     return ts
 
@@ -45,14 +43,22 @@ def get_test_timeseries():
     ts["time"] = time_col
 
     # Add Measurement
-    quant = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
-    ts["measurement"] = quant
+    ts["measurement"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
     ts["measurement"].meta = OrderedDict(
         {
             "VAR_TYPE": "metadata",
             "CATDESC": "Test Metadata",
         }
     )
+
+    # Add 2D Variable
+    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
+    ts["2d-var"].meta = OrderedDict({"CATDESC": "Test 2-Dimensional Variable"})
+
+    # Add 3D Variable
+    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="s", dtype=np.uint16)
+    ts["3d-var"].meta = OrderedDict({"CATDESC": "Test 3-Dimensional Variable"})
+
     return ts
 
 
@@ -99,14 +105,6 @@ def test_timedata_default():
 
     # Test Deleting the Writer
     del ts
-
-
-def test_multidimensional_data():
-    ts = get_test_timeseries()
-    ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
-
-    with pytest.raises(ValueError):
-        _ = TimeData(ts)
 
 
 def test_timedata_valid_attrs():
@@ -215,9 +213,7 @@ def test_timedata_single_measurement():
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update(
-        {"test_attr1": "test_value1", "CATDESC": "Test data"}
-    )
+    test_data["test_var1"].meta.update({"test_attr1": "test_value1", "CATDESC": "Test data"})
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -245,11 +241,6 @@ def test_timedata_add_measurement():
     # Add non-Quantity
     with pytest.raises(TypeError):
         test_data.add_measurement(measure_name="test", data=[], meta={})
-
-    # Add multi-domensional data
-    with pytest.raises(ValueError):
-        q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
-        test_data.add_measurement(measure_name="test", data=q, meta={})
 
     # Good measurement
     q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
@@ -332,6 +323,8 @@ def test_timedata_append():
     time = np.arange(start=10, stop=20)
     ts["time"] = Time(time, format="unix")
     ts["measurement"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
+    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="s", dtype=np.uint16)
     test_data.append(ts)
     assert test_data.shape[0] == 20
 
