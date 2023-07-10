@@ -108,8 +108,6 @@ attribute_key:
     derived: true
     required: true  # NOT Required in ISTP Guide
     override: false
-    check:
-      conditional_si_units: null
   UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
     derived: true
     required: true
