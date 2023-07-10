@@ -28,12 +28,10 @@
 		"python.linting.pycodestylePath": "/usr/local/bin/pycodestyle",
 		"python.linting.pydocstylePath": "/usr/local/bin/pydocstyle",
 		"python.linting.pylintPath": "/usr/bin/pylint",
+		"terminal.integrated.defaultProfile.linux": "bash (login)",
 		"terminal.integrated.profiles.linux": {
 			"bash (login)": {
-				"path": "/bin/bash",
-				"args": [
-					""
-				]
+				"path": "bash"
 			}
 		}
 	},
@@ -41,8 +39,14 @@
 	"extensions": [
 		"ms-python.python",
 		"ms-python.vscode-pylance",
-		"marklarah.pre-commit-vscode"
+		"marklarah.pre-commit-vscode",
+		"ms-toolsai.jupyter",
+		"ms-toolsai.jupyter-renderers",
+		"ms-toolsai.jupyter-keymap",
+		"jithurjacob.nbpreviewer"
 	],
+	// Mount to a volume if you'd like to persist data to your disk
+	// "mounts": ["source=<add your /path/on/host here>, target=/workspaces/hermes_core, type=bind"],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Hermes_core package is uninstalled from the container image after it is created to avoid circular import errors during development 
