@@ -34,7 +34,7 @@ class HERMESDataSchema:
         )
 
         # Load Default Global Attributes
-        self.default_global_attributes = HERMESDataSchema._load_default_attributes()
+        self._default_global_attributes = HERMESDataSchema._load_default_attributes()
 
     @property
     def global_attribute_schema(self):
@@ -45,6 +45,11 @@ class HERMESDataSchema:
     def variable_attribute_schema(self):
         """Schema for variable attributes of the file."""
         return self._variable_attr_schema
+
+    @property
+    def default_global_attributes(self):
+        """Default Global Attributes applied for all HERMES Data Files"""
+        return self._default_global_attributes
 
     @staticmethod
     def _load_default_global_attr_schema() -> dict:
