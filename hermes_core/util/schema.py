@@ -12,7 +12,7 @@ import hermes_core
 from hermes_core import log
 from hermes_core.util import util
 
-__all__ = ["CDFSchema"]
+__all__ = ["HERMESDataSchema", "CDFSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
@@ -163,14 +163,15 @@ class HERMESDataSchema:
         Function to generate a pandas `DataFrmame` of information about each global
         metadata attribute. The `DataFrame` contains all information in the HERMES
         global attribute schema including:
-            - description: (`str`) A brief description of the attribute
-            - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
-            - required: (`bool`) Whether the attribute is required by HERMES standards
-            - validate: (`bool`) Whether the attribute is included in the `TimeData`
-                validation checks. (Note, not all attributes that are required are validated)
-            - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-                existing attribute value with an updated attribute value from the derivation
-                process.
+
+        - description: (`str`) A brief description of the attribute
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+        - required: (`bool`) Whether the attribute is required by HERMES standards
+        - validate: (`bool`) Whether the attribute is included in the `TimeData`
+            validation checks. (Note, not all attributes that are required are validated)
+        - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
+            existing attribute value with an updated attribute value from the derivation
+            process.
 
         Parameters
         ----------
@@ -212,12 +213,13 @@ class HERMESDataSchema:
         Function to generate a pandas `DataFrmame` of information about each variable
         metadata attribute. The `DataFrame` contains all information in the HERMES
         variable attribute schema including:
-            - description: (`str`) A brief description of the attribute
-            - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
-            - required: (`bool`) Whether the attribute is required by HERMES standards
-            - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-                existing attribute value with an updated attribute value from the derivation
-                process.
+
+        - description: (`str`) A brief description of the attribute
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+        - required: (`bool`) Whether the attribute is required by HERMES standards
+        - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
+            existing attribute value with an updated attribute value from the derivation
+            process.
 
         Parameters
         ----------
