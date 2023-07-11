@@ -1,5 +1,5 @@
 DOI:
-  description: | 
+  description: > 
     DOI is a persistent Unique Digital Identifier with the form
     https://doi.org/<PREFIX>/<SUFFIX> with the <PREFIX> identifying the DOI
     registration authority and the <SUFFIX> identifying the dataset. The DOI should point to
@@ -11,7 +11,7 @@ DOI:
   validate: true
   override: false
 Data_level:
-  description: |
+  description: >
     This attribute is used in file name creation and records the level of processsing done
     on the dataset. For HERMES the following are valid values:
     • l0>Level 0
@@ -26,7 +26,7 @@ Data_level:
   validate: false
   override: true
 Data_product_descriptor:
-  description: | 
+  description: > 
     This is an optional field that may not be needed for all products. Where it is used, identifier
     should be short (e.q. 3-8 characters) descriptors that are helpful to end- users. If a 
     descriptor contains multiple components, underscores are used to separate those components.
@@ -36,7 +36,7 @@ Data_product_descriptor:
   validate: false
   override: true
 Data_type:
-  description: |
+  description: >
     This attribute is used by CDF file writing software to create a filename. It is a
     combination of the following filename components: mode, data level, and optional data
     product descriptor.
@@ -46,7 +46,7 @@ Data_type:
   validate: false
   override: true
 Data_version:
-  description: |
+  description: >
     This attribute identifies the version (vX.Y.Z) of a particular CDF data file.
   default: null
   derived: false
@@ -54,7 +54,7 @@ Data_version:
   validate: true
   override: false
 Descriptor:
-  description: |
+  description: >
     This attribute identifies the name of the instrument or sensor that collected the data. Both
     a long name and a short name are given. For any data file, only a single value is allowed.
     For HERMES, the following are valid values:
@@ -68,7 +68,7 @@ Descriptor:
   validate: true
   override: false
 Discipline:
-  description: |
+  description: >
     This attribute describes both the science discipline and sub discipline. For HERMES,
     this value should always be “Space Physics>Magnetospheric Science.”
   default: Space Physics>Magnetospheric Science
@@ -77,7 +77,7 @@ Discipline:
   validate: true
   override: false
 Generation_date:
-  description: |
+  description: >
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
   default: null
   derived: true
@@ -85,7 +85,7 @@ Generation_date:
   validate: true
   override: true
 HTTP_LINK:
-  description: |
+  description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
@@ -96,7 +96,7 @@ HTTP_LINK:
   validate: true
   override: false
 Instrument_mode:
-  description: | 
+  description: > 
     TBS
   default: null
   derived: false
@@ -104,7 +104,7 @@ Instrument_mode:
   validate: false
   override: false
 Instrument_type:
-  description: | 
+  description: > 
     This attribute is used to facilitate making choices of instrument type. More than one entry
     is allowed. Acceptable values for HERMES include:
     • Magnetic Fields (space)
@@ -117,7 +117,7 @@ Instrument_type:
   validate: true
   override: false
 LINK_TEXT:
-  description: |
+  description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
@@ -128,7 +128,7 @@ LINK_TEXT:
   validate: true
   override: false
 LINK_TITLE:
-  description: |
+  description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
@@ -139,7 +139,7 @@ LINK_TITLE:
   validate: true
   override: false
 Logical_file_id:
-  description: |
+  description: >
     This attribute stores the name of the CDF file but without the
     file extension (e.g. ".cdf"). This attribute is required to avoid loss of the original source
     in the case of accidental (or intentional) renaming.
@@ -149,7 +149,7 @@ Logical_file_id:
   validate: true
   override: true
 Logical_source:
-  description: | 
+  description: > 
     This attribute determines the file naming convention in the SKT Editor and is used by
     CDA Web. It is composed of the following values:
     • source_name - (e.g. spacecraft identifier)
@@ -163,7 +163,7 @@ Logical_source:
   validate: true
   override: true
 Logical_source_description:
-  description: |
+  description: >
     This attribute writes out the full words associated with the encrypted Logical_source
     above, e.g., "Level 1 Dual Electron Spectrometer Survey Data". Users on CDAWeb see
     this value on their website.
@@ -173,7 +173,7 @@ Logical_source_description:
   validate: true
   override: true
 MODS:
-  description: | 
+  description: > 
     This attribute is an SPDF standard global attribute, which is used to denote the history of
     modifications made to the CDF data set. The MODS attribute should contain a
     description of all significant changes to the data set, essentially capturing a log of high-
@@ -185,7 +185,7 @@ MODS:
   validate: true
   override: false
 Mission_group:
-  description: |
+  description: >
     This attribute has a single value and is used to facilitate making choices of source through
     CDAWeb. This value should be “HERMES.”
   default: HERMES
@@ -194,7 +194,7 @@ Mission_group:
   validate: true
   override: false
 PI_affiliation:
-  description: |
+  description: >
     This attribute value should include the HERMES mission PI affiliation followed by a
     comma-separated list of any Co-I affiliations that are responsible for this particular
     dataset. The following are valid HERMES values, of which the abbreviations should be
@@ -210,7 +210,7 @@ PI_affiliation:
   validate: true
   override: false
 PI_name:
-  description: |
+  description: >
     This attribute value should include first initial and last name of the HERMES mission PI
     followed by a comma-separated list of any Co-Is that are responsible for this particular
     dataset.
@@ -220,7 +220,7 @@ PI_name:
   validate: true
   override: false
 Project:
-  description: |
+  description: >
     This attribute identifies the name of the project and indicates ownership. For HERMES,
     this value should be “STP>Solar-Terrestrial Physics”.
   default: STP>Solar-Terrestrial Physics
@@ -229,7 +229,7 @@ Project:
   validate: true
   override: false
 Source_name:
-  description: |
+  description: >
     This attribute identifies the observatory where the data originated. The following are
     valid values for HERMES:
     • HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
@@ -239,7 +239,7 @@ Source_name:
   validate: true
   override: false
 Start_time:
-  description: |
+  description: >
     The start time of the contained data given in YYYYMMDD_hhmmss
   default: null
   derived: true
@@ -247,7 +247,7 @@ Start_time:
   validate: false
   override: true
 TEXT:
-  description: |
+  description: >
     This attribute is an SPDF standard global attribute, which is a text description of the
     experiment whose data is included in the CDF. A reference to a journal article(s) or to a
     World Wide Web page describing the experiment is essential and constitutes the
