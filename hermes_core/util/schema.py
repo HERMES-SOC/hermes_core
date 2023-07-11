@@ -4,6 +4,7 @@ from copy import deepcopy
 import math
 import datetime
 import yaml
+from astropy.table import Table
 from astropy import units as u
 import spacepy
 from spacepy.pycdf import _Hyperslice
@@ -28,9 +29,7 @@ class HERMESDataSchema:
         self._global_attr_schema = HERMESDataSchema._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
-        self._variable_attr_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
-        )
+        self._variable_attr_schema = HERMESDataSchema._load_default_variable_attr_schema()
 
         # Load Default Global Attributes
         self.default_global_attributes = HERMESDataSchema._load_default_attributes()
@@ -49,9 +48,7 @@ class HERMESDataSchema:
     def _load_default_global_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -60,9 +57,7 @@ class HERMESDataSchema:
     def _load_default_variable_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -132,93 +127,103 @@ class HERMESDataSchema:
             A template for required variable attributes that must be provided.
         """
         template = OrderedDict()
-        measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
-        )
-        for attr_name, attr_schema in measurement_attribute_schema[
-            "attribute_key"
-        ].items():
+        measurement_attribute_schema = HERMESDataSchema._load_default_variable_attr_schema()
+        for attr_name, attr_schema in measurement_attribute_schema["attribute_key"].items():
             if attr_schema["required"] and not attr_schema["derived"]:
                 template[attr_name] = None
         return template
 
-    # @staticmethod
-    # def global_attribute_info(attribute_name=None):
-    #     """
-    #     Function to generate a pandas `DataFrmame` of information about each global
-    #     metadata attribute. The `DataFrame` contains all information in the HERMES
-    #     global attribute schema including:
-    #         - description: (`str`) A brief description of the attribute
-    #         - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
-    #         - required: (`bool`) Whether the attribute is required by HERMES standards
-    #         - validate: (`bool`) Whether the attribute is included in the `TimeData`
-    #             validation checks. (Note, not all attributes that are required are validated)
-    #         - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-    #             existing attribute value with an updated attribute value from the derivation
-    #             process.
+    @staticmethod
+    def global_attribute_info(attribute_name=None):
+        """
+        Function to generate a pandas `DataFrmame` of information about each global
+        metadata attribute. The `DataFrame` contains all information in the HERMES
+        global attribute schema including:
+            - description: (`str`) A brief description of the attribute
+            - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+            - required: (`bool`) Whether the attribute is required by HERMES standards
+            - validate: (`bool`) Whether the attribute is included in the `TimeData`
+                validation checks. (Note, not all attributes that are required are validated)
+            - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
+                existing attribute value with an updated attribute value from the derivation
+                process.
 
-    #     Parameters
-    #     ----------
-    #     attribute_name : `str`, optional, default None
-    #         The name of the attribute to get specific information for.
+        Parameters
+        ----------
+        attribute_name : `str`, optional, default None
+            The name of the attribute to get specific information for.
 
-    #     Returns
-    #     -------
-    #     info: `DataFrame`
-    #         A table of information about global metadata.
+        Returns
+        -------
+        info: `DataFrame`
+            A table of information about global metadata.
 
-    #     Raises
-    #     ------
-    #     KeyError: If attribute_name is not a recognized global attribute.
-    #     """
-    #     global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
-    #     info = pd.DataFrame.from_dict(global_attribute_schema).transpose()
+        Raises
+        ------
+        KeyError: If attribute_name is not a recognized global attribute.
+        """
+        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
 
-    #     # Limit the Info to the requested Attribute
-    #     if attribute_name and attribute_name in info.index:
-    #         info = info.loc[attribute_name]
-    #     elif attribute_name and attribute_name not in info.index:
-    #         raise KeyError(f"Cannot find Global Metadata for attribute name: {attribute_name}")
+        # Get all the Attributes from the Schema
+        attribute_names = list(global_attribute_schema.keys())
+        table_rows = [info for _, info in global_attribute_schema.items()]
 
-    #     return info
+        # Create the Info Table
+        info = Table(rows=table_rows)
+        info.add_column(col=attribute_names, name="Attribute", index=0)
 
-    # @staticmethod
-    # def measurement_attribute_info(attribute_name=None):
-    #     """
-    #     Function to generate a pandas `DataFrmame` of information about each variable
-    #     metadata attribute. The `DataFrame` contains all information in the HERMES
-    #     variable attribute schema including:
-    #         - description: (`str`) A brief description of the attribute
-    #         - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
-    #         - required: (`bool`) Whether the attribute is required by HERMES standards
-    #         - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-    #             existing attribute value with an updated attribute value from the derivation
-    #             process.
+        # Limit the Info to the requested Attribute
+        if attribute_name and attribute_name in info["Attribute"]:
+            info = info[info["Attribute"] == attribute_name]
+        elif attribute_name and attribute_name not in info["Attribute"]:
+            raise KeyError(f"Cannot find Global Metadata for attribute name: {attribute_name}")
 
-    #     Parameters
-    #     ----------
-    #     attribute_name : `str`, optional, default None
-    #         The name of the attribute to get specific information for.
+        return info
 
-    #     Returns
-    #     -------
-    #     info: `DataFrame`
-    #         A table of information about variable metadata.
+    @staticmethod
+    def measurement_attribute_info(attribute_name=None):
+        """
+        Function to generate a pandas `DataFrmame` of information about each variable
+        metadata attribute. The `DataFrame` contains all information in the HERMES
+        variable attribute schema including:
+            - description: (`str`) A brief description of the attribute
+            - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+            - required: (`bool`) Whether the attribute is required by HERMES standards
+            - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
+                existing attribute value with an updated attribute value from the derivation
+                process.
 
-    #     Raises
-    #     ------
-    #     KeyError: If attribute_name is not a recognized global attribute.
-    #     """
-    #     measurement_attribute_schema = HERMESDataSchema._load_default_variable_attr_schema()
-    #     info = pd.DataFrame.from_dict(measurement_attribute_schema["attribute_key"]).transpose()
+        Parameters
+        ----------
+        attribute_name : `str`, optional, default None
+            The name of the attribute to get specific information for.
 
-    #     # Limit the Info to the requested Attribute
-    #     if attribute_name and attribute_name in info.index:
-    #         info = info.loc[attribute_name]
-    #     elif attribute_name and attribute_name not in info.index:
-    #         raise KeyError(f"Cannot find Variable Metadata for attribute name: {attribute_name}")
+        Returns
+        -------
+        info: `DataFrame`
+            A table of information about variable metadata.
 
-    #     return info
+        Raises
+        ------
+        KeyError: If attribute_name is not a recognized global attribute.
+        """
+        measurement_attribute_schema = HERMESDataSchema._load_default_variable_attr_schema()
+
+        # Get all the Attributes from the Schema
+        attribute_names = list(measurement_attribute_schema["attribute_key"].keys())
+        table_rows = [info for _, info in measurement_attribute_schema["attribute_key"].items()]
+
+        # Create the Info Table
+        info = Table(rows=table_rows)
+        info.add_column(col=attribute_names, name="Attribute", index=0)
+
+        # Limit the Info to the requested Attribute
+        if attribute_name and attribute_name in info["Attribute"]:
+            info = info[info["Attribute"] == attribute_name]
+        elif attribute_name and attribute_name not in info["Attribute"]:
+            raise KeyError(f"Cannot find Variable Metadata for attribute name: {attribute_name}")
+
+        return info
 
 
 class CDFSchema(HERMESDataSchema):
@@ -253,9 +258,7 @@ class CDFSchema(HERMESDataSchema):
         measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
         measurement_attributes["FORMAT"] = self._get_format(data, var_name)
         measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
-        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-            data, var_name
-        )
+        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(data, var_name)
         measurement_attributes["UNITS"] = self._get_units(data, var_name)
         measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
         measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
@@ -348,18 +351,14 @@ class CDFSchema(HERMESDataSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.to_datetime()
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             # guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return spacepy.pycdf.lib.v_tt2000_to_datetime(fillval)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             return fillval
@@ -374,9 +373,7 @@ class CDFSchema(HERMESDataSchema):
             )
             if i == 8:
                 continue
-            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = (
-                2 ** (8 * i) - 1
-            )
+            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = 2 ** (8 * i) - 1
         fillvals[spacepy.pycdf.const.CDF_EPOCH16.value] = (-1e31, -1e31)
         fillvals[spacepy.pycdf.const.CDF_REAL8.value] = -1e31
         fillvals[spacepy.pycdf.const.CDF_REAL4.value] = -1e31
@@ -399,15 +396,11 @@ class CDFSchema(HERMESDataSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.to_datetime()
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
             return self._format_helper(data, var_name, guess_types[0])
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
             return self._format_helper(data, var_name, guess_types[0])
 
     def _format_helper(self, data, var_name, cdftype):
@@ -441,8 +434,7 @@ class CDFSchema(HERMESDataSchema):
                     (
                         i
                         for i in (1, 2, 4, 8)
-                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
-                        == cdftype
+                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value == cdftype
                     )
                 )
                 minval = -(2 ** (8 * size - 1))
@@ -455,8 +447,7 @@ class CDFSchema(HERMESDataSchema):
                     (
                         8 * i
                         for i in (1, 2, 4)
-                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value
-                        == cdftype
+                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value == cdftype
                     ),
                     None,
                 )
@@ -466,9 +457,7 @@ class CDFSchema(HERMESDataSchema):
                             (
                                 8 * i
                                 for i in (1, 2, 4, 8)
-                                if getattr(
-                                    spacepy.pycdf.const, "CDF_INT{}".format(i)
-                                ).value
+                                if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
                                 == cdftype
                             )
                         )
@@ -480,9 +469,7 @@ class CDFSchema(HERMESDataSchema):
             # powers of 10 (log10(10) = 1 but needs two digits)
             # -Make sure not taking log of zero
             if minval < 0:  # Need an extra space for the negative sign
-                fmt = "I{}".format(
-                    int(math.log10(max(abs(maxval), abs(minval), 1))) + 2
-                )
+                fmt = "I{}".format(int(math.log10(max(abs(maxval), abs(minval), 1))) + 2)
             else:
                 fmt = "I{}".format(int(math.log10(maxval) if maxval != 0 else 1) + 1)
         elif cdftype == spacepy.pycdf.const.CDF_TIME_TT2000.value:
@@ -506,18 +493,14 @@ class CDFSchema(HERMESDataSchema):
             # (Use maxx-minn for this...effectively uses VALIDMIN/MAX for most
             # cases.)
             if range and (minn in var_data.meta and maxx in var_data.meta):
-                if len(str(int(var_data.meta[maxx]))) >= len(
-                    str(int(var_data.meta[minn]))
-                ):
+                if len(str(int(var_data.meta[maxx]))) >= len(str(int(var_data.meta[minn]))):
                     ln = str(int(var_data.meta[maxx]))
                 else:
                     ln = str(int(var_data.meta[minn]))
             if range and ln and range < 0:  # Cover all our bases:
                 range = None
             # Switch on Range
-            if (
-                range and ln and range <= 11
-            ):  # If range <= 11, we want 2 decimal places:
+            if range and ln and range <= 11:  # If range <= 11, we want 2 decimal places:
                 # Need extra for '.', and 3 decimal places (4 extra)
                 fmt = "F{}.3".format(len([i for i in ln]) + 4)
             elif range and ln and 11 < range <= 101:
@@ -551,24 +534,18 @@ class CDFSchema(HERMESDataSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "rotating Earth geoid"
         else:
-            raise TypeError(
-                f"Reference Position for Time type ({guess_types[0]}) not found."
-            )
+            raise TypeError(f"Reference Position for Time type ({guess_types[0]}) not found.")
 
     def _get_resolution(self, data):
         # Get the Variable Data
         var_data = data.time
         times = len(var_data)
         if times < 2:
-            raise ValueError(
-                f"Can not derive Time Resolution, need 2 samples, found {times}."
-            )
+            raise ValueError(f"Can not derive Time Resolution, need 2 samples, found {times}.")
         # Calculate the Timedelta between two datetimes
         times = var_data.to_datetime()
         delta = times[1] - times[0]
@@ -599,9 +576,7 @@ class CDFSchema(HERMESDataSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "J2000"
         else:
@@ -611,9 +586,7 @@ class CDFSchema(HERMESDataSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
             return "Terrestrial Time (TT)"
         else:
@@ -623,9 +596,7 @@ class CDFSchema(HERMESDataSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
+        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
         if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH.value:
             return "ms"
         if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
@@ -649,17 +620,13 @@ class CDFSchema(HERMESDataSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.to_datetime()
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
             # Get the Min Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return minval + datetime.timedelta(seconds=1)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
             # Get the Min Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return minval
@@ -669,17 +636,13 @@ class CDFSchema(HERMESDataSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.to_datetime()
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.to_datetime())
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval - datetime.timedelta(seconds=1)
         else:
             # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(var_data.value)
             # Get the Max Value
             minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
             return maxval
