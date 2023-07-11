@@ -5,6 +5,7 @@ DOI:
     registration authority and the <SUFFIX> identifying the dataset. The DOI should point to
     a landing page for additional information about the dataset. DOIs are typically created by
     the SPASE naming authority or archive.
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -19,6 +20,7 @@ Data_level:
     • l3>Level 3
     • l4>Level 4
     • ql>Quicklook
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
@@ -28,6 +30,7 @@ Data_product_descriptor:
     This is an optional field that may not be needed for all products. Where it is used, identifier
     should be short (e.q. 3-8 characters) descriptors that are helpful to end- users. If a 
     descriptor contains multiple components, underscores are used to separate those components.
+  default: null
   derived: false
   required: false # NOT Required in ISTP Guide (Derived)
   validate: false
@@ -37,6 +40,7 @@ Data_type:
     This attribute is used by CDF file writing software to create a filename. It is a
     combination of the following filename components: mode, data level, and optional data
     product descriptor.
+  default: null
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
@@ -44,6 +48,7 @@ Data_type:
 Data_version:
   description: |
     This attribute identifies the version (vX.Y.Z) of a particular CDF data file.
+  default: null
   derived: false
   required: true
   validate: true
@@ -57,6 +62,7 @@ Descriptor:
     • MERIT>Miniaturized Electron pRoton Telescope
     • NEMISIS> Noise Eliminating Magnetometer In a Small Integrated System
     • SPAN-I>Solar Probe Analyzer for Ions
+  default: null
   derived: false
   required: true
   validate: true
@@ -65,6 +71,7 @@ Discipline:
   description: |
     This attribute describes both the science discipline and sub discipline. For HERMES,
     this value should always be “Space Physics>Magnetospheric Science.”
+  default: Space Physics>Magnetospheric Science
   derived: false
   required: true
   validate: true
@@ -72,6 +79,7 @@ Discipline:
 Generation_date:
   description: |
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
+  default: null
   derived: true
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -82,6 +90,7 @@ HTTP_LINK:
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
     If text is not needed for these attributes, use an empty string “”.
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -89,6 +98,7 @@ HTTP_LINK:
 Instrument_mode:
   description: | 
     TBS
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
@@ -101,6 +111,7 @@ Instrument_type:
     • Particles (space)
     • Plasma and Solar Wind
     • Ephemeris -> Ephemeris/Attitude/Ancillary
+  default: null
   derived: false
   required: true
   validate: true
@@ -111,6 +122,7 @@ LINK_TEXT:
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
     If text is not needed for these attributes, use an empty string “”.
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -121,6 +133,7 @@ LINK_TITLE:
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
     If text is not needed for these attributes, use an empty string “”.
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -130,6 +143,7 @@ Logical_file_id:
     This attribute stores the name of the CDF file but without the
     file extension (e.g. ".cdf"). This attribute is required to avoid loss of the original source
     in the case of accidental (or intentional) renaming.
+  default: null
   derived: true
   required: true
   validate: true
@@ -143,6 +157,7 @@ Logical_source:
     found.)
     • data_type - (e.g. mode, data level, and optional data product descriptor - value
     come from 'Data_type' attribute)
+  default: null
   derived: true
   required: true
   validate: true
@@ -152,6 +167,7 @@ Logical_source_description:
     This attribute writes out the full words associated with the encrypted Logical_source
     above, e.g., "Level 1 Dual Electron Spectrometer Survey Data". Users on CDAWeb see
     this value on their website.
+  default: null
   derived: true
   required: true
   validate: true
@@ -163,6 +179,7 @@ MODS:
     description of all significant changes to the data set, essentially capturing a log of high-
     level release notes. This attribute can have as many entries as necessary and should be
     updated if the Interface Number ("X") of the version number changes.
+  default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
@@ -171,6 +188,7 @@ Mission_group:
   description: |
     This attribute has a single value and is used to facilitate making choices of source through
     CDAWeb. This value should be “HERMES.”
+  default: HERMES
   derived: false
   required: true
   validate: true
@@ -186,6 +204,7 @@ PI_affiliation:
     • UCB - University of California, Berkeley
     • SSL - Space Sciences Laboratory, UCB
     • UM - University of Michigan
+  default: null
   derived: false
   required: true
   validate: true
@@ -195,6 +214,7 @@ PI_name:
     This attribute value should include first initial and last name of the HERMES mission PI
     followed by a comma-separated list of any Co-Is that are responsible for this particular
     dataset.
+  default: null
   derived: false
   required: true
   validate: true
@@ -203,6 +223,7 @@ Project:
   description: |
     This attribute identifies the name of the project and indicates ownership. For HERMES,
     this value should be “STP>Solar-Terrestrial Physics”.
+  default: STP>Solar-Terrestrial Physics
   derived: false
   required: true
   validate: true
@@ -212,6 +233,7 @@ Source_name:
     This attribute identifies the observatory where the data originated. The following are
     valid values for HERMES:
     • HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
+  default: HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
   derived: false
   required: true
   validate: true
@@ -219,6 +241,7 @@ Source_name:
 Start_time:
   description: |
     The start time of the contained data given in YYYYMMDD_hhmmss
+  default: null
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
@@ -232,6 +255,7 @@ TEXT:
     attribute can have as many entries as necessary to contain the desired information.
     Typically, this attribute is about a paragraph in length and is not shown on CDAWeb.
     CDAWeb is the web portal for access to SPDF data, available at https://cdaweb.gsfc.nasa.gov.
+  default: null
   derived: false
   required: true
   validate: true
