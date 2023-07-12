@@ -9,7 +9,7 @@ attribute_key:
     derived: true
     required: true    # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   RESOLUTION:
     description: > 
@@ -18,7 +18,7 @@ attribute_key:
     derived: true
     required: true    # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   TIME_SCALE:
     description: >
@@ -27,7 +27,7 @@ attribute_key:
     derived: true
     required: true    # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   REFERENCE_POSITION:
     description: >
@@ -40,7 +40,7 @@ attribute_key:
     derived: true
     required: true    # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   LEAP_SECONDS_INCLUDED:
     description: > 
@@ -57,7 +57,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   ABSOLUTE_ERROR:
     description: >
@@ -65,7 +65,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   RELATIVE_ERROR:
     description: >
@@ -74,7 +74,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   BIN_LOCATION:
     description: >
@@ -84,7 +84,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   # ===== DATA VARIABLE ATTRIBUTES =====
   CATDESC:
@@ -94,7 +94,7 @@ attribute_key:
     derived: false
     required: true
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   DELTA_MINUS_VAR:
     description: >
@@ -109,7 +109,7 @@ attribute_key:
     derived: false
     required: false # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   DELTA_PLUS_VAR:
     description: >
@@ -124,7 +124,7 @@ attribute_key:
     derived: false
     required: false # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   DEPEND_0:
     description: >
@@ -134,7 +134,7 @@ attribute_key:
     derived: true
     required: true
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   DEPEND_i:         # For i'th dimensional data variables
     description: >
@@ -148,7 +148,7 @@ attribute_key:
     derived: false
     required: false
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   DISPLAY_TYPE:
     description: >
@@ -170,7 +170,7 @@ attribute_key:
     derived: true
     required: true
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   FILLVAL:
     description: >
@@ -180,7 +180,7 @@ attribute_key:
     derived: true
     required: true
     override: true
-    valid_values: []
+    valid_values: null
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     description: >
       This field allows software to properly format the associated data when displayed on a
@@ -190,7 +190,7 @@ attribute_key:
     derived: true
     required: true
     override: true
-    valid_values: []
+    valid_values: null
     alternate: FORM_PTR
   FORM_PTR:
     description: >
@@ -199,7 +199,7 @@ attribute_key:
     derived: false
     required: false
     override: false
-    valid_values: []
+    valid_values: null
     alternate: FORMAT
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
     description: >
@@ -208,7 +208,7 @@ attribute_key:
     derived: true
     required: true
     override: false
-    valid_values: []
+    valid_values: null
     alternate: LABL_PTR_1
   LABL_PTR_i:
     description: >
@@ -222,7 +222,7 @@ attribute_key:
     derived: false
     required: false
     override: false
-    valid_values: []
+    valid_values: null
     alternate: LABLAXIS
   SI_CONVERSION:
     description: >
@@ -237,7 +237,7 @@ attribute_key:
     derived: true
     required: true  # NOT Required in ISTP Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
     description: >
@@ -251,7 +251,7 @@ attribute_key:
     derived: true
     required: true
     override: false
-    valid_values: []
+    valid_values: null
     alternate: UNIT_PTR
   UNIT_PTR:
     description: >
@@ -262,7 +262,7 @@ attribute_key:
     derived: false
     required: false
     override: false
-    valid_values: []
+    valid_values: null
     alternate: UNITS
   VALIDMIN:
     description: >
@@ -272,7 +272,7 @@ attribute_key:
     derived: true
     required: true
     override: true
-    valid_values: []
+    valid_values: null
     alternate: null
   VALIDMAX:
     description: >
@@ -282,7 +282,7 @@ attribute_key:
     derived: true
     required: true
     override: true
-    valid_values: []
+    valid_values: null
     alternate: null
   VAR_TYPE:
     description: >
@@ -305,7 +305,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in HERMES Format Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   TENSOR_ORDER:
     description: > 
@@ -319,7 +319,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in HERMES Format Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   REPRESENTATION_i:
     description: >
@@ -331,7 +331,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in HERMES Format Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
   OPERATOR_TYPE:
     description: > 
@@ -341,7 +341,7 @@ attribute_key:
     derived: false
     required: false   # NOT Required in HERMES Format Guide
     override: false
-    valid_values: []
+    valid_values: null
     alternate: null
 time_series:
   - TIME_BASE

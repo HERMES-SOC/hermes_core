@@ -85,3 +85,80 @@ distribution effort for HERMES science data products. The institutions listed in
    +-------------------------------------------------------------------------+---------------------------------------------------------------------------+---------------------------------+
    | Solar Probe Analyzer for Ions (SPAN-I)                                  | University of California, Berkeley (UCB), Space Sciences Laboratory (SSL) | R. Livi                         |
    +-------------------------------------------------------------------------+---------------------------------------------------------------------------+---------------------------------+
+
+==============
+3. Conventions
+==============
+
+All HERMES scientific data products that will be shared between HERMES entities (e.g.
+ITFs, IDS groups) or made available to the general research community will be stored as
+CDF data files and are expected to be compatible with CDF version 3.5. Data that will
+not be shared beyond an individual team may be stored in any format that is convenient
+for that team.
+
+--------------------------------------
+3.1 Science Product Naming Conventions
+--------------------------------------
+
+The HERMES data products will be produced with the following filename format where
+the individual identifying components are described in Table 3-1. Additionally, to ensure
+software compatibility between disparate systems, filenames will consist of all lowercase
+characters. Filenames are used as a system identifier for a logical grouping of data and
+are also stored in the `Logical_file_id` global attribute field (see Section 4.1.8). It is
+expected that filenames will be created dynamically from the attributes identified in
+Section 4 of this document.
+
+**Filename Format**
+    `scId_instrumentId_mode_dataLevel_optionalDataProductDescriptor_startTime_vX.Y.Z.ext`
+
+.. list-table:: Table 3-1: Filename Component Description
+   :widths: 25 50 25
+   :header-rows: 1
+
+   * - Short Name
+     - Description
+     - Valid Options
+   * - scID
+     - Spacecraft ID
+     - `hermes`
+   * - instrumentId
+     - Instrument or investigation identifier shortened to three letter acronym.
+     - `eea`, `mrt`, `nms`, `spn`
+   * - mode
+     - *TBS*
+     - *TBS*
+   * - dataLevel
+     - The level to which the data product has been processed
+     - `l0`, `l1`, `ql`, `l2`, `l3`, `l4`
+   * - optionalDataProductDescriptor
+     - This is an optional field that may not be needed for all products. Where it is used, identifier should be short (e.q. 3-8 characters) descriptors that are helpful to end-users. If a descriptor contains multiple components, underscores are used to separate those components.
+     - An optional time span may be specified as "2s" to represent a data file that spans two seconds. In this case, "10s" and "5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
+   * - startTime
+     - The start time of the contained data given in "YYYYMMDD_hhmmss"
+     - `20220601_101520`
+   * - vX.Y.Z
+     - The 3-part version number of the data product. Full description of this identifier is provided in Section 3.1.1 of this document.
+     - `v0.0.0`, `v<#.#.#>`
+   * - .ext
+     - The required file extension, where CDF is required.
+     - `.cdf`
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3.1.1 Version Numbering Guidelines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The three-part version number contains the interface number, quality number, and bug
+fix/revision number. The initial release of CDF data that is suitable for scientific
+publication should begin with “v1.Y.Z”. Each component of the version number is
+incremented in integer steps, as needed, and Table 3-2 describes the instances in which
+the value should be incremented. Release “v0.Y.Z” may be used for early development
+purposes.
+
+====================
+4. Global Attributes
+====================
+
+.. csv-table:: HERMES Global Metadata Schema
+   :file: global_attributes.csv
+   :widths: 30, 70, 30, 30, 30, 30, 30
+   :header-rows: 1

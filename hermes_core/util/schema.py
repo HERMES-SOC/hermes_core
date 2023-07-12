@@ -189,6 +189,12 @@ class HERMESDataSchema:
         """
         global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
 
+        # Strip the Description of New Lines
+        for attr_name in global_attribute_schema.keys():
+            global_attribute_schema[attr_name]["description"] = global_attribute_schema[
+                attr_name
+            ]["description"].strip()
+
         # Get all the Attributes from the Schema
         attribute_names = list(global_attribute_schema.keys())
         table_rows = [info for _, info in global_attribute_schema.items()]
@@ -236,14 +242,18 @@ class HERMESDataSchema:
         KeyError: If attribute_name is not a recognized global attribute.
         """
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HERMESDataSchema._load_default_variable_attr_schema()["attribute_key"]
         )
 
+        # Strip the Description of New Lines
+        for attr_name in measurement_attribute_schema.keys():
+            measurement_attribute_schema[attr_name][
+                "description"
+            ] = measurement_attribute_schema[attr_name]["description"].strip()
+
         # Get all the Attributes from the Schema
-        attribute_names = list(measurement_attribute_schema["attribute_key"].keys())
-        table_rows = [
-            info for _, info in measurement_attribute_schema["attribute_key"].items()
-        ]
+        attribute_names = list(measurement_attribute_schema.keys())
+        table_rows = [info for _, info in measurement_attribute_schema.items()]
 
         # Create the Info Table
         info = Table(rows=table_rows)

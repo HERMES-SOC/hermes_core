@@ -191,7 +191,7 @@ class CDFValidator(TimeDataValidator):
                 # If the Var Data can be Validated
                 if (
                     "valid_values" in attr_schema
-                    and len(attr_schema["valid_values"]) > 0
+                    and attr_schema["valid_values"] is not None
                 ):
                     attr_valid_values = attr_schema["valid_values"]
                     attr_value = var_data.attrs[attr_name]
