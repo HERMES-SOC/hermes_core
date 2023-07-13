@@ -154,11 +154,359 @@ incremented in integer steps, as needed, and Table 3-2 describes the instances i
 the value should be incremented. Release “v0.Y.Z” may be used for early development
 purposes.
 
+.. list-table:: Table 3-2: Version Numbering Guidelines
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Part
+     - Name
+     - Description
+   * - X
+     - Interface Number
+     - Increments in this number represent a significant change to the processing software and/or to the content/structure of the file. These changes may be incompatible with existing code. Increments in this number may require code changes to software.
+   * - Y
+     - Quality Number
+     - This number represents a change in the quality of the data in the file, such as change in calibration or increase in fidelity. Changes should not impact software but may require consideration when processing data.
+   * - Z
+     - Bug Fix / Revision Number
+     - This number changes to indicate minor changes to the contents of the file due to reprocessing of missing data. Any dependent data products should generally be reprocessed if this value changes.
+
 ====================
 4. Global Attributes
 ====================
 
+Global attributes are used to provide information about the data set as an entity. Together
+with variables and variable attributes, the global attributes make the data correctly and
+independently usable by someone not connected with the instrument team, and hence, a
+good archive product.
+
+The required, recommended, and optional global attributes that have been identified for
+use with HERMES data products are listed below. Additional global attributes can be
+defined but they must start with a letter and can otherwise contain letters, numbers, and
+the underscore character (no other special characters allowed). Note that CDF attributes
+are case-sensitive and must exactly follow what is shown here.
+
+Detailed descriptions of the attributes listed below are available at the `ISTP/IACG Global
+Attributes Webpage <http://spdf.gsfc.nasa.gov/istp_guide/gattributes.html>`_.
+
+--------------------------------------
+4.1 Required Global Attributes
+--------------------------------------
+
+The following global attributes are required with HERMES data products. HERMES-
+specific values are provided where applicable.
+
 .. csv-table:: HERMES Global Metadata Schema
    :file: global_attributes.csv
+   :widths: 30, 70, 30, 30, 30, 30, 30
+   :header-rows: 1
+
+--------------------------------------
+4.2 Recommended Attributes
+--------------------------------------
+
+The following global attributes are recommended but not required with HERMES data
+products. HERMES-specific values are provided where applicable.
+
+.. list-table:: Table 4-1: Recommended Attributes
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Attribute
+     - Description
+   * - Acknowledgement
+     - This field indicates how the data should be cited.
+   * - Generated_by
+     - This attribute indicates where users can get more information about this data and/or check for new versions.
+
+--------------------------------------
+4.3 Optional Attributes
+--------------------------------------
+
+.. list-table:: Table 4-2: Optional Attributes
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Attribute
+     - Description
+   * - Parents
+     - This attribute lists the parent data files for files of derived and merged data sets. The syntax for a CDF parent is: "CDF>logical_file_id". Multiple entry values are used for multiple parents. This attribute is required for any HERMES data products that are derived from 2 or more data sources and the file names of parent data should be clearly identified. CDF parents may include source files with non-cdf extensions.
+   * - Skeleton_version
+     - This is a text attribute containing the skeleton file version number.
+   * - Rules_of_use
+     - Text containing information on citability and/or PI access restrictions. This may point to a World Wide Web page specifying the rules of use. Rules of Use are determined on both a mission and instrument basis, at the discretion of the PI.
+   * - Time_resolution
+     - Specifies time resolution of the file, e.g., "3 seconds".
+
+
+============
+5. Variables
+============
+
+There are three types of variables that should be included in CDF files: 
+* data, 
+* support data,
+* metadata. 
+
+Additionally, required attributes are listed with each variable type listed
+below.
+
+To facilitate data exchange and software development, variable names should be
+consistent across the HERMES instruments and four spacecraft. Additionally, it is
+preferable that data types are consistent throughout all HERMES data products (e.g. all
+real variables are CDF_REAL4, all integer variables are CDF_INT2, and flag/status
+variables are UINT2). This is not to imply that only these data types are allowable within
+HERMES CDF files. All CDF supported data types are available for use by HERMES.
+
+For detailed information and examples, please see the `ISTP/IACG Webpage <http://spdf.gsfc.nasa.gov/istp_guide/variables.html>`
+
+--------------------------------------
+5.1 Data
+--------------------------------------
+
+These are variables of primary importance (e.g., density, magnetic field, particle flux).
+Data is always time (record) varying but can be of any dimensionality or CDF supported
+data type. Real or Integer data are always defined as having one element.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.1.1 Naming
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+HERMES data variables must adhere to the following naming convention
+* `scId_instrumentId_paramName`
+
+An underscore is used to separate different fields in the variable name. It is strongly
+recommended that variable names employ further fields, qualifiers and information
+designed to identify unambiguously the nature of the variable, instrument mode and data
+processing level, with sufficient detail to lead the user to the unique source file which
+contains the variable. It is recommended that these follow the order shown below.
+* `scId_instrumentId_paramName[_coordSys][_paramQualifier][_subModeLevel][_mode][_dataLevel]`
+
+where the required fields are described in Table 5-1 and the optional fields are described
+in Table 5-2. An example data variable would be `hermes_eea_n_gse_l2`.
+
+.. list-table:: Table 5-1: Required Data Variable Fields
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Required Field Name
+     - Description
+   * - scId
+     - Spacecraft identifier, see Table 3-1 for acceptable values
+   * - instrumentId
+     - Instrument or investigation identifier, see Table 3-1 for acceptable values and note the caveats listed in Section 5.1.1.1.
+   * - paramName
+     - Data parameter identifier, a short (a few letters) representation of the physical parameter held in the variable.
+
+.. list-table:: Table 5-2: Optional Data Variable Fields
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Optional Field Name
+     - Description
+   * - coordSys
+     - An acronym for the coordinate system in which the parameter is cast.
+   * - paramQualifier
+     - Parameter descriptor, which may include multiple components separated by a "_" as needed (e.g. "pa_0" indicates a pitch angle of 0).
+   * - subModeLevel
+     - Qualifier(s) to include mode and data level information supplementary to the following two fields.
+   * - mode
+     - See Table 3-1 for acceptable values.
+   * - dataLevel
+     - See Table 3-1 for acceptable values.
+
+"""""""""""""""
+5.1.1.1 Caveats
+"""""""""""""""
+
+Note the following caveats in the variable naming conventions:
+
+* CDF variable names must begin with a letter and can contain numbers and underscores, but no other special characters.
+* In general, the instrumentId field follows the convention used for file names as defined in Section 3.1. 
+  However, since variable names cannot contain a hyphen, an underscore should be used instead of a hyphen when needing to separate
+  instrument components. For instance, "eea-ion" is a valid instrumentId in a
+  filename but when used in a variable name, "eea_ion" should be used instead.
+* To ensure software compatibility between disparate systems, parameter names
+  will consist of all lowercase characters.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.1.2 Required Epoch Variable 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All HERMES CDF data files must contain at least one variable of data type
+CDF_TIME_TT2000, typically named "Epoch". This variable should normally be the
+first variable in each CDF data set. All time varying variables in the CDF data set will
+depend on either this "epoch" variable or on another variable of type
+CDF_TIME_TT2000 (e.g. hermes_eea_epoch). More than one CDF_TIME_TT2000
+type variable is allowed in a data set to allow for more than one time resolution, using the
+required DEPEND_0 attribute (see Section 5.1.3.2) to associate a time variable to a given
+data variable. It is recommended that all such time variables use “epoch” within their
+variable name.
+
+For ISTP, but not necessarily for all HERMES data, the time value of a record refers
+to the center of the accumulation period for the record if the measurement is not an
+instantaneous one. All HERMES time variables used as DEPEND_0 are strongly
+recommended to have DELTA_PLUS_VAR and DELTA_MINUS_VAR attributes which delineate the
+time interval over which the data was sampled, integrated, or otherwise representative 
+of. This also locates the timetag within that interval.
+
+The epoch datatype, CDF_TIME_TT2000, is defined as an 8-byte signed integer with the
+characteristics shown in Table 5-3.
+
+.. list-table:: Table 5-3: Characteristics of CDF_TIME_TT2000
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Name
+     - Example
+   * - time_base
+     - J2000 (Julian date 2451545.0 TT or 2000 January 1, 12h TT)
+   * - resolution
+     - nanoseconds
+   * - time_scale
+     - Terrestrial Time (TT)
+   * - units
+     - nanoseconds
+   * - reference_position
+     - rotating Earth Geoid
+
+Given a current list of leap seconds, conversion between TT and UTC is straightforward
+(TT = TAI + 32.184s; TT = UTC + deltaAT + 32.184s, where deltaAT is the sum of the
+leap seconds since 1960; for example, for 2009, deltaAT = 34s). Pad values of -
+9223372036854775808 (0x8000000000000000) which corresponds to 1707-09-
+22T12:13:15.145224192; recommended FILLVAL is same.
+
+It is proposed that the required data variables VALIDMIN and VALIDMAX are given values 
+corresponding to the dates 1990-01-01T00:00:00 and 2100-01-01T00:00:00 as these are well 
+outside any expected valid times.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.1.3 Required Attributes: Data Variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data variables require the following attributes:
+
+* CATDESC
+* DEPEND_0
+* DEPEND_i [for dimensional data variables]
+* DISPLAY_TYPE
+* FIELDNAM
+* FILLVAL
+* FORMAT or FORM_PTR
+* LABLAXIS or LABL_PTR_i
+* SI_CONVERSION
+* UNITS or UNIT_PTR
+* VALIDMIN and VALIDMAX
+* VAR_TYPE
+
+In addition, the following attributes are strongly recommended for vectors, tensors and
+quaternions which are held in or relate to a particular coordinate system (see sections
+``5.1.3.17-5.1.3.20``):
+
+* COORDINATE_SYSTEM
+* TENSOR_ORDER
+* REPRESENTATION_i
+* OPERATOR_TYPE [for quaternions]
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.1.4 Attributes for DEPEND_i Variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Variables appearing in a data variable's DEPEND_i attribute require a minimal set of
+their own attributes to fulfill their role in supporting the data variable. The standard
+SUPPORT_DATA variable attributes are listed in Section 5.3.2.
+Other standard variable attributes are optional.
+
+--------------------------------------
+5.2 Quaternions
+--------------------------------------
+
+HERMES mec files contain unit quaternions which can be employed to rotate from one
+coordinate system to the other. For an arbitrary rotation, that rotational information can
+expressed as a rotation through an angle θ about a unit vector u. The Wikipedia page on
+“Quaternions and Spatial Rotation” provides details and the relationship between the
+quaternion and a 3x3 rotation matrix. In the mec files, quaternions are represented by:
+
+``q = (qx, qy, qz, qw)``
+`
+in which qw (also known elsewhere as qc) = cos (θ/2) and (qx, qy, qz) = u sin (θ/2).
+Extensions of existing attribute standards are strongly recommended to be used to
+describe such quaternions. The following attributes serve this purpose:
+
+* OPERATOR_TYPE=UNIT_QUATERNION
+* REPRESENTATION_1 = “x”, “y”, “z”, “c” [in the right order; the “c” denotes the cosineterm]
+* COORDINATE_SYSTEM=XXX [standard syntax, as for vectors; the FROM frame]
+* TO_COORDINATE_SYSTEM=YYY [same syntax; the TO frame]
+
+Such a quaternion will take a vector given in the XXX coordinate system and generate its
+components in the YYY coordinate system.
+
+--------------------------------------
+5.3 Support Data
+--------------------------------------
+
+These are variables of secondary importance employed as DEPEND_i variables as
+described in section 5.1.3.3 (e.g., time, energy_bands associated with particle flux), but
+they may also be used for housekeeping or other information not normally used for
+scientific analysis.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.3.1 Naming
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support data variable names must begin with a letter and can contain numbers and
+underscores, but no other special characters. Support data variable names need not follow
+the same naming convention as Data Variables (5.1.1) but may be shortened for
+convenience.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.3.2 Required Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* CATDESC
+* DEPEND_0 (if time varying)
+* FIELDNAM
+* FILLVAL (if time varying)
+* FORMAT/FORM_PTR
+* SI_CONVERSION
+* UNITS/UNIT_PTR
+* VALIDMIN (if time varying)
+* VALIDMAX (if time varying)
+* VAR_TYPE = “support_data”
+
+Other attributes may also be present.
+
+--------------------------------------
+5.4 Metadata
+--------------------------------------
+
+These are variables of secondary importance (e.g. a variable holding "Bx”, “By”, “Bz" to
+label magnetic field). Metadata are usually text strings as opposed to the numerical values
+held in DEPEND_i support data.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.4.1 Naming
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Metadata variable names must begin with a letter and can contain numbers and
+underscores, but no other special characters. Metadata variable names need not follow the
+same naming convention as Data Variables (5.1.1) but may be shortened for convenience.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.3.2 Required Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* CATDESC
+* DEPEND_0 (if time varying, this value must be “Epoch”)
+* FIELDNAM
+* FILLVAL (if time varying)
+* FORMAT/FORM_PTR
+* VAR_TYPE = metadata
+
+--------------------------------------
+5.5 Variable Attribute Schema
+--------------------------------------
+.. csv-table:: Table 5-4 HERMES Variable Attribute Schema
+   :file: variable_attributes.csv
    :widths: 30, 70, 30, 30, 30, 30, 30
    :header-rows: 1

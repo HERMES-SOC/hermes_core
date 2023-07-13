@@ -160,8 +160,8 @@ class HERMESDataSchema:
     @staticmethod
     def global_attribute_info(attribute_name=None):
         """
-        Function to generate a pandas `DataFrmame` of information about each global
-        metadata attribute. The `DataFrame` contains all information in the HERMES
+        Function to generate a `astropy.table.Table` of information about each global
+        metadata attribute. The `astropy.table.Table` contains all information in the HERMES
         global attribute schema including:
 
         - description: (`str`) A brief description of the attribute
@@ -180,7 +180,7 @@ class HERMESDataSchema:
 
         Returns
         -------
-        info: `DataFrame`
+        info: `astropy.table.Table`
             A table of information about global metadata.
 
         Raises
@@ -216,8 +216,8 @@ class HERMESDataSchema:
     @staticmethod
     def measurement_attribute_info(attribute_name=None):
         """
-        Function to generate a pandas `DataFrmame` of information about each variable
-        metadata attribute. The `DataFrame` contains all information in the HERMES
+        Function to generate a `astropy.table.Table` of information about each variable
+        metadata attribute. The `astropy.table.Table` contains all information in the HERMES
         variable attribute schema including:
 
         - description: (`str`) A brief description of the attribute
@@ -234,7 +234,7 @@ class HERMESDataSchema:
 
         Returns
         -------
-        info: `DataFrame`
+        info: `astropy.table.Table`
             A table of information about variable metadata.
 
         Raises
