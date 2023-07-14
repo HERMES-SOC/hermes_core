@@ -165,13 +165,16 @@ class HERMESDataSchema:
         global attribute schema including:
 
         - description: (`str`) A brief description of the attribute
-        - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+        - default: (`str`) The default value used if none is provided
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES
+            :py:class:`~hermes_core.util.schema.CDFSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - validate: (`bool`) Whether the attribute is included in the `TimeData`
-            validation checks. (Note, not all attributes that are required are validated)
-        - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-            existing attribute value with an updated attribute value from the derivation
-            process.
+        - validate: (`bool`) Whether the attribute is included in the
+            :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
+            are required are validated)
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+            attribute derivations will overwrite an existing attribute value with an updated
+            attribute value from the derivation process.
 
         Parameters
         ----------
@@ -221,11 +224,19 @@ class HERMESDataSchema:
         variable attribute schema including:
 
         - description: (`str`) A brief description of the attribute
-        - derived: (`bool`) Whether the attibute can be derived by the HERMES `CDFSchema`
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES
+            :py:class:`~hermes_core.util.schema.CDFSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - override: (`bool`) Whether the `TimeData` metadata derivations will overwite an
-            existing attribute value with an updated attribute value from the derivation
-            process.
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+            attribute derivations will overwrite an existing attribute value with an updated
+            attribute value from the derivation process.
+        - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
+            if applicable
+        - alternate: (`str`) An additional attribute name that can be treated as an alternative
+            of the given attribute. Not all attributes have an alternative and only one of a given
+            attribute or its alternate are required.
+        - var_types: (`str`) A list of the variable types that require the given
+            attribute to be present.
 
         Parameters
         ----------
@@ -242,18 +253,32 @@ class HERMESDataSchema:
         KeyError: If attribute_name is not a recognized global attribute.
         """
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()["attribute_key"]
+            HERMESDataSchema._load_default_variable_attr_schema()
         )
+        measurement_attribute_key = measurement_attribute_schema["attribute_key"]
 
         # Strip the Description of New Lines
-        for attr_name in measurement_attribute_schema.keys():
-            measurement_attribute_schema[attr_name][
+        for attr_name in measurement_attribute_key.keys():
+            measurement_attribute_key[attr_name][
                 "description"
-            ] = measurement_attribute_schema[attr_name]["description"].strip()
+            ] = measurement_attribute_key[attr_name]["description"].strip()
+
+        # Create New Column to describe which VAR_TYPE's require the given attribute
+        for attr_name in measurement_attribute_key.keys():
+            # Create a new list to store the var types
+            measurement_attribute_key[attr_name]["var_types"] = []
+            for var_type in ["data", "support_data", "metadata"]:
+                # If the attribute is required for the given var type
+                if attr_name in measurement_attribute_schema[var_type]:
+                    measurement_attribute_key[attr_name]["var_types"].append(var_type)
+            # Convert the list to a string that can be written to a CSV from the table
+            measurement_attribute_key[attr_name]["var_types"] = " ".join(
+                measurement_attribute_key[attr_name]["var_types"]
+            )
 
         # Get all the Attributes from the Schema
-        attribute_names = list(measurement_attribute_schema.keys())
-        table_rows = [info for _, info in measurement_attribute_schema.items()]
+        attribute_names = list(measurement_attribute_key.keys())
+        table_rows = [info for _, info in measurement_attribute_key.items()]
 
         # Create the Info Table
         info = Table(rows=table_rows)

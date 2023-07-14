@@ -9,7 +9,7 @@ DOI:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: false
+  overwrite: false
 Data_level:
   description: >
     This attribute is used in file name creation and records the level of processsing done
@@ -24,7 +24,7 @@ Data_level:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
-  override: true
+  overwrite: true
 Data_product_descriptor:
   description: > 
     This is an optional field that may not be needed for all products. Where it is used, identifier
@@ -34,7 +34,7 @@ Data_product_descriptor:
   derived: false
   required: false # NOT Required in ISTP Guide (Derived)
   validate: false
-  override: true
+  overwrite: true
 Data_type:
   description: >
     This attribute is used by CDF file writing software to create a filename. It is a
@@ -44,7 +44,7 @@ Data_type:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
-  override: true
+  overwrite: true
 Data_version:
   description: >
     This attribute identifies the version (vX.Y.Z) of a particular CDF data file.
@@ -52,7 +52,7 @@ Data_version:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Descriptor:
   description: >
     This attribute identifies the name of the instrument or sensor that collected the data. Both
@@ -66,7 +66,7 @@ Descriptor:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Discipline:
   description: >
     This attribute describes both the science discipline and sub discipline. For HERMES,
@@ -75,7 +75,7 @@ Discipline:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Generation_date:
   description: >
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
@@ -83,7 +83,7 @@ Generation_date:
   derived: true
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: true
+  overwrite: true
 HTTP_LINK:
   description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
@@ -94,7 +94,7 @@ HTTP_LINK:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: false
+  overwrite: false
 Instrument_mode:
   description: > 
     TBS
@@ -102,7 +102,7 @@ Instrument_mode:
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
-  override: false
+  overwrite: false
 Instrument_type:
   description: > 
     This attribute is used to facilitate making choices of instrument type. More than one entry
@@ -115,7 +115,7 @@ Instrument_type:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 LINK_TEXT:
   description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
@@ -126,7 +126,7 @@ LINK_TEXT:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: false
+  overwrite: false
 LINK_TITLE:
   description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
@@ -137,7 +137,7 @@ LINK_TITLE:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: false
+  overwrite: false
 Logical_file_id:
   description: >
     This attribute stores the name of the CDF file but without the
@@ -147,7 +147,7 @@ Logical_file_id:
   derived: true
   required: true
   validate: true
-  override: true
+  overwrite: true
 Logical_source:
   description: > 
     This attribute determines the file naming convention in the SKT Editor and is used by
@@ -161,7 +161,7 @@ Logical_source:
   derived: true
   required: true
   validate: true
-  override: true
+  overwrite: true
 Logical_source_description:
   description: >
     This attribute writes out the full words associated with the encrypted Logical_source
@@ -171,7 +171,7 @@ Logical_source_description:
   derived: true
   required: true
   validate: true
-  override: true
+  overwrite: true
 MODS:
   description: > 
     This attribute is an SPDF standard global attribute, which is used to denote the history of
@@ -183,7 +183,7 @@ MODS:
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
-  override: false
+  overwrite: false
 Mission_group:
   description: >
     This attribute has a single value and is used to facilitate making choices of source through
@@ -192,7 +192,7 @@ Mission_group:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 PI_affiliation:
   description: >
     This attribute value should include the HERMES mission PI affiliation followed by a
@@ -208,7 +208,7 @@ PI_affiliation:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 PI_name:
   description: >
     This attribute value should include first initial and last name of the HERMES mission PI
@@ -218,7 +218,7 @@ PI_name:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Project:
   description: >
     This attribute identifies the name of the project and indicates ownership. For HERMES,
@@ -227,7 +227,7 @@ Project:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Source_name:
   description: >
     This attribute identifies the observatory where the data originated. The following are
@@ -237,7 +237,7 @@ Source_name:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false
 Start_time:
   description: >
     The start time of the contained data given in YYYYMMDD_hhmmss
@@ -245,7 +245,7 @@ Start_time:
   derived: true
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
-  override: true
+  overwrite: true
 TEXT:
   description: >
     This attribute is an SPDF standard global attribute, which is a text description of the
@@ -259,4 +259,4 @@ TEXT:
   derived: false
   required: true
   validate: true
-  override: false
+  overwrite: false

@@ -104,7 +104,7 @@ The HERMES data products will be produced with the following filename format whe
 the individual identifying components are described in Table 3-1. Additionally, to ensure
 software compatibility between disparate systems, filenames will consist of all lowercase
 characters. Filenames are used as a system identifier for a logical grouping of data and
-are also stored in the `Logical_file_id` global attribute field (see Section 4.1.8). It is
+are also stored in the `Logical_file_id` global attribute field (see Section 4.1). It is
 expected that filenames will be created dynamically from the attributes identified in
 Section 4 of this document.
 
@@ -193,10 +193,23 @@ Attributes Webpage <http://spdf.gsfc.nasa.gov/istp_guide/gattributes.html>`_.
 4.1 Required Global Attributes
 --------------------------------------
 
-The following global attributes are required with HERMES data products. HERMES-
-specific values are provided where applicable.
+The following global attributes shown in Table 4-1 are required with HERMES data products.
+HERMES-specific values are provided where applicable. For each attribute the following 
+information is provided:
 
-.. csv-table:: HERMES Global Metadata Schema
+* description: (`str`) A brief description of the attribute
+* default: (`str`) The default value used if none is provided
+* derived: (`bool`) Whether the attibute can be derived by the HERMES 
+  :py:class:`~hermes_core.util.schema.CDFSchema` class
+* required: (`bool`) Whether the attribute is required by HERMES standards
+* validate: (`bool`) Whether the attribute is included in the 
+  :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that 
+  are required are validated)
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+  attribute derivations will overwrite an existing attribute value with an updated 
+  attribute value from the derivation process.
+
+.. csv-table:: Table 4-1: Required Global Attributes
    :file: global_attributes.csv
    :widths: 30, 70, 30, 30, 30, 30, 30
    :header-rows: 1
@@ -208,7 +221,7 @@ specific values are provided where applicable.
 The following global attributes are recommended but not required with HERMES data
 products. HERMES-specific values are provided where applicable.
 
-.. list-table:: Table 4-1: Recommended Attributes
+.. list-table:: Table 4-2: Recommended Attributes
    :widths: 25 50
    :header-rows: 1
 
@@ -339,7 +352,7 @@ first variable in each CDF data set. All time varying variables in the CDF data 
 depend on either this "epoch" variable or on another variable of type
 CDF_TIME_TT2000 (e.g. hermes_eea_epoch). More than one CDF_TIME_TT2000
 type variable is allowed in a data set to allow for more than one time resolution, using the
-required DEPEND_0 attribute (see Section 5.1.3.2) to associate a time variable to a given
+required DEPEND_0 attribute (see Section 5.5) to associate a time variable to a given
 data variable. It is recommended that all such time variables use “epoch” within their
 variable name.
 
@@ -506,7 +519,27 @@ same naming convention as Data Variables (5.1.1) but may be shortened for conven
 --------------------------------------
 5.5 Variable Attribute Schema
 --------------------------------------
+
+The following variable attributes shown in Table 5-4 are required with HERMES data products.
+HERMES-specific values are provided where applicable. For each attribute the following 
+information is provided:
+
+* description: (`str`) A brief description of the attribute
+* derived: (`bool`) Whether the attibute can be derived by the HERMES 
+  :py:class:`~hermes_core.util.schema.CDFSchema` class
+* required: (`bool`) Whether the attribute is required by HERMES standards
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+  attribute derivations will overwrite an existing attribute value with an updated 
+  attribute value from the derivation process.
+* valid_values: (`list`) List of allowed values the attribute can take for HERMES products,
+  if applicable
+* alternate: (`str`) An additional attribute name that can be treated as an alternative 
+  of the given attribute. Not all attributes have an alternative and only one of a given 
+  attribute or its alternate are required. 
+* var_types: (`str`) A list of the variable types that require the given
+  attribute to be present.
+
 .. csv-table:: Table 5-4 HERMES Variable Attribute Schema
    :file: variable_attributes.csv
-   :widths: 30, 70, 30, 30, 30, 30, 30
+   :widths: 10, 50, 10, 10, 10, 30, 30, 30
    :header-rows: 1

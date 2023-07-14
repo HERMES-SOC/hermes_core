@@ -8,7 +8,7 @@ attribute_key:
       4714 BC (Julian)) or flexible (provider-defined)
     derived: true
     required: true    # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   RESOLUTION:
@@ -17,7 +17,7 @@ attribute_key:
       Resolution provides the smallest change in time that is measured.
     derived: true
     required: true    # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   TIME_SCALE:
@@ -26,7 +26,7 @@ attribute_key:
       UTC (includes leap seconds), TDB (same as SPICE ET), EME1950 [default: UTC]
     derived: true
     required: true    # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   REFERENCE_POSITION:
@@ -39,7 +39,7 @@ attribute_key:
       Reference_Position=STEREO-B.
     derived: true
     required: true    # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   LEAP_SECONDS_INCLUDED:
@@ -56,7 +56,7 @@ attribute_key:
       $ cat tai-utc.dat | awk 'ORS="," { val = $7 - prev } {prev = $7} { print $1$2"01+" val "s" }'
     derived: false
     required: false   # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   ABSOLUTE_ERROR:
@@ -64,7 +64,7 @@ attribute_key:
       Absolute or systematic error, in same units as Units attribute.
     derived: false
     required: false   # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   RELATIVE_ERROR:
@@ -73,7 +73,7 @@ attribute_key:
       of the time stamps relative to each other. This is usually much smaller than Absolute_Error.
     derived: false
     required: false   # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   BIN_LOCATION:
@@ -83,7 +83,7 @@ attribute_key:
       measurement. Since clock readings are usually truncated, the real value may be closer to 0.0.
     derived: false
     required: false   # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   # ===== DATA VARIABLE ATTRIBUTES =====
@@ -93,7 +93,7 @@ attribute_key:
       character string which describes the variable and what it depends on.
     derived: false
     required: true
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   DELTA_MINUS_VAR:
@@ -108,7 +108,7 @@ attribute_key:
       elsewhere in the CDF file.
     derived: false
     required: false # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   DELTA_PLUS_VAR:
@@ -123,7 +123,7 @@ attribute_key:
       elsewhere in the CDF file.
     derived: false
     required: false # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   DEPEND_0:
@@ -133,7 +133,7 @@ attribute_key:
       which specifies the HERMES usage of DEPEND_0.
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   DEPEND_i:         # For i'th dimensional data variables
@@ -147,7 +147,7 @@ attribute_key:
       DEPEND_i variables also require their own attributes, as described in section 5.1.4.
     derived: false
     required: false
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   DISPLAY_TYPE:
@@ -155,7 +155,7 @@ attribute_key:
       This tells automated software, such as CDAWeb, how the data should be displayed.
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values:
       time_series
       time_series>noerrorbars
@@ -169,7 +169,7 @@ attribute_key:
       listing heading. This is a string, up to ~30 characters in length.
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   FILLVAL:
@@ -179,7 +179,7 @@ attribute_key:
       ISTP standard fill values are listed in Table 5-4.
     derived: true
     required: true
-    override: true
+    overwrite: true
     valid_values: null
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     description: >
@@ -189,7 +189,7 @@ attribute_key:
       where 3 of those characters are to the right of the decimal.
     derived: true
     required: true
-    override: true
+    overwrite: true
     valid_values: null
     alternate: FORM_PTR
   FORM_PTR:
@@ -198,7 +198,7 @@ attribute_key:
       desired output format for the associated data.
     derived: false
     required: false
-    override: false
+    overwrite: false
     valid_values: null
     alternate: FORMAT
   LABLAXIS:          # NOTE Only one of LABLAXIS or LABL_PTR_i should be present
@@ -207,7 +207,7 @@ attribute_key:
       6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values: null
     alternate: LABL_PTR_1
   LABL_PTR_i:
@@ -221,7 +221,7 @@ attribute_key:
       generally 6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
     derived: false
     required: false
-    override: false
+    overwrite: false
     valid_values: null
     alternate: LABLAXIS
   SI_CONVERSION:
@@ -236,7 +236,7 @@ attribute_key:
       transformed into SI should follow the blank syntax “☐>☐” described above.
     derived: true
     required: true  # NOT Required in ISTP Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   UNITS:            # NOTE Only one of UNITS or UNIT_PTR should be present
@@ -250,7 +250,7 @@ attribute_key:
       formatting the UNITS string.
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values: null
     alternate: UNIT_PTR
   UNIT_PTR:
@@ -261,7 +261,7 @@ attribute_key:
       must be a variable in the same CDF data set.
     derived: false
     required: false
-    override: false
+    overwrite: false
     valid_values: null
     alternate: UNITS
   VALIDMIN:
@@ -271,7 +271,7 @@ attribute_key:
       value must match the data type of the variable.
     derived: true
     required: true
-    override: true
+    overwrite: true
     valid_values: null
     alternate: null
   VALIDMAX:
@@ -281,7 +281,7 @@ attribute_key:
       value must match the data type of the variable.
     derived: true
     required: true
-    override: true
+    overwrite: true
     valid_values: null
     alternate: null
   VAR_TYPE:
@@ -289,7 +289,7 @@ attribute_key:
       Used in CDAWeb to indicate if the data should be used directly by users. 
     derived: true
     required: true
-    override: false
+    overwrite: false
     valid_values:
         data
         support_data
@@ -304,7 +304,7 @@ attribute_key:
       string which takes the form: "XXX[>optional long name]"
     derived: false
     required: false   # NOT Required in HERMES Format Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   TENSOR_ORDER:
@@ -318,7 +318,7 @@ attribute_key:
       held as a CDF_INT4, rather than a character string.
     derived: false
     required: false   # NOT Required in HERMES Format Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   REPRESENTATION_i:
@@ -330,7 +330,7 @@ attribute_key:
       = latitude). Examples follow.
     derived: false
     required: false   # NOT Required in HERMES Format Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
   OPERATOR_TYPE:
@@ -340,7 +340,7 @@ attribute_key:
       values could be added. Unit quaternions correspond to pure spatial rotations.
     derived: false
     required: false   # NOT Required in HERMES Format Guide
-    override: false
+    overwrite: false
     valid_values: null
     alternate: null
 time_series:
