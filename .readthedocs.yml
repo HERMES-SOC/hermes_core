@@ -1,20 +1,33 @@
-# .readthedocs.yml
-# Read the Docs configuration file
+# Read the Docs configuration file for Sphinx projects
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-  configuration: docs/conf.py
+# Set the OS, Python version and other tools you might need
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.8"
+  jobs:
+    pre_build:
+      - wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf38_0/cdf38_0-dist-cdf.tar.gz
+      - tar zxvpf cdf38_0-dist-cdf.tar.gz && rm cdf38_0-dist-cdf.tar.gz
+      - apt-get -y install gfortran
+      - apt-get -y install libncurses5-dev
+      - cd cdf38_0-dist
+      - make OS=linux ENV=gnu all
+      - make INSTALLDIR=/usr/local/cdf install
 
 # Optionally build your docs in additional formats such as PDF and ePub
-formats: []
+formats:
+  - pdf
+  - epub
 
-# Optionally set the version of Python and requirements required to build your docs
+# Optional but recommended, declare the Python requirements required
+# to build your documentation
+# See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
-  version: 3.8
   install:
     - method: pip
       path: .
