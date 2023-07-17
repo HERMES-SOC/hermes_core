@@ -485,6 +485,10 @@ class TimeData:
         if columns is None:
             columns = self.columns.copy()
             columns.remove("time")
+            # Remove Columns with more than 2 Dimensions
+            for column in self.columns:
+                if len(self[column].shape) > 2:
+                    columns.remove(column)
         # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:
