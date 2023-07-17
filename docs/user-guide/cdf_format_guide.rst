@@ -1,4 +1,4 @@
-.. cdf_format_guide:
+.. _cdf_format_guide:
 
 *******************************
 HERMES CDF Format Guide
