@@ -11,13 +11,8 @@ build:
     python: "3.8"
   jobs:
     pre_build:
-      - wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf38_0/cdf38_0-dist-cdf.tar.gz
-      - tar zxvpf cdf38_0-dist-cdf.tar.gz && rm cdf38_0-dist-cdf.tar.gz
-      - apt-get -y install gfortran
-      - apt-get -y install libncurses5-dev
-      - cd cdf38_0-dist
-      - make OS=linux ENV=gnu all
-      - make INSTALLDIR=/usr/local/cdf install
+      - wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
+      - unzip latest.zip
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats:
