@@ -129,3 +129,7 @@ graphviz_dot_args = [
     "-Gfontsize=10",
     "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
 ]
+
+# -- Environmental Variables ------------------------------------------------
+# Set CDF Library Path
+os.environ["CDF_LIB"] = "../cdf/lib"
