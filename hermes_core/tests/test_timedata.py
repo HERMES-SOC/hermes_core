@@ -54,11 +54,11 @@ def get_test_timeseries():
     )
 
     # Add 2D Variable
-    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
+    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="m", dtype=np.uint16)
     ts["2d-var"].meta = OrderedDict({"CATDESC": "Test 2-Dimensional Variable"})
 
     # Add 3D Variable
-    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="s", dtype=np.uint16)
+    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="m", dtype=np.uint16)
     ts["3d-var"].meta = OrderedDict({"CATDESC": "Test 3-Dimensional Variable"})
 
     return ts
@@ -327,8 +327,8 @@ def test_timedata_append():
     time = np.arange(start=10, stop=20)
     ts["time"] = Time(time, format="unix")
     ts["measurement"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
-    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
-    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="s", dtype=np.uint16)
+    ts["2d-var"] = Quantity(value=random(size=(10, 2)), unit="m", dtype=np.uint16)
+    ts["3d-var"] = Quantity(value=random(size=(10, 2, 2)), unit="m", dtype=np.uint16)
     test_data.append(ts)
     assert test_data.shape[0] == 20
 
