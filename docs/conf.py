@@ -8,6 +8,10 @@
 import os
 import sys
 
+# -- Environmental Variables ------------------------------------------------
+# Set CDF Library Path
+os.environ["CDF_LIB"] = "../cdf/lib"
+
 sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
@@ -129,7 +133,3 @@ graphviz_dot_args = [
     "-Gfontsize=10",
     "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
 ]
-
-# -- Environmental Variables ------------------------------------------------
-# Set CDF Library Path
-os.environ["CDF_LIB"] = "../cdf/lib"
