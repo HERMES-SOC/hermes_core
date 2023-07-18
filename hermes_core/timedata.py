@@ -411,9 +411,81 @@ class TimeData:
         """
         self._data.remove_column(measure_name)
 
-    def plot(self, axes=None, columns=None, subplots=True, **plot_args):
+    def plot_spectrogram(self, column, axes=None, **plot_args):
         """
-        Plot the data.
+        Plot the spectrogram.
+
+        Parameters
+        ----------
+        axes : `matplotlib.axis.Axes`, optional
+            The axes where the plot will be added.
+        column: `str`
+            The Column name
+        plot_args :
+            Arguments pass to the plot call `pcolormesh`.
+
+        Returns
+        -------
+        `matplotlib.collections.QuadMesh`
+        """
+        import matplotlib.dates as mdates
+        from matplotlib import pyplot as plt
+
+        if axes is None:
+            fig, axes = plt.subplots()
+        else:
+            fig = axes.get_figure()
+
+        if column in self.columns:
+            data = self.data[column].value.T
+        else:
+            raise KeyError(f"No Data for Column {column}")
+
+        # Create Title
+        title = f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
+        # Times
+        times = self.time.to_datetime()
+        frequencies = np.arange(data.shape[0] + 1)
+
+        # Add the Title
+        axes.set_title(title)
+        # Plot Bounds
+        axes.plot(
+            times[[0, -1]],
+            frequencies[[0, -1]],
+            linestyle="None",
+            marker="None",
+        )
+        # Colormesh Spectrogram
+        ret = axes.pcolormesh(
+            times,
+            frequencies,
+            data[:, :-1],
+            norm="log",
+            shading="auto",
+            **plot_args,
+        )
+        # Setup X-Axis
+        axes.set_xlim(times[0], times[-1])
+        locator = mdates.AutoDateLocator(minticks=4, maxticks=8)
+        formatter = mdates.ConciseDateFormatter(locator)
+        axes.xaxis.set_major_locator(locator)
+        axes.xaxis.set_major_formatter(formatter)
+        fig.autofmt_xdate()
+        # Setup Y-Axis
+        axes.set_ylabel(self.data[column].meta["LABLAXIS"])
+        # Add Colorbar
+        fig.colorbar(ret)
+        # Set current axes/image if pyplot is being used (makes colorbar work)
+        for i in plt.get_fignums():
+            if axes in plt.figure(i).axes:
+                plt.sca(axes)
+                plt.sci(ret)
+        return ret
+
+    def plot_timeseries(self, axes=None, columns=None, subplots=True, **plot_args):
+        """
+        Plot a Time Series plot of the data.
 
         Parameters
         ----------
@@ -448,6 +520,11 @@ class TimeData:
             else:
                 iter_axes = axes
             for this_ax, this_col in zip(iter_axes, columns):
+                if len(self.data[this_col].shape) > 1:
+                    warn_user(
+                        f"Skipping plot for column {this_col}. Cannot plot time series for multi-dimensional variable"
+                    )
+                    continue
                 if i == 0:
                     this_ax.set_title(
                         f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
@@ -460,6 +537,11 @@ class TimeData:
                 f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
             )
             for this_col in columns:
+                if len(self.data[this_col].shape) > 1:
+                    warn_user(
+                        f"Skipping plot for column {this_col}. Cannot plot time series for multi-dimensional variable"
+                    )
+                    continue
                 axes.plot(
                     self.time,
                     self.data[this_col],
@@ -485,10 +567,6 @@ class TimeData:
         if columns is None:
             columns = self.columns.copy()
             columns.remove("time")
-            # Remove Columns with more than 2 Dimensions
-            for column in self.columns:
-                if len(self[column].shape) > 2:
-                    columns.remove(column)
         # Create Axes or Subplots for displaying the data
         if axes is None:
             if not subplots:

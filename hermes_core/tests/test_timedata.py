@@ -274,14 +274,14 @@ def test_timedata_plot():
     test_data.add_measurement(measure_name="test", data=q)
 
     # Plot All Columns
-    ax = test_data.plot(subplots=True)
+    ax = test_data.plot_timeseries(subplots=True)
     assert isinstance(ax, np.ndarray)
-    ax = test_data.plot(subplots=False)
+    ax = test_data.plot_timeseries(subplots=False)
     assert isinstance(ax, Axes)
     # Plot Single Column
-    ax = test_data.plot(columns=["test"], subplots=True)
+    ax = test_data.plot_timeseries(columns=["test"], subplots=True)
     assert isinstance(ax, Axes)
-    ax = test_data.plot(columns=["test"], subplots=False)
+    ax = test_data.plot_timeseries(columns=["test"], subplots=False)
     assert isinstance(ax, Axes)
 
 
