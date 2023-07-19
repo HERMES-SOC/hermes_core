@@ -152,7 +152,7 @@ Remember that you'll then have to fill in the meta data afterwards.
 
 Visualizing data in a ``TimeData`` Container
 ============================================
-The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot`.
+The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot_timeseries`.
 By default, a plot will be generated with each measurement in its own plot panel.
 
 .. plot::
@@ -172,7 +172,7 @@ By default, a plot will be generated with each measurement in its own plot panel
     >>> timedata.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
     >>> timedata.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
     >>> fig = plt.figure()
-    >>> timedata.plot() # doctest: +SKIP
+    >>> timedata.plot_timeseries() # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
 
 Writing a CDF File

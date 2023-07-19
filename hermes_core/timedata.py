@@ -430,6 +430,7 @@ class TimeData:
         """
         import matplotlib.dates as mdates
         from matplotlib import pyplot as plt
+        from astropy.visualization import quantity_support, time_support
 
         if axes is None:
             fig, axes = plt.subplots()
@@ -440,6 +441,8 @@ class TimeData:
             data = self.data[column].value.T
         else:
             raise KeyError(f"No Data for Column {column}")
+        quantity_support()
+        time_support()
 
         # Create Title
         title = f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
@@ -465,13 +468,8 @@ class TimeData:
             shading="auto",
             **plot_args,
         )
-        # Setup X-Axis
-        axes.set_xlim(times[0], times[-1])
-        locator = mdates.AutoDateLocator(minticks=4, maxticks=8)
-        formatter = mdates.ConciseDateFormatter(locator)
-        axes.xaxis.set_major_locator(locator)
-        axes.xaxis.set_major_formatter(formatter)
-        fig.autofmt_xdate()
+        # Setup the Time Axis
+        self._setup_x_axis(axes)
         # Setup Y-Axis
         axes.set_ylabel(self.data[column].meta["LABLAXIS"])
         # Add Colorbar
