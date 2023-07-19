@@ -448,8 +448,12 @@ class TimeData:
         title = f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
         # Times
         times = self.time.to_datetime()
-        frequencies = np.arange(data.shape[0] + 1)
+        # Assume the Energy Bins are in DEPEND_1
+        bin_ctr_var = self.data[column].meta["DEPEND_1"]
+        frequencies = self.data[bin_ctr_var].value.mean(axis=0)
 
+        # Set the Scale
+        plt.yscale("log")
         # Add the Title
         axes.set_title(title)
         # Plot Bounds
@@ -460,26 +464,27 @@ class TimeData:
             marker="None",
         )
         # Colormesh Spectrogram
-        ret = axes.pcolormesh(
+        cmesh = axes.pcolormesh(
             times,
             frequencies,
-            data[:, :-1],
-            norm="log",
-            shading="auto",
+            data[:-1, :-1],
+            norm="symlog",
             **plot_args,
         )
         # Setup the Time Axis
         self._setup_x_axis(axes)
         # Setup Y-Axis
-        axes.set_ylabel(self.data[column].meta["LABLAXIS"])
+        y_label = f'{self.data[bin_ctr_var].meta["LABLAXIS"]} ({self.data[bin_ctr_var].meta["UNITS"]})'
+        axes.set_ylabel(y_label)
         # Add Colorbar
-        fig.colorbar(ret)
+        colorbar_label = f'{self.data[column].meta["UNITS"]}'
+        fig.colorbar(cmesh, label=colorbar_label)
         # Set current axes/image if pyplot is being used (makes colorbar work)
         for i in plt.get_fignums():
             if axes in plt.figure(i).axes:
                 plt.sca(axes)
-                plt.sci(ret)
-        return ret
+                plt.sci(cmesh)
+        return axes
 
     def plot_timeseries(self, axes=None, columns=None, subplots=True, **plot_args):
         """

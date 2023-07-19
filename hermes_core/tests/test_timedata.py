@@ -257,7 +257,7 @@ def test_timedata_add_measurement():
     assert len(test_data) == data_len
 
 
-def test_timedata_plot():
+def test_timedata_plot_timeseries():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -282,6 +282,67 @@ def test_timedata_plot():
     ax = test_data.plot_timeseries(columns=["test"], subplots=True)
     assert isinstance(ax, Axes)
     ax = test_data.plot_timeseries(columns=["test"], subplots=False)
+    assert isinstance(ax, Axes)
+
+
+def test_timedata_plot_spectra():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    test_data = TimeData(ts, meta=input_attrs)
+
+    # Add Main Spectra
+    spectra = [
+        [24467.140625, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [22753.509765625, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 43653.54296875],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 2662.03466796875],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ]
+    q = Quantity(value=spectra, unit="keV/(cm^2 s sr keV)")
+    q.meta = OrderedDict(
+        {"CATDESC": "energy spectrum", "LABLAXIS": "DEF", "DEPEND_1": "dis_energy"}
+    )
+    test_data.add_measurement(measure_name="energyspectr", data=q)
+
+    # Add Support
+    bins = [
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+        [2.16, 3.91, 7.0],
+    ]
+    q = Quantity(value=bins, unit="eV")
+    q.meta = OrderedDict(
+        {
+            "CATDESC": "spectrum energies",
+            "LABLAXIS": "energy",
+        }
+    )
+    test_data.add_measurement(measure_name="dis_energy", data=q)
+
+    # Plot Bad Column
+    with pytest.raises(KeyError):
+        test_data.plot_spectrogram("bad_column")
+    # Plot Good Column
+    ax = test_data.plot_spectrogram(column="energyspectr")
     assert isinstance(ax, Axes)
 
 
