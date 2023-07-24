@@ -152,7 +152,13 @@ Remember that you'll then have to fill in the meta data afterwards.
 
 Visualizing data in a ``TimeData`` Container
 ============================================
-The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot_timeseries`.
+The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through 
+:py:func:`~hermes_core.timedata.TimeData.plot_timeseries` and 
+:py:func:`~hermes_core.timedata.TimeData.plot_spectrogram` functions.
+
+Plotting Time Series
+--------------------
+
 By default, a plot will be generated with each measurement in its own plot panel.
 
 .. plot::
@@ -173,6 +179,43 @@ By default, a plot will be generated with each measurement in its own plot panel
     >>> timedata.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
     >>> fig = plt.figure()
     >>> timedata.plot_timeseries() # doctest: +SKIP
+    >>> plt.show() # doctest: +SKIP
+
+Plotting Spectrograms
+---------------------
+
+.. plot::
+    :include-source:
+
+    >>> from collections import OrderedDict
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> import astropy.units as u
+    >>> from astropy.timeseries import TimeSeries
+    >>> from hermes_core.timedata import TimeData
+    >>> bx = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=99)]).cumsum(0)
+    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": u.Quantity(bx, "nanoTesla", dtype=np.int16)})
+    >>> input_attrs = TimeData.global_attribute_template("merit", "l1", "1.0.0")
+    >>> timedata = TimeData(data=ts, meta=input_attrs)
+    >>> # Add Main Spectra
+    >>> spectra = np.sin(np.random.random(size=(100, 10))+1)
+    >>> q = u.Quantity(value=spectra, unit="keV/(cm^2 s sr keV)")
+    >>> q.meta = OrderedDict(
+    >>>     {"CATDESC": "energy spectrum", "LABLAXIS": "DEF", "DEPEND_1": "dis_energy"}
+    >>> )
+    >>> timedata.add_measurement(measure_name="energyspectr", data=q)
+    >>> # Add Support
+    >>> bins = np.repeat([[2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0]], 100, axis=0)
+    >>> q = u.Quantity(value=bins, unit="eV")
+    >>> q.meta = OrderedDict(
+    >>>     {
+    >>>         "CATDESC": "spectrum energies",
+    >>>         "LABLAXIS": "energy",
+    >>>     }
+    >>> )
+    >>> timedata.add_measurement(measure_name="dis_energy", data=q)
+    >>> fig = plt.figure()
+    >>> timedata.plot_spectrogram(column="energyspectr") # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
 
 Writing a CDF File

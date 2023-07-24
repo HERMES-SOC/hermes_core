@@ -450,7 +450,7 @@ class TimeData:
         times = self.time.to_datetime()
         # Assume the Energy Bins are in DEPEND_1
         bin_ctr_var = self.data[column].meta["DEPEND_1"]
-        frequencies = self.data[bin_ctr_var].value.mean(axis=0)
+        bins = self.data[bin_ctr_var].value.mean(axis=0)
 
         # Set the Scale
         plt.yscale("log")
@@ -459,14 +459,14 @@ class TimeData:
         # Plot Bounds
         axes.plot(
             times[[0, -1]],
-            frequencies[[0, -1]],
+            bins[[0, -1]],
             linestyle="None",
             marker="None",
         )
         # Colormesh Spectrogram
         cmesh = axes.pcolormesh(
             times,
-            frequencies,
+            bins,
             data[:-1, :-1],
             norm="symlog",
             **plot_args,
@@ -479,11 +479,7 @@ class TimeData:
         # Add Colorbar
         colorbar_label = f'{self.data[column].meta["UNITS"]}'
         fig.colorbar(cmesh, label=colorbar_label)
-        # Set current axes/image if pyplot is being used (makes colorbar work)
-        for i in plt.get_fignums():
-            if axes in plt.figure(i).axes:
-                plt.sca(axes)
-                plt.sci(cmesh)
+
         return axes
 
     def plot_timeseries(self, axes=None, columns=None, subplots=True, **plot_args):
