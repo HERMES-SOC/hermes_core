@@ -3,6 +3,7 @@ from pathlib import Path
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+import astropy.units as u
 from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
@@ -94,7 +95,10 @@ class CDFHandler(TimeDataIOHandler):
             # Add Global Attributes from the CDF file to TimeSeries
             input_global_attrs = {}
             for attr_name in input_file.attrs:
-                if len(input_file.attrs[attr_name]) > 1:
+                if len(input_file.attrs[attr_name]) == 0:
+                    # gAttr is not set
+                    input_global_attrs[attr_name] = ""
+                elif len(input_file.attrs[attr_name]) > 1:
                     # gAttr is a List
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][:]
                 else:
@@ -114,19 +118,39 @@ class CDFHandler(TimeDataIOHandler):
                 ts["time"].meta = OrderedDict()
                 ts["time"].meta.update(time_attrs)
 
+            # Get all the Keys for Measurement Variable Data
+            # These are Keys where the underlying object is a `dict` that contains
+            # additional data, and is not the `EPOCH` variable
+            variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
             # Add Variable Attributtes from the CDF file to TimeSeries
-            for var_name in input_file:
-                if var_name != "Epoch":  # Since we added this separately
-                    var_data = input_file[var_name][:].copy()
-                    var_attrs = {}
-                    for attr_name in input_file[var_name].attrs:
-                        var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+            for var_name in variable_keys:
+                # Make sure the Variable is record-varying
+                if len(input_file[var_name]) != len(ts["time"]):
+                    warn_user(
+                        f"Measurement Variable {var_name} does not match the length of the EPOCH variable. Cannot add {var_name} to the TimeSeries"
+                    )
+                    # Skip to the next Variable
+                    continue
+
+                # If all checks pass, then add to the TimeSeries
+                var_data = input_file[var_name][:].copy()
+                var_attrs = {}
+                for attr_name in input_file[var_name].attrs:
+                    var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+                try:
                     # Create the Quantity object
-                    ts[var_name] = var_data
-                    ts[var_name].unit = var_attrs["UNITS"]
-                    # Create the Metadata
-                    ts[var_name].meta = OrderedDict()
-                    ts[var_name].meta.update(var_attrs)
+                    var_data = u.Quantity(
+                        value=var_data, unit=var_attrs["UNITS"], copy=False
+                    )
+                except ValueError:
+                    warn_user(
+                        f'Measurement Variable {var_name} cannot be converted to an astropy.units.Quantity. UNITS were: {var_attrs["UNITS"]}'
+                    )
+                    continue
+                ts[var_name] = var_data
+                # Create the Metadata
+                ts[var_name].meta = OrderedDict()
+                ts[var_name].meta.update(var_attrs)
 
         # Return the given TimeSeries
         return ts
