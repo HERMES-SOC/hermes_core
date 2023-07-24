@@ -293,6 +293,7 @@ recommended that variable names employ further fields, qualifiers and informatio
 designed to identify unambiguously the nature of the variable, instrument mode and data
 processing level, with sufficient detail to lead the user to the unique source file which
 contains the variable. It is recommended that these follow the order shown below.
+
 * `scId_instrumentId_paramName[_coordSys][_paramQualifier][_subModeLevel][_mode][_dataLevel]`
 
 where the required fields are described in Table 5-1 and the optional fields are described
@@ -413,8 +414,7 @@ Data variables require the following attributes:
 * VAR_TYPE
 
 In addition, the following attributes are strongly recommended for vectors, tensors and
-quaternions which are held in or relate to a particular coordinate system (see sections
-``5.1.3.17-5.1.3.20``):
+quaternions which are held in or relate to a particular coordinate system:
 
 * COORDINATE_SYSTEM
 * TENSOR_ORDER
@@ -441,7 +441,7 @@ expressed as a rotation through an angle θ about a unit vector u. The Wikipedia
 quaternion and a 3x3 rotation matrix. In the mec files, quaternions are represented by:
 
 ``q = (qx, qy, qz, qw)``
-`
+
 in which qw (also known elsewhere as qc) = cos (θ/2) and (qx, qy, qz) = u sin (θ/2).
 Extensions of existing attribute standards are strongly recommended to be used to
 describe such quaternions. The following attributes serve this purpose:
@@ -459,7 +459,7 @@ components in the YYY coordinate system.
 --------------------------------------
 
 These are variables of secondary importance employed as DEPEND_i variables as
-described in section 5.1.3.3 (e.g., time, energy_bands associated with particle flux), but
+described in section 5.1.3 (e.g., time, energy_bands associated with particle flux), but
 they may also be used for housekeeping or other information not normally used for
 scientific analysis.
 
