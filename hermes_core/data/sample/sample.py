@@ -20,7 +20,7 @@ A `TimeData` container must be created using:
 
 - An `~astropy.timeseries.TimeSeries` containing at least two columns
     1. `time`
-    2. At least one measurement column as an `~astropy.units.Quantity` object. 
+    2. At least one measurement column as an `~astropy.units.Quantity` object.
 - A global metadata dictionary that contains attribute information of the CDF to be created.
 
 The following lines of code create these two pieces if required information.
@@ -66,7 +66,7 @@ OrderedDict([('DOI', None),
              ('TEXT', None)])
 ```
 
-You can then provide values for each of these attributes 
+You can then provide values for each of these attributes
 """
 
 global_attrs_template["DOI"] = "https://doi.org/<PREFIX>/<SUFFIX>"
@@ -96,8 +96,8 @@ global_attrs_template["TEXT"] = "Sample CDF File"
 
 
 """
-With bothe the `astropy.timeSeries.TimeSeries` aw well as the global `meta` defined, 
-we can now create a `TimeData` object to manipulate the measuerments and metadata together. 
+With bothe the `astropy.timeSeries.TimeSeries` aw well as the global `meta` defined,
+we can now create a `TimeData` object to manipulate the measuerments and metadata together.
 """
 
 timedata = TimeData(data=ts, meta=global_attrs_template)
@@ -120,7 +120,7 @@ This gives an `OrderedDict` of empty attributes to be filled out
 OrderedDict([('CATDESC', None)])
 ```
 
-You can then provide values for each of these attributes 
+You can then provide values for each of these attributes
 """
 
 # Update the Metadata for each of the Measurements
@@ -145,9 +145,9 @@ timedata.add_measurement(
 """
 # Saving the TimeData Container to a CDF File
 
-The `TimeData` class delegetes to the appropriate IO module to save the CDF File. 
+The `TimeData` class delegetes to the appropriate IO module to save the CDF File.
 The `CDFHandler` uses the `spacepy.pycdf` module to convert all variable data and metadata
-to a CDF format. 
+to a CDF format.
 """
 
 output_path = "./"
