@@ -1,7 +1,7 @@
 """
 This module provides an example for creating a CDF File using the `~hermes_core.timedata.TimeData`
 class. This class is an abstraction of underlying data structures to make the handling of
-measurement data easier when reading and writinf CDF data.
+measurement data easier when reading and writing CDF data.
 """
 from typing import OrderedDict
 import numpy as np
@@ -106,7 +106,7 @@ timedata = TimeData(data=ts, meta=global_attrs_template)
 """
 # Modifying a TimeData container
 
-Once the TimeData container has been created you can add metadata and new measurements
+Once the `TimeData` container has been created you can add metadata and new measurements
 """
 
 # To make the creation of variable metadata easier you can use the static
@@ -132,7 +132,9 @@ timedata["Bz1"].meta.update(OrderedDict({"CATDESC": "Magnetic Field 1 Z"}))
 timedata.add_measurement(
     measure_name="Bx2",
     data=u.Quantity(
-        value=np.random.choice(a=[-1, 0, 1], size=1000).cumsum(0), unit="nanoTesla", dtype=np.int16
+        value=np.random.choice(a=[-1, 0, 1], size=1000).cumsum(0),
+        unit="nanoTesla",
+        dtype=np.int16,
     ),
     meta={
         "VAR_TYPE": "data",
