@@ -1,5 +1,5 @@
 """
-This module provides schema metadata derivations. 
+This module provides schema metadata derivations.
 
 This code is based on that provided by SpacePy see
     licenses/SPACEPY.rst

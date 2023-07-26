@@ -5,7 +5,7 @@
 Various constants defined in cdf.h and used in pycdf.
 Most constants referred to in the CDF manuals are provided by this module.
 E.g., to create a CDF and add a variable of type EPOCH:
-    
+
 This code is based on that provided by SpacePy see
     licenses/SPACEPY.rst
 """
