@@ -233,8 +233,9 @@ class CDFSchema(FileTypeSchema):
                 raise ValueError(msg)
         return d
 
-    def types(self, data, backward=False, encoding="utf-8"):
-        """Find dimensions and valid types of a nested list-of-lists
+    def _types(self, data, backward=False, encoding="utf-8"):
+        """
+        Find dimensions and valid types of a nested list-of-lists
 
         Any given data may be representable by a range of CDF types; infer
         the CDF types which can represent this data. This breaks down to:
@@ -272,6 +273,7 @@ class CDFSchema(FileTypeSchema):
                  number of elements required (i.e. length of longest string)
         @rtype: 3-tuple of lists ([int], [ctypes.c_long], [int])
         @raise ValueError: if L{data} has irregular dimensions
+
         """
         d = CDFSchema.check_well_formed(data)
         dims = d.shape
@@ -443,7 +445,7 @@ class CDFSchema(FileTypeSchema):
                 elements = ne
         return (dims, types, elements)
 
-    def get_minmax(self, cdftype):
+    def _get_minmax(self, cdftype):
         """Find minimum, maximum possible value based on CDF type.
 
         This returns the processed value (e.g. datetimes for Epoch
@@ -616,7 +618,7 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the FILLVAL for the gussed data type
@@ -624,7 +626,7 @@ class CDFSchema(FileTypeSchema):
             return datetime.datetime(9999, 12, 31, 23, 59, 59, 999999)
         else:
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             return fillval
@@ -660,13 +662,13 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             return self._format_helper(data, var_name, guess_types[0])
         else:
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             return self._format_helper(data, var_name, guess_types[0])
 
     def _format_helper(self, data, var_name, cdftype):
@@ -806,7 +808,7 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
         if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "rotating Earth geoid"
         else:
@@ -851,7 +853,7 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
         if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "J2000"
         else:
@@ -861,7 +863,7 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
         if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "Terrestrial Time (TT)"
         else:
@@ -871,7 +873,7 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data.time
         # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self.types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
         if guess_types[0] == const.CDF_EPOCH.value:
             return "ms"
         if guess_types[0] == const.CDF_TIME_TT2000.value:
@@ -895,17 +897,17 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the Min Value
-            minval, maxval = self.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return minval + datetime.timedelta(seconds=1)
         else:
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Min Value
-            minval, maxval = self.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return minval
 
     def _get_validmax(self, data, var_name):
@@ -913,17 +915,17 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
         if var_name == "time":
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the Max Value
-            minval, maxval = self.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return maxval - datetime.timedelta(seconds=1)
         else:
             # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self.types(var_data.value)
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Max Value
-            minval, maxval = self.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return maxval
 
     def _get_var_type(self, data, var_name):
