@@ -6,6 +6,7 @@ import numpy as np
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from hermes_core.util.exceptions import warn_user
+from hermes_core.util.schema import CDFSchema
 
 __all__ = ["CDFHandler", "JSONDataHandler", "CSVDataHandler"]
 
@@ -480,6 +481,10 @@ class CSVDataHandler(TimeDataIOHandler):
     def __init__(self):
         super().__init__()
 
+        # Schema to get Variable Infrormation
+        self.schema = CDFSchema()
+
+        # Heaer Tags
         self.global_metadata_tag = "GLOBAL_METADATA"
         self.variable_metadata_tag = "VARIABLE_METADATA"
         self.variable_name_tag = "VARIABLE_NAME"
@@ -591,9 +596,6 @@ class CSVDataHandler(TimeDataIOHandler):
         Function to Parse Global and Variable metadata information from
         the header of the CSV file and add to the TimeSeries meta attributes
         """
-        from random import randrange
-        from hermes_core import INST_NAMES, INST_FULLNAMES
-        from hermes_core.util.util import VALID_DATA_LEVELS
 
         # Initialize Global Metadata Dict
         if not hasattr(ts, "meta"):
@@ -633,7 +635,18 @@ class CSVDataHandler(TimeDataIOHandler):
         # Loop through the Lines
         for line in global_metadata_lines:
             # Strip and Split the line
-            attr_name, attr_value = line.strip("#\n").split(",")
+            attr_parts = line.strip("#\n").split(",")
+            attr_name = attr_parts[0]
+            attr_value = attr_parts[1:-1]
+            attr_type = attr_parts[-1]
+
+            # Parse the attribute value
+            if isinstance(attr_value, list) and len(attr_value) == 1:
+                attr_value = attr_value[0]
+            else:
+                print(attr_name, attr_value)
+
+            # TODO Check the Type Matches the Schema
             # Add to the TimeSeries Meta Dict
             ts.meta.update({attr_name: attr_value})
 
@@ -646,7 +659,13 @@ class CSVDataHandler(TimeDataIOHandler):
                 _, targeted_variable = line.strip("#\n").split(",")
             elif targeted_variable is not None:
                 # Strip and Split the line
-                attr_name, attr_value = line.strip("#\n").split(",")
+                attr_parts = line.strip("#\n").split(",")
+                attr_name = attr_parts[0]
+                attr_value = attr_parts[1:-1]
+                attr_type = attr_parts[-1]
+
+                # TODO Check the Type Matches the Schema
+                # Add to the Variable Meta Dict
                 ts[targeted_variable].meta.update({attr_name: attr_value})
 
     def save_data(self, data, file_path):
@@ -690,8 +709,11 @@ class CSVDataHandler(TimeDataIOHandler):
 
         # Loop though Global Attributes in target_dict
         for attr_name, attr_value in data.meta.items():
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self.schema.types(attr_value)
+            attr_type = self.schema.cdftypenames[guess_types[0]]
+
             # Add the Attribute to the CSV File
-            attr_type = type(attr_value).__name__
             if isinstance(attr_value, datetime):
                 csv_file.write(f"#{attr_name},{attr_value.isoformat()},{attr_type}\n")
             else:
@@ -702,12 +724,23 @@ class CSVDataHandler(TimeDataIOHandler):
 
         # Loop through the Variables in the TimeData container
         for column_name in data.columns:
+            # Get the Data Type for the variable
+            (guess_dims, guess_types, guess_elements) = self.schema.types(
+                data[column_name].value
+            )
+            var_type = self.schema.cdftypenames[guess_types[0]]
+
             # Write a tag for the specific variable
-            csv_file.write(f"#Variable_Name,{column_name}\n")
+            csv_file.write(f"#Variable_Name,{column_name},{var_type}\n")
             # Loop through the Variable Attributes for the Variable
             for attr_name, attr_value in data[column_name].meta.items():
+                # Guess the const CDF Data Type
+                (guess_dims, guess_types, guess_elements) = self.schema.types(
+                    attr_value
+                )
+                attr_type = self.schema.cdftypenames[guess_types[0]]
+
                 # Add the Attribute to the CSV File
-                attr_type = type(attr_value).__name__
                 if isinstance(attr_value, datetime):
                     csv_file.write(
                         f"#{attr_name},{attr_value.isoformat()},{attr_type}\n"
