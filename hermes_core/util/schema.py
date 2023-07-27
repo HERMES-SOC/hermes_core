@@ -350,7 +350,7 @@ class CDFSchema(HERMESDataSchema):
 
     def __init__(self):
         super().__init__()
-        
+
     def check_well_formed(data):
         """Checks if input data is well-formed, regular array
 
