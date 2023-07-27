@@ -17,6 +17,12 @@ ISTP compliance ensures that the data adheres to specific formatting requirement
 Uploading CDF files to the `NASA SPDF archive <https://spdf.gsfc.nasa.gov>`_ requires conforming to the ISTP guidelines.
 In addition, HERMES maintains it's own standards in the CDF guide.
 
+The CDF C library must be properly installed in order to use this package to save and load CDF files. 
+The CDF library can be downloaded from the `SPDF CDF Page <https://cdf.gsfc.nasa.gov/>`_ to use the 
+CDF libraries in your local environment. Alternatively, the CDF library is installed and available
+through the HERMES development Docker continer environment. For more information on the HERMES Docker
+container please see our :doc:`Development Environment Page </dev-guide/dev_env>`.
+
 To make it easier to work with HERMES data, the :py:class:`~hermes_core.timedata.TimeData` class facilitates the abstraction of HERMES CDF files.
 It allows users to read and write HERMES data and is compliant with `PyHC expectations <https://heliopython.org>`_.
 The data is stored in a `~astropy.timeseries.TimeSeries` table while the metadata is stored in dictionaries.
