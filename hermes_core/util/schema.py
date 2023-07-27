@@ -1,3 +1,9 @@
+"""
+This module provides schema metadata derivations.
+
+This code is based on that provided by SpacePy see
+    licenses/SPACEPY.rst
+"""
 from abc import ABC, abstractmethod
 from pathlib import Path
 from collections import OrderedDict
@@ -5,12 +11,12 @@ from copy import deepcopy
 import math
 import datetime
 import yaml
+import ctypes
+import numpy as np
 from astropy import units as u
-import spacepy
-from spacepy.pycdf import _Hyperslice
 import hermes_core
 from hermes_core import log
-from hermes_core.util import util
+from hermes_core.util import util, const
 
 __all__ = ["CDFSchema"]
 
@@ -49,6 +55,50 @@ class CDFSchema(FileTypeSchema):
 
         # Load Default Global Attributes
         self.default_global_attributes = CDFSchema._load_default_attributes()
+
+        self.cdftypenames = {
+            const.CDF_BYTE.value: "CDF_BYTE",
+            const.CDF_CHAR.value: "CDF_CHAR",
+            const.CDF_INT1.value: "CDF_INT1",
+            const.CDF_UCHAR.value: "CDF_UCHAR",
+            const.CDF_UINT1.value: "CDF_UINT1",
+            const.CDF_INT2.value: "CDF_INT2",
+            const.CDF_UINT2.value: "CDF_UINT2",
+            const.CDF_INT4.value: "CDF_INT4",
+            const.CDF_UINT4.value: "CDF_UINT4",
+            const.CDF_INT8.value: "CDF_INT8",
+            const.CDF_FLOAT.value: "CDF_FLOAT",
+            const.CDF_REAL4.value: "CDF_REAL4",
+            const.CDF_DOUBLE.value: "CDF_DOUBLE",
+            const.CDF_REAL8.value: "CDF_REAL8",
+            const.CDF_EPOCH.value: "CDF_EPOCH",
+            const.CDF_EPOCH16.value: "CDF_EPOCH16",
+            const.CDF_TIME_TT2000.value: "CDF_TIME_TT2000",
+        }
+        self.numpytypedict = {
+            const.CDF_BYTE.value: np.int8,
+            const.CDF_CHAR.value: np.int8,
+            const.CDF_INT1.value: np.int8,
+            const.CDF_UCHAR.value: np.uint8,
+            const.CDF_UINT1.value: np.uint8,
+            const.CDF_INT2.value: np.int16,
+            const.CDF_UINT2.value: np.uint16,
+            const.CDF_INT4.value: np.int32,
+            const.CDF_UINT4.value: np.uint32,
+            const.CDF_INT8.value: np.int64,
+            const.CDF_FLOAT.value: np.float32,
+            const.CDF_REAL4.value: np.float32,
+            const.CDF_DOUBLE.value: np.float64,
+            const.CDF_REAL8.value: np.float64,
+            const.CDF_EPOCH.value: np.float64,
+            const.CDF_EPOCH16.value: np.dtype((np.float64, 2)),
+            const.CDF_TIME_TT2000.value: np.int64,
+        }
+        self.timetypes = [
+            const.CDF_EPOCH.value,
+            const.CDF_EPOCH16.value,
+            const.CDF_TIME_TT2000.value,
+        ]
 
     @property
     def global_attribute_schema(self):
@@ -154,6 +204,298 @@ class CDFSchema(FileTypeSchema):
             if attr_schema["required"] and not attr_schema["derived"]:
                 template[attr_name] = None
         return template
+
+    @staticmethod
+    def check_well_formed(data):
+        """Checks if input data is well-formed, regular array
+
+        Returns
+        -------
+        :class:`~numpy.ndarray`
+            The input data as a well-formed array; may be the input
+            data exactly.
+        """
+        msg = (
+            "Data must be well-formed, regular array of number, " "string, or datetime"
+        )
+        try:
+            d = np.asanyarray(data)
+        except ValueError:
+            raise ValueError(msg)
+        # In a future numpy, the case tested below will raise ValueError,
+        # so can remove entire if block.
+        if d.dtype == object:  # this is probably going to be bad
+            if d.shape != () and not len(d):
+                # Completely empty, so "well-formed" enough
+                return d
+            if np.array(d.flat[0]).shape != ():
+                # Sequence-like, so we know it's ragged
+                raise ValueError(msg)
+        return d
+
+    def _types(self, data, backward=False, encoding="utf-8"):
+        """
+        Find dimensions and valid types of a nested list-of-lists
+
+        Any given data may be representable by a range of CDF types; infer
+        the CDF types which can represent this data. This breaks down to:
+          1. Proper kind (numerical, string, time)
+          2. Proper range (stores highest and lowest number)
+          3. Sufficient resolution (EPOCH16 or TT2000 required if datetime has
+             microseconds or below.)
+
+        If more than one value satisfies the requirements, types are returned
+        in preferred order:
+          1. Type that matches precision of data first, then
+          2. integer type before float type, then
+          3. Smallest type first, then
+          4. signed type first, then
+          5. specifically-named (CDF_BYTE) vs. generically named (CDF_INT1)
+        So for example, EPOCH_16 is preferred over EPOCH if L{data} specifies
+        below the millisecond level (rule 1), but otherwise EPOCH is preferred
+        (rule 2). TIME_TT2000 is always preferred as of 0.3.0.
+
+        For floats, four-byte is preferred unless eight-byte is required:
+          1. absolute values between 0 and 3e-39
+          2. absolute values greater than 1.7e38
+        This will switch to an eight-byte double in some cases where four bytes
+        would be sufficient for IEEE 754 encoding, but where DEC formats would
+        require eight.
+
+        @param data: data for which dimensions and CDF types are desired
+        @type data: list (of lists)
+        @param backward: limit to pre-CDF3 types
+        @type backward: bool
+        @param encoding: Encoding to use for Unicode input, default utf-8
+        @type backward: str
+        @return: dimensions of L{data}, in order outside-in;
+                 CDF types which can represent this data;
+                 number of elements required (i.e. length of longest string)
+        @rtype: 3-tuple of lists ([int], [ctypes.c_long], [int])
+        @raise ValueError: if L{data} has irregular dimensions
+
+        """
+        d = CDFSchema.check_well_formed(data)
+        dims = d.shape
+        elements = 1
+        types = []
+
+        if d.dtype.kind in ("S", "U"):  # it's a string
+            types = [const.CDF_CHAR, const.CDF_UCHAR]
+            # Length of string from type (may be longer than contents)
+            elements = d.dtype.itemsize
+            if d.dtype.kind == "U":
+                # Big enough for contents (bytes/char are encoding-specific)
+                elements = max(
+                    elements // 4,  # numpy stores as 4-byte
+                    np.char.encode(d, encoding=encoding).dtype.itemsize,
+                )
+        elif d.size and hasattr(np.ma.getdata(d).flat[0], "microsecond"):
+            if max((dt.microsecond % 1000 for dt in d.flat)) > 0:
+                types = [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH]
+            else:
+                types = [const.CDF_TIME_TT2000, const.CDF_EPOCH, const.CDF_EPOCH16]
+            if backward:
+                del types[types.index(const.CDF_EPOCH16)]
+                del types[0]
+        elif d is data or isinstance(data, np.generic):
+            # np array came in, use its type (or byte-swapped)
+            types = [
+                k
+                for k in self.numpytypedict
+                if (
+                    self.numpytypedict[k] == d.dtype
+                    or self.numpytypedict[k] == d.dtype.newbyteorder()
+                )
+                and k not in self.timetypes
+            ]
+            # Maintain priority to match the ordered lists below:
+            # float/double (44, 45) before real (21/22), and
+            # byte (41) before int (1) before char (51). So hack.
+            # Consider making typedict an ordered dict once 2.6 is dead.
+            types.sort(key=lambda x: x % 50, reverse=True)
+
+        if not types:  # not a numpy array, or can't parse its type
+            if d.dtype.kind == "O":  # Object. Try to make it numeric
+                if d.shape != () and not len(d):
+                    raise ValueError("Cannot determine CDF type of empty object array.")
+                # Can't do safe casting from Object, so try and compare
+                # Basically try most restrictive to least restrictive
+                trytypes = (np.uint64, np.int64, np.float64)
+                for t in trytypes:
+                    try:
+                        newd = d.astype(dtype=t)
+                    except ValueError:  # Failure to cast, try next type
+                        continue
+                    if (newd == d).all():  # Values preserved, use this type
+                        d = newd
+                        # Continue with normal guessing, as if a list
+                        break
+                else:
+                    # fell through without a match
+                    raise ValueError("Cannot convert generic objects to CDF type.")
+            if d.dtype.kind in ("i", "u"):  # integer
+                minval = np.min(d)
+                maxval = np.max(d)
+                if minval < 0:
+                    types = [
+                        const.CDF_BYTE,
+                        const.CDF_INT1,
+                        const.CDF_INT2,
+                        const.CDF_INT4,
+                        const.CDF_INT8,
+                        const.CDF_FLOAT,
+                        const.CDF_REAL4,
+                        const.CDF_DOUBLE,
+                        const.CDF_REAL8,
+                    ]
+                    cutoffs = [
+                        2**7,
+                        2**7,
+                        2**15,
+                        2**31,
+                        2**63,
+                        1.7e38,
+                        1.7e38,
+                        8e307,
+                        8e307,
+                    ]
+                else:
+                    types = [
+                        const.CDF_BYTE,
+                        const.CDF_INT1,
+                        const.CDF_UINT1,
+                        const.CDF_INT2,
+                        const.CDF_UINT2,
+                        const.CDF_INT4,
+                        const.CDF_UINT4,
+                        const.CDF_INT8,
+                        const.CDF_FLOAT,
+                        const.CDF_REAL4,
+                        const.CDF_DOUBLE,
+                        const.CDF_REAL8,
+                    ]
+                    cutoffs = [
+                        2**7,
+                        2**7,
+                        2**8,
+                        2**15,
+                        2**16,
+                        2**31,
+                        2**32,
+                        2**63,
+                        1.7e38,
+                        1.7e38,
+                        8e307,
+                        8e307,
+                    ]
+                types = [
+                    t
+                    for (t, c) in zip(types, cutoffs)
+                    if c > maxval and (minval >= 0 or minval >= -c)
+                ]
+            else:  # float
+                if dims == ():
+                    if d != 0 and (abs(d) > 1.7e38 or abs(d) < 3e-39):
+                        types = [const.CDF_DOUBLE, const.CDF_REAL8]
+                    else:
+                        types = [
+                            const.CDF_FLOAT,
+                            const.CDF_REAL4,
+                            const.CDF_DOUBLE,
+                            const.CDF_REAL8,
+                        ]
+                else:
+                    absolutes = np.abs(d[d != 0])
+                    if len(absolutes) > 0 and (
+                        np.max(absolutes) > 1.7e38 or np.min(absolutes) < 3e-39
+                    ):
+                        types = [const.CDF_DOUBLE, const.CDF_REAL8]
+                    else:
+                        types = [
+                            const.CDF_FLOAT,
+                            const.CDF_REAL4,
+                            const.CDF_DOUBLE,
+                            const.CDF_REAL8,
+                        ]
+        types = [t.value if hasattr(t, "value") else t for t in types]
+        # If data has a type, might be a VarCopy, prefer that type
+        if hasattr(data, "type"):
+            try:
+                t = data.type()
+            except AttributeError:
+                t = None
+                pass
+            if t in types:
+                types = [t]
+            # If passed array, types prefers its dtype, so try for compatible
+            # and let type() override
+            elif d is data:
+                try:
+                    _ = data.astype(dtype=self.numpytypedict[t])
+                except ValueError:
+                    pass
+                finally:
+                    types = [t]
+        # And if the VarCopy specifies a number of elements, use that
+        # if compatible
+        if hasattr(data, "nelems"):
+            ne = data.nelems()
+            if ne > elements:
+                elements = ne
+        return (dims, types, elements)
+
+    def _get_minmax(self, cdftype):
+        """Find minimum, maximum possible value based on CDF type.
+
+        This returns the processed value (e.g. datetimes for Epoch
+        types) because comparisons to EPOCH16s are otherwise
+        difficult.
+
+        Parameters
+        ==========
+        cdftype : int
+            CDF type number from :mod:`~const`
+
+        Raises
+        ======
+        ValueError : if can't match the type
+
+        Returns
+        =======
+        out : tuple
+            minimum, maximum value supported by type (of type matching the
+            CDF type).
+
+        """
+        if hasattr(cdftype, "value"):
+            cdftype = cdftype.value
+        if cdftype == const.CDF_EPOCH.value:
+            return (
+                datetime.datetime(1, 1, 1),
+                # Can get asymptotically closer, but why bother
+                datetime.datetime(9999, 12, 31, 23, 59, 59),
+            )
+        elif cdftype == const.CDF_EPOCH16.value:
+            return (
+                datetime.datetime(1, 1, 1),
+                datetime.datetime(9999, 12, 31, 23, 59, 59),
+            )
+        elif cdftype == const.CDF_TIME_TT2000.value:
+            return (
+                datetime.datetime(1, 1, 1),
+                datetime.datetime(2292, 4, 11, 11, 46, 7, 670776),
+            )
+        dtype = self.numpytypedict.get(cdftype, None)
+        if dtype is None:
+            raise ValueError("Unknown data type: {}".format(cdftype))
+        if np.issubdtype(dtype, np.integer):
+            inf = np.iinfo(dtype)
+        elif np.issubdtype(dtype, np.floating):
+            inf = np.finfo(dtype)
+        else:
+            raise ValueError("Unknown data type: {}".format(cdftype))
+        return (inf.min, inf.max)
 
     def derive_measurement_attributes(self, data, var_name):
         """
@@ -275,19 +617,16 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data[var_name]
         if var_name == "time":
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
-            # guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
-            return spacepy.pycdf.lib.v_tt2000_to_datetime(fillval)
+            return datetime.datetime(9999, 12, 31, 23, 59, 59, 999999)
         else:
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(data, cdf_type=guess_types[0])
             return fillval
@@ -297,26 +636,22 @@ class CDFSchema(FileTypeSchema):
         fillvals = {}
         # Integers
         for i in (1, 2, 4, 8):
-            fillvals[getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value] = -(
-                2 ** (8 * i - 1)
-            )
+            fillvals[getattr(const, "CDF_INT{}".format(i)).value] = -(2 ** (8 * i - 1))
             if i == 8:
                 continue
-            fillvals[getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value] = (
-                2 ** (8 * i) - 1
-            )
-        fillvals[spacepy.pycdf.const.CDF_EPOCH16.value] = (-1e31, -1e31)
-        fillvals[spacepy.pycdf.const.CDF_REAL8.value] = -1e31
-        fillvals[spacepy.pycdf.const.CDF_REAL4.value] = -1e31
-        fillvals[spacepy.pycdf.const.CDF_CHAR.value] = " "
-        fillvals[spacepy.pycdf.const.CDF_UCHAR.value] = " "
+            fillvals[getattr(const, "CDF_UINT{}".format(i)).value] = 2 ** (8 * i) - 1
+        fillvals[const.CDF_EPOCH16.value] = (-1e31, -1e31)
+        fillvals[const.CDF_REAL8.value] = -1e31
+        fillvals[const.CDF_REAL4.value] = -1e31
+        fillvals[const.CDF_CHAR.value] = " "
+        fillvals[const.CDF_UCHAR.value] = " "
         # Equivalent pairs
         for cdf_t, equiv in (
-            (spacepy.pycdf.const.CDF_TIME_TT2000, spacepy.pycdf.const.CDF_INT8),
-            (spacepy.pycdf.const.CDF_EPOCH, spacepy.pycdf.const.CDF_REAL8),
-            (spacepy.pycdf.const.CDF_BYTE, spacepy.pycdf.const.CDF_INT1),
-            (spacepy.pycdf.const.CDF_FLOAT, spacepy.pycdf.const.CDF_REAL4),
-            (spacepy.pycdf.const.CDF_DOUBLE, spacepy.pycdf.const.CDF_REAL8),
+            (const.CDF_TIME_TT2000, const.CDF_INT8),
+            (const.CDF_EPOCH, const.CDF_REAL8),
+            (const.CDF_BYTE, const.CDF_INT1),
+            (const.CDF_FLOAT, const.CDF_REAL4),
+            (const.CDF_DOUBLE, const.CDF_REAL8),
         ):
             fillvals[cdf_t.value] = fillvals[equiv.value]
         value = fillvals[cdf_type]
@@ -326,16 +661,14 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data[var_name]
         if var_name == "time":
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             return self._format_helper(data, var_name, guess_types[0])
         else:
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             return self._format_helper(data, var_name, guess_types[0])
 
     def _format_helper(self, data, var_name, cdftype):
@@ -345,46 +678,44 @@ class CDFSchema(FileTypeSchema):
         var_data = data[var_name]
 
         if cdftype in (
-            spacepy.pycdf.const.CDF_INT1.value,
-            spacepy.pycdf.const.CDF_INT2.value,
-            spacepy.pycdf.const.CDF_INT4.value,
-            spacepy.pycdf.const.CDF_INT8.value,
-            spacepy.pycdf.const.CDF_UINT1.value,
-            spacepy.pycdf.const.CDF_UINT2.value,
-            spacepy.pycdf.const.CDF_UINT4.value,
-            spacepy.pycdf.const.CDF_BYTE.value,
+            const.CDF_INT1.value,
+            const.CDF_INT2.value,
+            const.CDF_INT4.value,
+            const.CDF_INT8.value,
+            const.CDF_UINT1.value,
+            const.CDF_UINT2.value,
+            const.CDF_UINT4.value,
+            const.CDF_BYTE.value,
         ):
             if minn in var_data.meta:  # Just use validmin or scalemin
                 minval = var_data.meta[minn]
             elif cdftype in (
-                spacepy.pycdf.const.CDF_UINT1.value,
-                spacepy.pycdf.const.CDF_UINT2.value,
-                spacepy.pycdf.const.CDF_UINT4.value,
+                const.CDF_UINT1.value,
+                const.CDF_UINT2.value,
+                const.CDF_UINT4.value,
             ):  # unsigned, easy
                 minval = 0
-            elif cdftype == spacepy.pycdf.const.CDF_BYTE.value:
+            elif cdftype == const.CDF_BYTE.value:
                 minval = -(2**7)
             else:  # Signed, harder
                 size = next(
                     (
                         i
                         for i in (1, 2, 4, 8)
-                        if getattr(spacepy.pycdf.const, "CDF_INT{}".format(i)).value
-                        == cdftype
+                        if getattr(const, "CDF_INT{}".format(i)).value == cdftype
                     )
                 )
                 minval = -(2 ** (8 * size - 1))
             if maxx in var_data.meta:  # Just use max
                 maxval = var_data.meta[maxx]
-            elif cdftype == spacepy.pycdf.const.CDF_BYTE.value:
+            elif cdftype == const.CDF_BYTE.value:
                 maxval = 2**7 - 1
             else:
                 size = next(
                     (
                         8 * i
                         for i in (1, 2, 4)
-                        if getattr(spacepy.pycdf.const, "CDF_UINT{}".format(i)).value
-                        == cdftype
+                        if getattr(const, "CDF_UINT{}".format(i)).value == cdftype
                     ),
                     None,
                 )
@@ -394,9 +725,7 @@ class CDFSchema(FileTypeSchema):
                             (
                                 8 * i
                                 for i in (1, 2, 4, 8)
-                                if getattr(
-                                    spacepy.pycdf.const, "CDF_INT{}".format(i)
-                                ).value
+                                if getattr(const, "CDF_INT{}".format(i)).value
                                 == cdftype
                             )
                         )
@@ -413,17 +742,17 @@ class CDFSchema(FileTypeSchema):
                 )
             else:
                 fmt = "I{}".format(int(math.log10(maxval) if maxval != 0 else 1) + 1)
-        elif cdftype == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        elif cdftype == const.CDF_TIME_TT2000.value:
             fmt = "A{}".format(len("9999-12-31T23:59:59.999999999"))
-        elif cdftype == spacepy.pycdf.const.CDF_EPOCH16.value:
+        elif cdftype == const.CDF_EPOCH16.value:
             fmt = "A{}".format(len("31-Dec-9999 23:59:59.999.999.000.000"))
-        elif cdftype == spacepy.pycdf.const.CDF_EPOCH.value:
+        elif cdftype == const.CDF_EPOCH.value:
             fmt = "A{}".format(len("31-Dec-9999 23:59:59.999"))
         elif cdftype in (
-            spacepy.pycdf.const.CDF_REAL8.value,
-            spacepy.pycdf.const.CDF_REAL4.value,
-            spacepy.pycdf.const.CDF_FLOAT.value,
-            spacepy.pycdf.const.CDF_DOUBLE.value,
+            const.CDF_REAL8.value,
+            const.CDF_REAL4.value,
+            const.CDF_FLOAT.value,
+            const.CDF_DOUBLE.value,
         ):
             if "VALIDMIN" in var_data.meta and "VALIDMAX" in var_data.meta:
                 range = var_data.meta["VALIDMAX"] - var_data.meta["VALIDMIN"]
@@ -459,14 +788,14 @@ class CDFSchema(FileTypeSchema):
                 # OR we don't care because it's a 'big' number:
                 fmt = "G10.2E3"
         elif cdftype in (
-            spacepy.pycdf.const.CDF_CHAR.value,
-            spacepy.pycdf.const.CDF_UCHAR.value,
+            const.CDF_CHAR.value,
+            const.CDF_UCHAR.value,
         ):
             fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(
                 "Couldn't find FORMAT for {} of type {}".format(
-                    var_name, spacepy.pycdf.lib.cdftypenames.get(cdftype, "UNKNOWN")
+                    var_name, self.cdftypenames.get(cdftype, "UNKNOWN")
                 )
             )
         return fmt
@@ -478,16 +807,13 @@ class CDFSchema(FileTypeSchema):
     def _get_reference_position(self, data):
         # Get the Variable Data
         var_data = data.time
-        # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
-        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        # Guess the const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+        if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "rotating Earth geoid"
         else:
-            raise TypeError(
-                f"Reference Position for Time type ({guess_types[0]}) not found."
-            )
+            msg = f"Reference Position for Time type ({guess_types[0]}) not found."
+            raise TypeError(msg)
 
     def _get_resolution(self, data):
         # Get the Variable Data
@@ -526,11 +852,9 @@ class CDFSchema(FileTypeSchema):
     def _get_time_base(self, data):
         # Get the Variable Data
         var_data = data.time
-        # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
-        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        # Guess the const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+        if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "J2000"
         else:
             raise TypeError(f"Time Base for Time type ({guess_types[0]}) not found.")
@@ -538,11 +862,9 @@ class CDFSchema(FileTypeSchema):
     def _get_time_scale(self, data):
         # Get the Variable Data
         var_data = data.time
-        # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
-        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        # Guess the const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+        if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "Terrestrial Time (TT)"
         else:
             raise TypeError(f"Time Scale for Time type ({guess_types[0]}) not found.")
@@ -550,15 +872,13 @@ class CDFSchema(FileTypeSchema):
     def _get_time_units(self, data):
         # Get the Variable Data
         var_data = data.time
-        # Guess the spacepy.pycdf.const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-            var_data.to_datetime()
-        )
-        if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH.value:
+        # Guess the const CDF Data Type
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+        if guess_types[0] == const.CDF_EPOCH.value:
             return "ms"
-        if guess_types[0] == spacepy.pycdf.const.CDF_TIME_TT2000.value:
+        if guess_types[0] == const.CDF_TIME_TT2000.value:
             return "ns"
-        if guess_types[0] == spacepy.pycdf.const.CDF_EPOCH16.value:
+        if guess_types[0] == const.CDF_EPOCH16.value:
             return "ps"
         else:
             raise TypeError(f"Time Units for Time type ({guess_types[0]}) not found.")
@@ -576,40 +896,36 @@ class CDFSchema(FileTypeSchema):
         # Get the Variable Data
         var_data = data[var_name]
         if var_name == "time":
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the Min Value
-            minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return minval + datetime.timedelta(seconds=1)
         else:
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Min Value
-            minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return minval
 
     def _get_validmax(self, data, var_name):
         # Get the Variable Data
         var_data = data[var_name]
         if var_name == "time":
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(
                 var_data.to_datetime()
             )
             # Get the Max Value
-            minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return maxval - datetime.timedelta(seconds=1)
         else:
-            # Guess the spacepy.pycdf.const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = _Hyperslice.types(
-                var_data.value
-            )
+            # Guess the const CDF Data Type
+            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Max Value
-            minval, maxval = spacepy.pycdf.lib.get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_types[0])
             return maxval
 
     def _get_var_type(self, data, var_name):
