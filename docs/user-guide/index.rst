@@ -12,5 +12,6 @@ For more details checkout the :ref:`reference`.
 
    Brief Tour <tour>
    reading_writing_data
+   cdf_format_guide
    customization
    logger

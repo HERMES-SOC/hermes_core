@@ -156,8 +156,158 @@ Remember that you'll then have to fill in the meta data afterwards.
 
     >>> timedata['By'].meta.update(measure_meta) # doctest: +SKIP
 
+Adding metadata attributes
+==========================
+
+Additional CDF file global metadata and variable metadata can be easily added to a 
+:py:class:`~hermes_core.timedata.TimeData` data container. For more information about the required 
+metadata attributes please see the :doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
+
+Global Metadata Attributes
+--------------------------
+
+Global metadata attributes can be updated for a :py:class:`~hermes_core.timedata.TimeData` object 
+using the object's :py:attr:`~hermes_core.timedata.TimeData.meta` parameter which is an 
+`~collections.OrderedDict` containing all attributes. 
+
+Required Global Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :py:class:`~hermes_core.timedata.TimeData` class requires several global metadata attributes 
+to be provided upon instantiation:
+
+- `Descriptor`
+- `Data_level`
+- `Data_version`
+
+A :py:class:`~hermes_core.timedata.TimeData` container cannot be created without supplying at 
+lest this subset of global metadata attributes. 
+
+Derived Global Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :py:class:`~hermes_core.util.schema.CDFSchema` class derives several global metadata 
+attributes required for ISTP compliance. The following global attribtues are derived:
+
+- `Data_type`
+- `Generation_date`
+- `Logical_file_id`
+- `Logical_source`
+- `Logical_source_description`
+- `Start_time`
+
+For more information about each of these attriubtes please see the 
+:doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
+
+Using a Template for Global Metadata Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A template of the required metadata can be obtained using the 
+:py:func:`~hermes_core.timedata.TimeData.global_attribute_template` function::
+
+    >>> from collections import OrderedDict
+    >>> from hermes_core.timedata import TimeData
+    >>> TimeData.global_attribute_template()
+    OrderedDict([('DOI', None),
+             ('Data_level', None),
+             ('Data_version', None),
+             ('Descriptor', None),
+             ('HTTP_LINK', None),
+             ('Instrument_mode', None),
+             ('Instrument_type', None),
+             ('LINK_TEXT', None),
+             ('LINK_TITLE', None),
+             ('MODS', None),
+             ('PI_affiliation', None),
+             ('PI_name', None),
+             ('TEXT', None)])
+
+
+You can also pass arguments into the function to get a partially populated template:: 
+
+    >>> from collections import OrderedDict
+    >>> from hermes_core.timedata import TimeData
+    >>> TimeData.global_attribute_template(
+    ...     instr_name='eea', 
+    ...     data_level='l1',
+    ...     version='0.1.0'
+    ... )
+    OrderedDict([('DOI', None),
+             ('Data_level', 'L1>Level 1'),
+             ('Data_version', '0.1.0'),
+             ('Descriptor', 'EEA>Electron Electrostatic Analyzer'),
+             ('HTTP_LINK', None),
+             ('Instrument_mode', None),
+             ('Instrument_type', None),
+             ('LINK_TEXT', None),
+             ('LINK_TITLE', None),
+             ('MODS', None),
+             ('PI_affiliation', None),
+             ('PI_name', None),
+             ('TEXT', None)])
+
+This can make the definition of global metadata easier since instrument teams or users only need 
+to supply pieces of metadata that are in this template. Additional metadata items can be added 
+if desired. Once the template is instantiated and all attributes have been filled out, you can
+use this  duruing instantiation of your :py:class:`~hermes_core.timedata.TimeData` container.
+
+Variable Metadata Attributes
+----------------------------
+
+Variable metadata requirements can be updated for a :py:class:`~hermes_core.timedata.TimeData` 
+variable using the variable's :py:attr:`~hermes_core.timedata.TimeData.meta` property which is an 
+`~collections.OrderedDict` of all attributes. 
+
+Required Variable Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :py:class:`~hermes_core.timedata.TimeData` class requires one variable metadata attribute
+to be provided upon instantiation:
+
+- `CATDESC` : (Catalogue Description) This is a human readable description of the data variable.
+
+Derived Variable Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :py:class:`~hermes_core.util.schema.CDFSchema` class derives several variable metadata
+attributes required for ISTP compliance.
+
+-  `TIME_BASE`
+-  `RESOLUTION`
+-  `TIME_SCALE`
+-  `REFERENCE_POSITION`
+-  `DEPEND_0`
+-  `DISPLAY_TYPE`
+-  `FIELDNAM`
+-  `FILLVAL`
+-  `FORMAT`
+-  `LABLAXIS`
+-  `SI_CONVERSION`
+-  `UNITS`
+-  `VALIDMIN`
+-  `VALIDMAX`
+-  `VAR_TYPE`
+
+For more information about each of these attriubtes please see the 
+:doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
+
+Using a Template for Variable Metadata Attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A template of the required metadata can be obtained using the 
+:py:func:`~hermes_core.timedata.TimeData.measurement_attribute_template` function::
+
+    >>> from collections import OrderedDict
+    >>> from hermes_core.timedata import TimeData
+    >>> TimeData.measurement_attribute_template()
+    OrderedDict([('CATDESC', None)])
+
+If you use the :py:func:`~hermes_core.timedata.TimeData.add_measurement` function, it will 
+automatically fill most of them in for you. Additional pieces of metadata can be added if desired.
+
 Visualizing data in a ``TimeData`` Container
 ============================================
+
 The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot`.
 By default, a plot will be generated with each measurement in its own plot panel.
 
@@ -203,35 +353,3 @@ and by passing, as a parameter, the full path to the CDF file to be validated::
 
 This returns a `list[str]` that contains any validation errors that were encountered when examining the CDF file.
 If no validation errors were found the method will return an empty list.
-
-Adding metadata attributes
-==========================
-
-Additional CDF file global metadata and variable metadata can be easily added to a :py:class:`~hermes_core.timedata.TimeData` data container.
-A list of ISTP-compliant attributes can be found `here <https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html#VAR_TYPE>`_.
-
-**Global Metadata** can be updated for a :py:class:`~hermes_core.timedata.TimeData` object using the object's :py:attr:`~hermes_core.timedata.TimeData.meta` parameter
-which is an `~collections.OrderedDict` containing relevant information. The :py:class:`~hermes_core.timedata.TimeData` derives most global
-metadata required for ISTP compliance. However, there are a few pieces of metadata that must be supplied by users to successfuly generate ISTP-compliant CDF files.
-A template of the required metadata can be obtained using the :py:func:`~hermes_core.timedata.TimeData.global_attribute_template` function::
-
-    >>> global_attrs_template = TimeData.global_attribute_template('eea', 'l1', '0.1.0')
-
-This can make the definition of global metadata easier since instrument teams or users only need to supply pieces of metadata that are in this template.
-Additional metadata items can be added if desired.
-
-**Variable Metadata** can be updated for a :py:class:`~hermes_core.timedata.TimeData` variable using its :py:attr:`~hermes_core.timedata.TimeData.meta` property which is an `~collections.OrderedDict`.
-The :py:class:`~hermes_core.timedata.TimeData` derives most variable metadata required for ISTP compliance.
-However, there are a few pieces of metadata that must be supplied by users to generate ISTP-compliant CDF files:
-
-* `CATDESC` : (Catalogue Description) This is a human readable description of the data variable.
-
-A template of the required metadata can be obtained using the :py:func:`~hermes_core.timedata.TimeData.measurement_attribute_template` function::
-
-    >>> variable_attrs_template = TimeData.measurement_attribute_template()
-    >>> variable_attrs_template
-    OrderedDict([('CATDESC', None)])
-
-If you use the :py:func:`~hermes_core.timedata.TimeData.add_measurement` function, it will automatically fill most of them in for you.
-Additional pieces of metadata can be added if desired.
-

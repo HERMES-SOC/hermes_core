@@ -36,8 +36,7 @@ If you do not use our developer environment, you can run the following code to s
 
   >>> from hermes_core import util
   >>> print(util.config._get_user_configdir())
-
-  /home/vscode/.config/hermes_core/
+  /home/vscode/.config/hermes_core
 
 
 .. note:: 

@@ -293,14 +293,14 @@ class TimeData:
 
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
-            # If the attribute is set, check if we want to override it
+            # If the attribute is set, check if we want to overwrite it
             if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
-                # We want to override if:
+                # We want to overwrite if:
                 #   1) The actual value is not the derived value
-                #   2) The schema marks this attribute to be overriden
+                #   2) The schema marks this attribute to be overwriten
                 if (
                     self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["override"]
+                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
                 ):
                     warn_user(
                         f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
@@ -317,7 +317,7 @@ class TimeData:
             if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
                 if (
                     self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["override"]
+                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
                 ):
                     warn_user(
                         f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
@@ -339,7 +339,7 @@ class TimeData:
                 ]
                 if (
                     self._data["time"].meta[attr_name] != attr_value
-                    and attr_schema["override"]
+                    and attr_schema["overwrite"]
                 ):
                     warn_user(
                         f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
@@ -362,7 +362,7 @@ class TimeData:
                     ][attr_name]
                     if (
                         self._data[col].meta[attr_name] != attr_value
-                        and attr_schema["override"]
+                        and attr_schema["overwrite"]
                     ):
                         warn_user(
                             f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
