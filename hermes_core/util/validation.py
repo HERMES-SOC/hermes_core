@@ -170,13 +170,17 @@ class CDFValidator(TimeDataValidator):
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 # Check to see if there is an "alternate" attribute
-                if "alternate" not in attr_schema:
+                if (
+                    "alternate" not in attr_schema
+                    and attr_schema["alternate"] is not None
+                ):
                     variable_errors.append(
                         f"Variable: {var_name} missing '{attr_name}' attribute."
                     )
                 # If there is an alternate, and the alternate is not in the metadata
                 if (
                     "alternate" in attr_schema
+                    and attr_schema["alternate"] is not None
                     and attr_schema["alternate"] not in var_data.attrs
                 ):
                     variable_errors.append(
@@ -185,7 +189,10 @@ class CDFValidator(TimeDataValidator):
             # Assume that the Attribue is Present in the metadata for the Variable
             else:
                 # If the Var Data can be Validated
-                if "valid_values" in attr_schema:
+                if (
+                    "valid_values" in attr_schema
+                    and attr_schema["valid_values"] is not None
+                ):
                     attr_valid_values = attr_schema["valid_values"]
                     attr_value = var_data.attrs[attr_name]
                     if attr_value not in attr_valid_values:

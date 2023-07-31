@@ -4,7 +4,6 @@ This module provides schema metadata derivations.
 This code is based on that provided by SpacePy see
     licenses/SPACEPY.rst
 """
-from abc import ABC, abstractmethod
 from pathlib import Path
 from collections import OrderedDict
 from copy import deepcopy
@@ -13,48 +12,35 @@ import datetime
 import yaml
 import ctypes
 import numpy as np
+from astropy.table import Table
 from astropy import units as u
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
 
-__all__ = ["CDFSchema"]
+__all__ = ["HERMESDataSchema", "CDFSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
 
 
-class FileTypeSchema(ABC):
-    """Abstract class representing the schema of a file type."""
-
-    @property
-    @abstractmethod
-    def global_attribute_schema(self):
-        """Schema for global attributes of the file."""
-        pass
-
-    @property
-    @abstractmethod
-    def variable_attribute_schema(self):
-        """Schema for variable attributes of the file."""
-        pass
-
-
-class CDFSchema(FileTypeSchema):
-    """Schema for CDF files."""
+class HERMESDataSchema:
+    """Class representing the schema of a file type."""
 
     def __init__(self):
         super().__init__()
 
         # Data Validation, Complaiance, Derived Attributes
-        self._global_attr_schema = CDFSchema._load_default_global_attr_schema()
+        self._global_attr_schema = HERMESDataSchema._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
-        self._variable_attr_schema = CDFSchema._load_default_variable_attr_schema()
+        self._variable_attr_schema = (
+            HERMESDataSchema._load_default_variable_attr_schema()
+        )
 
         # Load Default Global Attributes
-        self.default_global_attributes = CDFSchema._load_default_attributes()
+        self._default_global_attributes = HERMESDataSchema._load_default_attributes()
 
         self.cdftypenames = {
             const.CDF_BYTE.value: "CDF_BYTE",
@@ -116,6 +102,11 @@ class CDFSchema(FileTypeSchema):
         """Schema for variable attributes of the file."""
         return self._variable_attr_schema
 
+    @property
+    def default_global_attributes(self):
+        """Default Global Attributes applied for all HERMES Data Files"""
+        return self._default_global_attributes
+
     @staticmethod
     def _load_default_global_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
@@ -125,7 +116,7 @@ class CDFSchema(FileTypeSchema):
             / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CDFSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_variable_attr_schema() -> dict:
@@ -136,15 +127,24 @@ class CDFSchema(FileTypeSchema):
             / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return CDFSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_attributes():
         # The Default Attributes file is contained in the `hermes_core/data` directory
         default_attributes_path = str(
-            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_FILE
+            Path(hermes_core.__file__).parent
+            / "data"
+            / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
-        return CDFSchema._load_yaml_data(yaml_file_path=default_attributes_path)
+        global_schema = HERMESDataSchema._load_yaml_data(
+            yaml_file_path=default_attributes_path
+        )
+        return {
+            attr_name: info["default"]
+            for attr_name, info in global_schema.items()
+            if info["default"] is not None
+        }
 
     @staticmethod
     def _load_yaml_data(yaml_file_path):
@@ -180,8 +180,8 @@ class CDFSchema(FileTypeSchema):
             A template for required global attributes that must be provided.
         """
         template = OrderedDict()
-        global_attribute_schema = CDFSchema._load_default_global_attr_schema()
-        default_global_attributes = CDFSchema._load_default_attributes()
+        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
+        default_global_attributes = HERMESDataSchema._load_default_attributes()
         for attr_name, attr_schema in global_attribute_schema.items():
             if (
                 attr_schema["required"]
@@ -203,7 +203,9 @@ class CDFSchema(FileTypeSchema):
             A template for required variable attributes that must be provided.
         """
         template = OrderedDict()
-        measurement_attribute_schema = CDFSchema._load_default_variable_attr_schema()
+        measurement_attribute_schema = (
+            HERMESDataSchema._load_default_variable_attr_schema()
+        )
         for attr_name, attr_schema in measurement_attribute_schema[
             "attribute_key"
         ].items():
@@ -212,6 +214,149 @@ class CDFSchema(FileTypeSchema):
         return template
 
     @staticmethod
+    def global_attribute_info(attribute_name=None):
+        """
+        Function to generate a `astropy.table.Table` of information about each global
+        metadata attribute. The `astropy.table.Table` contains all information in the HERMES
+        global attribute schema including:
+
+        - description: (`str`) A brief description of the attribute
+        - default: (`str`) The default value used if none is provided
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES
+            :py:class:`~hermes_core.util.schema.CDFSchema` class
+        - required: (`bool`) Whether the attribute is required by HERMES standards
+        - validate: (`bool`) Whether the attribute is included in the
+            :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
+            are required are validated)
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+            attribute derivations will overwrite an existing attribute value with an updated
+            attribute value from the derivation process.
+
+        Parameters
+        ----------
+        attribute_name : `str`, optional, default None
+            The name of the attribute to get specific information for.
+
+        Returns
+        -------
+        info: `astropy.table.Table`
+            A table of information about global metadata.
+
+        Raises
+        ------
+        KeyError: If attribute_name is not a recognized global attribute.
+        """
+        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
+
+        # Strip the Description of New Lines
+        for attr_name in global_attribute_schema.keys():
+            global_attribute_schema[attr_name]["description"] = global_attribute_schema[
+                attr_name
+            ]["description"].strip()
+
+        # Get all the Attributes from the Schema
+        attribute_names = list(global_attribute_schema.keys())
+        table_rows = [info for _, info in global_attribute_schema.items()]
+
+        # Create the Info Table
+        info = Table(rows=table_rows)
+        info.add_column(col=attribute_names, name="Attribute", index=0)
+
+        # Limit the Info to the requested Attribute
+        if attribute_name and attribute_name in info["Attribute"]:
+            info = info[info["Attribute"] == attribute_name]
+        elif attribute_name and attribute_name not in info["Attribute"]:
+            raise KeyError(
+                f"Cannot find Global Metadata for attribute name: {attribute_name}"
+            )
+
+        return info
+
+    @staticmethod
+    def measurement_attribute_info(attribute_name=None):
+        """
+        Function to generate a `astropy.table.Table` of information about each variable
+        metadata attribute. The `astropy.table.Table` contains all information in the HERMES
+        variable attribute schema including:
+
+        - description: (`str`) A brief description of the attribute
+        - derived: (`bool`) Whether the attibute can be derived by the HERMES
+            :py:class:`~hermes_core.util.schema.CDFSchema` class
+        - required: (`bool`) Whether the attribute is required by HERMES standards
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+            attribute derivations will overwrite an existing attribute value with an updated
+            attribute value from the derivation process.
+        - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
+            if applicable
+        - alternate: (`str`) An additional attribute name that can be treated as an alternative
+            of the given attribute. Not all attributes have an alternative and only one of a given
+            attribute or its alternate are required.
+        - var_types: (`str`) A list of the variable types that require the given
+            attribute to be present.
+
+        Parameters
+        ----------
+        attribute_name : `str`, optional, default None
+            The name of the attribute to get specific information for.
+
+        Returns
+        -------
+        info: `astropy.table.Table`
+            A table of information about variable metadata.
+
+        Raises
+        ------
+        KeyError: If attribute_name is not a recognized global attribute.
+        """
+        measurement_attribute_schema = (
+            HERMESDataSchema._load_default_variable_attr_schema()
+        )
+        measurement_attribute_key = measurement_attribute_schema["attribute_key"]
+
+        # Strip the Description of New Lines
+        for attr_name in measurement_attribute_key.keys():
+            measurement_attribute_key[attr_name][
+                "description"
+            ] = measurement_attribute_key[attr_name]["description"].strip()
+
+        # Create New Column to describe which VAR_TYPE's require the given attribute
+        for attr_name in measurement_attribute_key.keys():
+            # Create a new list to store the var types
+            measurement_attribute_key[attr_name]["var_types"] = []
+            for var_type in ["data", "support_data", "metadata"]:
+                # If the attribute is required for the given var type
+                if attr_name in measurement_attribute_schema[var_type]:
+                    measurement_attribute_key[attr_name]["var_types"].append(var_type)
+            # Convert the list to a string that can be written to a CSV from the table
+            measurement_attribute_key[attr_name]["var_types"] = " ".join(
+                measurement_attribute_key[attr_name]["var_types"]
+            )
+
+        # Get all the Attributes from the Schema
+        attribute_names = list(measurement_attribute_key.keys())
+        table_rows = [info for _, info in measurement_attribute_key.items()]
+
+        # Create the Info Table
+        info = Table(rows=table_rows)
+        info.add_column(col=attribute_names, name="Attribute", index=0)
+
+        # Limit the Info to the requested Attribute
+        if attribute_name and attribute_name in info["Attribute"]:
+            info = info[info["Attribute"] == attribute_name]
+        elif attribute_name and attribute_name not in info["Attribute"]:
+            raise KeyError(
+                f"Cannot find Variable Metadata for attribute name: {attribute_name}"
+            )
+
+        return info
+
+
+class CDFSchema(HERMESDataSchema):
+    """Schema for CDF files."""
+
+    def __init__(self):
+        super().__init__()
+
     def check_well_formed(data):
         """Checks if input data is well-formed, regular array
 
@@ -1209,7 +1354,7 @@ class CDFSchema(FileTypeSchema):
         return instr_mode.lower()  # Makse sure its all lowercase
 
 
-class NetCDFSchema(FileTypeSchema):
+class NetCDFSchema(HERMESDataSchema):
     """Schema for NetCDF files."""
 
     @property
