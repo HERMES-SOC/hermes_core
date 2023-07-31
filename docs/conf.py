@@ -8,6 +8,10 @@
 import os
 import sys
 
+# -- Environmental Variables ------------------------------------------------
+# Set CDF Library Path
+os.environ["CDF_LIB"] = "../cdf/lib"
+
 sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
@@ -17,8 +21,19 @@ author = "HERMES SOC Team"
 
 # The full version, including alpha/beta/rc tags
 from hermes_core import __version__
+from hermes_core.util.schema import HERMESDataSchema
 
 version = __version__
+
+# -- Generate CSV Files for Docs ---------------------------------------------
+
+# Global Attributes to CSV
+global_info = HERMESDataSchema.global_attribute_info()
+global_info.write("user-guide/global_attributes.csv", overwrite=True)
+
+# Variable Attributes to CSV
+variable_info = HERMESDataSchema.measurement_attribute_info()
+variable_info.write("user-guide/variable_attributes.csv", overwrite=True)
 
 # -- General configuration ---------------------------------------------------
 
@@ -119,7 +134,3 @@ graphviz_dot_args = [
     "-Gfontsize=10",
     "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
 ]
-
-# -- Environmental Variables ------------------------------------------------
-# Set CDF Library Path
-os.environ["CDF_LIB"] = "../cdf/lib"
