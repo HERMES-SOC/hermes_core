@@ -5,8 +5,10 @@ from datetime import datetime
 import numpy as np
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+import astropy.units as u
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
+from hermes_core.util import const
 
 __all__ = ["CDFHandler", "JSONDataHandler", "CSVDataHandler"]
 
@@ -526,24 +528,52 @@ class CSVDataHandler(TimeDataIOHandler):
                 # Read in the next Line
                 line = f.readline()
 
+        # Convert the Table Contents Python types
+        columns, data, units = self._convert_table_contents(table)
+
+        # Convert the Metadata from the header Python types
+        variable_types, global_attrs, variable_attrs = self._convert_header_metadata(
+            header
+        )
+
         # Create a new TimeSeries
         ts = TimeSeries()
 
-        # Convert the Table Contents to a TimeSeries
-        self._convert_table_contents(table, ts)
+        # Add Time to the TimeSeries
+        ts["time"] = data["time"]
 
-        # Add the Metadata from the header to the TimeSeries
-        self._convert_header_metadata(header, ts)
+        # Add Columns to the TimeSeries
+        for column_name in columns[1:]:
+            # Add Data to the TimeSeries
+            var_type_value = self._get_attribute_type(variable_types[column_name])
+            try:
+                ts[column_name] = u.Quantity(
+                    value=np.array(data[column_name]),
+                    unit=units[column_name],
+                    dtype=self.schema.numpytypedict[var_type_value],
+                )
+            except ValueError:
+                warn_user(f"Cannot identify unit for column {column_name}.")
+
+        # Initialize Global Metadata Dict
+        if not hasattr(ts, "meta"):
+            ts.meta = OrderedDict()
+        ts.meta.update(global_attrs)
+
+        # Initialize Variable Metadata Dicts
+        for column_name in ts.columns:
+            if not hasattr(ts[column_name], "meta"):
+                ts[column_name].meta = OrderedDict()
+            ts[column_name].meta.update(variable_attrs[column_name])
 
         # Return the given TimeSeries
         return ts
 
-    def _convert_table_contents(self, table_contents, ts):
+    def _convert_table_contents(self, table_contents):
         """
         Function to convert table contents of the CSV to an `~astropy.timeseries.TimeSeries`
         """
         import csv
-        from astropy import units as u
 
         # Use csv.reader to parse the CSV data
         reader = csv.reader(table_contents)
@@ -553,58 +583,32 @@ class CSVDataHandler(TimeDataIOHandler):
         # Intermittent Format
         columns = []
         data = {}
+        units = {}
 
         # Parse Column Information
-        columns.append("Time")
-        data["Time"] = []
-        columns.extend(header[1:])
-        for column_name in columns[1:]:
+        columns.append("time")
+        for column in header[1:]:
+            column_name, unit_str = column.split("__")
+            columns.append(column_name)
+            units[column_name] = unit_str
+        for column_name in columns:
             data[column_name] = []
 
         # Parse Time and Measurement Information
         for i, line in enumerate(reader):
             # Time
-            data["Time"].append(line[0])
-
+            data["time"].append(line[0])
             # Remaining Measurement Columns
             for i, measurement in enumerate(line[1:]):
-                # Try Convert to Float
-                try:
-                    value = float(measurement)
-                except ValueError:
-                    value = measurement
-                data[columns[i + 1]].append(value)
+                data[columns[i + 1]].append(measurement)
 
-        # Add Time to the TimeSeries
-        ts["time"] = data["Time"]
+        return columns, data, units
 
-        # Add Columns to the TimeSeries
-        for column_name in columns[1:]:
-            # Add Data to the TimeSeries
-            ts[column_name] = data[column_name]
-
-            # Convert to a Quantity column by setting the `units`
-            unit_str = column_name.split("__")[-1]
-            try:
-                ts[column_name].unit = u.Unit(unit_str)
-            except ValueError:
-                warn_user(f"Cannot identify unit for column {column_name}.")
-                ts.remove_column(column_name)
-
-    def _convert_header_metadata(self, header, ts):
+    def _convert_header_metadata(self, header):
         """
         Function to Parse Global and Variable metadata information from
         the header of the CSV file and add to the TimeSeries meta attributes
         """
-
-        # Initialize Global Metadata Dict
-        if not hasattr(ts, "meta"):
-            ts.meta = OrderedDict()
-
-        # Initialize Variable Metadata Dicts
-        for column_name in ts.columns:
-            if not hasattr(ts[column_name], "meta"):
-                ts[column_name].meta = OrderedDict({"VAR_TYPE": "data"})
 
         # Split the Global and Variable Metadata Sections
         global_metadata_lines = []
@@ -626,47 +630,92 @@ class CSVDataHandler(TimeDataIOHandler):
                 warn_user(f"Cannot Parse Header Line: {line}")
 
         # Parse the Global Metadata and add to the TimeSeries
-        self._parse_global_metadata_lines(global_metadata_lines, ts)
+        global_attrs = self._parse_global_metadata_lines(global_metadata_lines)
 
         # Parse the Variable Metadata and add to the TimeSeries
-        self._parse_variable_metadata_lines(variable_metadata_lines, ts)
+        variable_types, variable_attrs = self._parse_variable_metadata_lines(
+            variable_metadata_lines
+        )
 
-    def _parse_global_metadata_lines(self, global_metadata_lines, ts):
+        return variable_types, global_attrs, variable_attrs
+
+    def _get_attribute_type(self, attr_type):
+        # Get the CDF Type Value for the CDF Type Name
+        cdftypevalues = {v: k for k, v in self.schema.cdftypenames.items()}
+        return cdftypevalues[attr_type]
+
+    def _convert_attribute_to_type(self, attr_value, attr_type):
+        # Convert the Attr Value to the correct Data Type
+        if attr_type == const.CDF_CHAR.value:
+            return str(attr_value)
+        elif attr_type in self.schema.timetypes:
+            return datetime.fromisoformat(attr_value)
+        elif attr_type in self.schema.numpytypedict:
+            return np.array([attr_value]).astype(self.schema.numpytypedict[attr_type])[
+                0
+            ]
+
+        return attr_value
+
+    def _parse_attribute_value(self, attr_value, attr_type):
+        # Get the CDF Type Value for the CDF Type Name
+        type_value = self._get_attribute_type(attr_type)
+
+        # Parse the attribute value
+        if isinstance(attr_value, list) and len(attr_value) == 1:
+            attr_value = self._convert_attribute_to_type(attr_value[0], type_value)
+        elif isinstance(attr_value, list) and len(attr_value) > 1:
+            attr_list = []
+            for part in attr_value:
+                part_value = self._convert_attribute_to_type(
+                    part.strip("[]' "), type_value
+                )
+                attr_list.append(part_value)
+            # Set the Attr Value to the Newly Parsed List
+            attr_value = attr_list
+        return attr_value
+
+    def _parse_global_metadata_lines(self, global_metadata_lines):
+        # Create a template
+        global_attrs = OrderedDict()
+
         # Loop through the Lines
         for line in global_metadata_lines:
             # Strip and Split the line
             attr_parts = line.strip("#\n").split(",")
             attr_name = attr_parts[0]
-            attr_value = attr_parts[1:-1]
             attr_type = attr_parts[-1]
+            attr_value = self._parse_attribute_value(attr_parts[1:-1], attr_type)
 
-            # Parse the attribute value
-            if isinstance(attr_value, list) and len(attr_value) == 1:
-                attr_value = attr_value[0]
-            else:
-                print(attr_name, attr_value)
+            # Add to the Meta Dict
+            global_attrs.update({attr_name: attr_value})
 
-            # TODO Check the Type Matches the Schema
-            # Add to the TimeSeries Meta Dict
-            ts.meta.update({attr_name: attr_value})
+        return global_attrs
 
-    def _parse_variable_metadata_lines(self, variable_metadata_lines, ts):
+    def _parse_variable_metadata_lines(self, variable_metadata_lines):
+        # Create a template
+        variable_attrs = OrderedDict()
+        variable_types = OrderedDict()
+
         targeted_variable = None
         # Loop though the Lines
         for line in variable_metadata_lines:
             if self.variable_name_tag in line:
                 # Strip and Split the line
-                _, targeted_variable = line.strip("#\n").split(",")
+                _, targeted_variable, variable_type = line.strip("#\n").split(",")
+                variable_attrs[targeted_variable] = OrderedDict()
+                variable_types[targeted_variable] = variable_type
             elif targeted_variable is not None:
                 # Strip and Split the line
                 attr_parts = line.strip("#\n").split(",")
                 attr_name = attr_parts[0]
-                attr_value = attr_parts[1:-1]
                 attr_type = attr_parts[-1]
+                attr_value = self._parse_attribute_value(attr_parts[1:-1], attr_type)
 
-                # TODO Check the Type Matches the Schema
                 # Add to the Variable Meta Dict
-                ts[targeted_variable].meta.update({attr_name: attr_value})
+                variable_attrs[targeted_variable].update({attr_name: attr_value})
+
+        return variable_types, variable_attrs
 
     def save_data(self, data, file_path):
         """
@@ -731,7 +780,7 @@ class CSVDataHandler(TimeDataIOHandler):
             var_type = self.schema.cdftypenames[guess_types[0]]
 
             # Write a tag for the specific variable
-            csv_file.write(f"#Variable_Name,{column_name},{var_type}\n")
+            csv_file.write(f"#{self.variable_name_tag},{column_name},{var_type}\n")
             # Loop through the Variable Attributes for the Variable
             for attr_name, attr_value in data[column_name].meta.items():
                 # Guess the const CDF Data Type
