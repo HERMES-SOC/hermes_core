@@ -22,6 +22,13 @@ def get_test_timedata():
             "Data_level": "l1>Level 1",
             "Data_version": "v0.0.1",
             "Start_time": datetime.datetime.now(),
+            "MODS": [
+                "v0.0.0 - Original version.",
+                "v1.0.0 - Include trajectory vectors and optics state.",
+                "v1.1.0 - Update metadata: counts -> flux.",
+                "v1.2.0 - Added flux error.",
+                "v1.3.0 - Trajectory vector errors are now deltas.",
+            ],
         }
     )
 

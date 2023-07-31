@@ -389,42 +389,53 @@ class CDFSchema(HERMESDataSchema):
         Find dimensions and valid types of a nested list-of-lists
 
         Any given data may be representable by a range of CDF types; infer
-        the CDF types which can represent this data. This breaks down to:
-          1. Proper kind (numerical, string, time)
-          2. Proper range (stores highest and lowest number)
-          3. Sufficient resolution (EPOCH16 or TT2000 required if datetime has
-             microseconds or below.)
+        the CDF types which can represent this data. This breaks down to:\n
+        1. Proper kind (numerical, string, time)
+        2. Proper range (stores highest and lowest number)
+        3. Sufficient resolution (EPOCH16 or TT2000 required if datetime has
+            microseconds or below.)
 
         If more than one value satisfies the requirements, types are returned
-        in preferred order:
-          1. Type that matches precision of data first, then
-          2. integer type before float type, then
-          3. Smallest type first, then
-          4. signed type first, then
-          5. specifically-named (CDF_BYTE) vs. generically named (CDF_INT1)
+        in preferred order:\n
+        1. Type that matches precision of data first, then
+        2. integer type before float type, then
+        3. Smallest type first, then
+        4. signed type first, then
+        5. specifically-named (CDF_BYTE) vs. generically named (CDF_INT1)
+
         So for example, EPOCH_16 is preferred over EPOCH if L{data} specifies
         below the millisecond level (rule 1), but otherwise EPOCH is preferred
         (rule 2). TIME_TT2000 is always preferred as of 0.3.0.
 
-        For floats, four-byte is preferred unless eight-byte is required:
-          1. absolute values between 0 and 3e-39
-          2. absolute values greater than 1.7e38
+        For floats, four-byte is preferred unless eight-byte is required:\n
+        1. absolute values between 0 and 3e-39
+        2. absolute values greater than 1.7e38
+
         This will switch to an eight-byte double in some cases where four bytes
         would be sufficient for IEEE 754 encoding, but where DEC formats would
         require eight.
 
-        @param data: data for which dimensions and CDF types are desired
-        @type data: list (of lists)
-        @param backward: limit to pre-CDF3 types
-        @type backward: bool
-        @param encoding: Encoding to use for Unicode input, default utf-8
-        @type backward: str
-        @return: dimensions of L{data}, in order outside-in;
-                 CDF types which can represent this data;
-                 number of elements required (i.e. length of longest string)
-        @rtype: 3-tuple of lists ([int], [ctypes.c_long], [int])
-        @raise ValueError: if L{data} has irregular dimensions
+        Parameters
+        ----------
+        data : `list`, `np.ndarray`
+            The data to get type information for
+        backward : `bool`, optional
+            limit to pre-CDF3 types
+        encoding : `str`, optional
+            Encoding to use for Unicode input, default utf-8
 
+        Returns
+        -------
+        dimensions : `list[int]`
+            dimensions of L{data}, in order outside-in
+        types : `list[ctypes.c_long]`
+            CDF types which can represent this data
+        elements : `list[int]`
+            number of elements required (i.e. length of longest string)
+
+        Raises
+        ------
+        ValueError: if L{data} has irregular dimensions
         """
         d = CDFSchema.check_well_formed(data)
         dims = d.shape

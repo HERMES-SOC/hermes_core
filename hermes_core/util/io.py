@@ -358,9 +358,9 @@ class JSONDataHandler(TimeDataIOHandler):
                 # Add the Measurement to the TimeSeries as a Quantity
                 ts[key] = measurement_data
                 ts[key].unit = measurement_variable["UNITS"]
+
                 # Create the Metadata
                 ts[key].meta = OrderedDict()
-
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
                 metadata_attrs = filter(
