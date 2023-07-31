@@ -209,6 +209,8 @@ information is provided:
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 
+Note that this table is derived from :file:`hermes_core/data/hermes_default_global_cdf_attrs_schema.yaml`
+
 .. csv-table:: Table 4-1: Required Global Attributes
    :file: global_attributes.csv
    :widths: 30, 70, 30, 30, 30, 30, 30
@@ -538,6 +540,8 @@ information is provided:
   attribute or its alternate are required. 
 * var_types: (`str`) A list of the variable types that require the given
   attribute to be present.
+  
+Note that this table is derived from :file:`hermes_core/data/hermes_default_variable_cdf_attrs_schema.yaml`
 
 .. csv-table:: Table 5-4 HERMES Variable Attribute Schema
    :file: variable_attributes.csv
