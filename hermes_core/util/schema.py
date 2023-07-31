@@ -101,6 +101,12 @@ class CDFSchema(FileTypeSchema):
         ]
 
     @property
+    def cdftypevalues(self):
+        # Get the CDF Type Value for the CDF Type Name
+        cdftypevalues = {v: k for k, v in self.cdftypenames.items()}
+        return cdftypevalues
+
+    @property
     def global_attribute_schema(self):
         """Schema for variable attributes of the file."""
         return self._global_attr_schema

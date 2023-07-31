@@ -545,7 +545,7 @@ class CSVDataHandler(TimeDataIOHandler):
         # Add Columns to the TimeSeries
         for column_name in columns[1:]:
             # Add Data to the TimeSeries
-            var_type_value = self._get_attribute_type(variable_types[column_name])
+            var_type_value = self.schema.cdftypevalues[variable_types[column_name]]
             try:
                 ts[column_name] = u.Quantity(
                     value=np.array(data[column_name]),
@@ -639,11 +639,6 @@ class CSVDataHandler(TimeDataIOHandler):
 
         return variable_types, global_attrs, variable_attrs
 
-    def _get_attribute_type(self, attr_type):
-        # Get the CDF Type Value for the CDF Type Name
-        cdftypevalues = {v: k for k, v in self.schema.cdftypenames.items()}
-        return cdftypevalues[attr_type]
-
     def _convert_attribute_to_type(self, attr_value, attr_type):
         # Convert the Attr Value to the correct Data Type
         if attr_type == const.CDF_CHAR.value:
@@ -659,7 +654,7 @@ class CSVDataHandler(TimeDataIOHandler):
 
     def _parse_attribute_value(self, attr_value, attr_type):
         # Get the CDF Type Value for the CDF Type Name
-        type_value = self._get_attribute_type(attr_type)
+        type_value = self.schema.cdftypevalues[attr_type]
 
         # Parse the attribute value
         if isinstance(attr_value, list) and len(attr_value) == 1:
