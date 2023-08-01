@@ -5,7 +5,7 @@ from astropy.time import Time
 from hermes_core.util import util
 
 time = "2024-04-06T12:06:21"
-time_formatted = "20240406_120621"
+time_formatted = "2024-04-06T12:06:21.000"
 
 
 # fmt: off

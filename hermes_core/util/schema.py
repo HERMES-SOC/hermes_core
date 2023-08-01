@@ -1321,7 +1321,7 @@ class CDFSchema(HERMESDataSchema):
         given in format `YYYYMMDD_hhmmss`
         """
         # Get the Start Time from the TimeSeries
-        return data["time"].to_datetime()[0]
+        return data["time"][0].isot
 
     def _get_version(self, data):
         """

@@ -11,7 +11,6 @@ import hermes_core
 __all__ = ["create_science_filename", "parse_science_filename", "VALID_DATA_LEVELS"]
 
 TIME_FORMAT_L0 = "%Y%j-%H%M%S"
-TIME_FORMAT = "%Y%m%d_%H%M%S"
 VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 FILENAME_EXTENSION = ".cdf"
 
@@ -45,9 +44,9 @@ def create_science_filename(
     test_str = ""
 
     if isinstance(time, str):
-        time_str = Time(time, format="isot").strftime(TIME_FORMAT)
+        time_str = Time(time, format="isot").isot
     else:
-        time_str = time.strftime(TIME_FORMAT)
+        time_str = time.isot
 
     if instrument not in hermes_core.INST_NAMES:
         raise ValueError(
@@ -148,9 +147,7 @@ def parse_science_filename(filepath):
         #  reverse the dictionary to look up instrument name from the short name
         from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
 
-        result["time"] = Time.strptime(
-            filename_components[-3] + "_" + filename_components[-2], TIME_FORMAT
-        )
+        result["time"] = Time(filename_components[-2], format="isot")
 
         # mode and descriptor are optional so need to figure out if one or both or none is included
         if filename_components[2][0:2] not in VALID_DATA_LEVELS:
@@ -159,13 +156,15 @@ def parse_science_filename(filepath):
             result["level"] = filename_components[3].replace("test", "")
             if "test" in filename_components[3]:
                 result["test"] = True
-            if len(filename_components) == 8:
+            if len(filename_components) == 7:
+                print(f"HERER::: {filename_components[4]}")
                 result["descriptor"] = filename_components[4]
         else:
             result["level"] = filename_components[2].replace("test", "")
             if "test" in filename_components[2]:
                 result["test"] = True
-            if len(filename_components) == 7:
+            if len(filename_components) == 6:
+                print(f"HERER::: {filename_components[3]}")
                 result["descriptor"] = filename_components[3]
     else:
         raise ValueError(f"File extension {file_ext} not recognized.")
