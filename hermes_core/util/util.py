@@ -157,14 +157,12 @@ def parse_science_filename(filepath):
             if "test" in filename_components[3]:
                 result["test"] = True
             if len(filename_components) == 7:
-                print(f"HERER::: {filename_components[4]}")
                 result["descriptor"] = filename_components[4]
         else:
             result["level"] = filename_components[2].replace("test", "")
             if "test" in filename_components[2]:
                 result["test"] = True
             if len(filename_components) == 6:
-                print(f"HERER::: {filename_components[3]}")
                 result["descriptor"] = filename_components[3]
     else:
         raise ValueError(f"File extension {file_ext} not recognized.")
