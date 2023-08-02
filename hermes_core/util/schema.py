@@ -1368,7 +1368,7 @@ class CDFSchema(HERMESDataSchema):
                 import spacepy.pycdf as pycdf
 
                 cdf_lib_version = pycdf.lib.version
-            except ImportError:
+            except (ImportError, AttributeError) as e:
                 cdf_lib_version = "unknown version"
         else:
             cdf_lib_version = data.meta[attr_name]
