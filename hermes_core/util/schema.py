@@ -344,7 +344,8 @@ class HERMESDataSchema:
 
         return info
 
-    def check_well_formed(data):
+    @staticmethod
+    def _check_well_formed(data):
         """Checks if input data is well-formed, regular array
 
         Returns
@@ -413,7 +414,7 @@ class HERMESDataSchema:
         @raise ValueError: if L{data} has irregular dimensions
 
         """
-        d = HERMESDataSchema.check_well_formed(data)
+        d = HERMESDataSchema._check_well_formed(data)
         dims = d.shape
         elements = 1
         types = []
