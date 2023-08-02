@@ -18,7 +18,7 @@ import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
 
-__all__ = ["HERMESDataSchema", "CDFSchema"]
+__all__ = ["HERMESDataSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
@@ -217,12 +217,12 @@ class HERMESDataSchema:
         - description: (`str`) A brief description of the attribute
         - default: (`str`) The default value used if none is provided
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.CDFSchema` class
+            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
         - validate: (`bool`) Whether the attribute is included in the
             :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
             are required are validated)
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
 
@@ -275,9 +275,9 @@ class HERMESDataSchema:
 
         - description: (`str`) A brief description of the attribute
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.CDFSchema` class
+            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
         - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
@@ -344,19 +344,12 @@ class HERMESDataSchema:
 
         return info
 
-
-class CDFSchema(HERMESDataSchema):
-    """Schema for CDF files."""
-
-    def __init__(self):
-        super().__init__()
-
     def check_well_formed(data):
         """Checks if input data is well-formed, regular array
 
         Returns
         -------
-        :class:`~numpy.ndarray`
+        :class:`~numpy.ndarray`s
             The input data as a well-formed array; may be the input
             data exactly.
         """
@@ -420,7 +413,7 @@ class CDFSchema(HERMESDataSchema):
         @raise ValueError: if L{data} has irregular dimensions
 
         """
-        d = CDFSchema.check_well_formed(data)
+        d = HERMESDataSchema.check_well_formed(data)
         dims = d.shape
         elements = 1
         types = []
@@ -1346,33 +1339,3 @@ class CDFSchema(HERMESDataSchema):
         else:
             instr_mode = data.meta["Instrument_mode"]
         return instr_mode.lower()  # Makse sure its all lowercase
-
-
-class NetCDFSchema(HERMESDataSchema):
-    """Schema for NetCDF files."""
-
-    @property
-    def global_attribute_schema(self):
-        """Schema for global attributes of the file."""
-        return {
-            "attribute1": {"type": "string", "required": True},
-            "attribute2": {"type": "int", "required": False},
-            # Define more global attributes and their schemas
-        }
-
-    @property
-    def variable_attribute_schema(self):
-        """Schema for variable attributes of the file."""
-        return {
-            "variable1": {
-                "attribute1": {"type": "float", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable1 and their schemas
-            },
-            "variable2": {
-                "attribute1": {"type": "int", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable2 and their schemas
-            },
-            # Define more variables and their attribute schemas
-        }

@@ -4,7 +4,7 @@ from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from hermes_core.util.exceptions import warn_user
-from hermes_core.util.schema import CDFSchema
+from hermes_core.util.schema import HERMESDataSchema
 
 __all__ = ["CDFHandler"]
 
@@ -66,7 +66,7 @@ class CDFHandler(TimeDataIOHandler):
         super().__init__()
 
         # CDF Schema
-        self.schema = CDFSchema()
+        self.schema = HERMESDataSchema()
 
     def load_data(self, file_path):
         """
@@ -167,9 +167,7 @@ class CDFHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
-                raise ValueError(
-                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
-                )
+                cdf_file.attrs[attr_name] = ""
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
@@ -195,50 +193,3 @@ class CDFHandler(TimeDataIOHandler):
                     else:
                         # Add the Attribute to the CDF File
                         cdf_file[var_name].attrs[var_attr_name] = var_attr_val
-
-
-# ================================================================================================
-#                                   NET CDF HANDLER
-# ================================================================================================
-
-
-class NetCDFHandler(TimeDataIOHandler):
-    """
-    A concrete implementation of TimeDataIOHandler for handling heliophysics data in NetCDF format.
-
-    This class provides methods to load and save heliophysics data from/to a NetCDF file.
-    """
-
-    def load_data(self, file_path):
-        """
-        Load heliophysics data from a NetCDF file.
-
-        Parameters
-        ----------
-        file_path : `str`
-            The path to the NetCDF file.
-
-        Returns
-        -------
-        data : `~astropy.time.TimeSeries`
-            An instance of `TimeSeries` containing the loaded data.
-        """
-        pass
-
-    def save_data(self, data, file_path):
-        """
-        Save heliophysics data to a NetCDF file.
-
-        Parameters
-        ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` containing the data to be saved.
-        file_path : `str`
-            The path to save the NetCDF file.
-
-        Returns
-        -------
-        path : `str`
-            A path to the saved file.
-        """
-        pass
