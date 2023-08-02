@@ -38,16 +38,9 @@
 			}
 		}
 	},
-	"customizations": {
-		"vscode": {
-			"settings": {
-				"extensions.verifySignature": false
-			}
-		}
-	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"ms-python.python@2023.6.1",
+		"ms-python.python",
 		"ms-python.vscode-pylance",
 		"marklarah.pre-commit-vscode",
 		"ms-toolsai.jupyter",
