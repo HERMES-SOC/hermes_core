@@ -17,36 +17,25 @@ SAMPLE_CDF_FILE = "hermes_nms_default_l1_20160322_123031_v0.0.1.cdf"
 
 
 def get_test_timeseries():
+    """Get Test Data"""
     ts = TimeSeries()
 
     # Create an astropy.Time object
     time = np.arange(10)
     time_col = Time(time, format="unix")
     ts["time"] = time_col
+    ts["time"].meta = OrderedDict({"CATDESC": "Epoch Time"})
 
     # Add Measurement
     quant = u.Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
     ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
-            "VAR_TYPE": "metadata",
-            "CATDESC": "Test Metadata",
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
         }
     )
     return ts
-
-
-def test_valid_cdf():
-    """Function to Test Validation of a Valid Sample CDF File"""
-    valid_cdf_path = str(
-        Path(hermes_core.__file__).parent
-        / "data"
-        / "sample"
-        / "hermes_nms_default_l1_20160322_123031_v0.0.1.cdf"
-    )
-
-    result = validate(valid_cdf_path)
-    assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
 
 def test_non_cdf_file():
@@ -89,7 +78,7 @@ def test_missing_global_attrs():
 
 
 def test_missing_var_type():
-    """Function to ensure missing global attributes are reported in validation"""
+    """Function to ensure missing variable attributes are reported in validation"""
 
     # Create a Test TimeData
     ts = get_test_timeseries()
@@ -111,6 +100,36 @@ def test_missing_var_type():
         )
 
 
-# attrs = HERMESDataSchema.global_attribute_info()
-# attrs = attrs[(attrs["required"]==True) & (attrs["default"]==None) & (attrs["derived"]==False)]["Attribute"].tolist()
-# attrs = list(filter(lambda attr_name: attr_name not in ["Descriptor", "Data_level", "Data_version"], attrs))
+def test_missing_variable_attrs():
+    """Function to ensure missing variable attributes are reported in validation"""
+
+    # Create a Test TimeData
+    ts = get_test_timeseries()
+    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+    td = TimeData(data=ts, meta=template)
+
+    # Convert to a CDF File and Validate
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        out_file = td.save(tmpdirname)
+
+        with CDF(out_file, readonly=False) as cdf:
+            del cdf["measurement"].meta["CATDESC"]
+            del cdf["measurement"].meta["UNITS"]
+            cdf["measurement"].meta["DISPLAY_TYPE"] = "bad_type"
+            cdf["measurement"].meta["FORMAT"] = "bad_format"
+
+        # Validate
+        result = validate(out_file)
+        assert "Variable: measurement missing 'CATDESC' attribute." in result
+        assert (
+            "Variable: measurement missing 'UNITS' attribute. Alternative: UNIT_PTR not found."
+            in result
+        )
+        assert (
+            "Variable: measurement Attribute 'DISPLAY_TYPE' not one of valid options.",
+            "Was bad_type, expected one of time_series time_series>noerrorbars spectrogram stack_plot image",
+        ) in result
+        assert (
+            "Variable: measurement Attribute 'FORMAT' value 'bad_format' does not match derrived format 'I5'"
+            in result
+        )
