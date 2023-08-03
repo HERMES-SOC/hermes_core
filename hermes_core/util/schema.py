@@ -464,7 +464,7 @@ class HERMESDataSchema:
                 for t in trytypes:
                     try:
                         newd = d.astype(dtype=t)
-                    except ValueError:  # Failure to cast, try next type
+                    except TypeError:  # Failure to cast, try next type
                         continue
                     if (newd == d).all():  # Values preserved, use this type
                         d = newd
