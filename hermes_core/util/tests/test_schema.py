@@ -73,6 +73,31 @@ def test_load_yaml_data():
         assert yaml_data == {}
 
 
+def test_global_attributes():
+    ts = TimeSeries()
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    ts["time"] = time_col
+    ts["time"].meta = OrderedDict({"CATDESC": "Epoch Time"})
+
+    # Add Measurement
+    quant = u.Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    ts["measurement"] = quant
+    ts["measurement"].meta = OrderedDict(
+        {
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
+        }
+    )
+    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+
+    # Create TimeData
+    td = TimeData(data=ts, meta=template)
+    with pytest.raises(ValueError):
+        _ = HERMESDataSchema()._derive_global_attribute(td, "bad_attribute")
+
+
 def test_check_well_formed():
     """Test that the Data can be output to CDF"""
 
@@ -314,13 +339,13 @@ def test_format():
                 v.attrs["VALIDMIN"] = vmin
             if vmin is not None:
                 v.attrs["VALIDMAX"] = vmax
-            format = HERMESDataSchema()._format_helper(cdf, "var", t)
+            format = HERMESDataSchema()._get_format(cdf["var"], t)
             assert e == format
             del cdf["var"]
 
         # Test Format Char
         v = cdf.new("var", data=["hi", "there"])
-        format = HERMESDataSchema()._format_helper(cdf, "var", const.CDF_CHAR.value)
+        format = HERMESDataSchema()._get_format(cdf["var"], const.CDF_CHAR.value)
         assert "A2" == format
 
 
@@ -347,3 +372,41 @@ def test_resolution():
     # Get Resolution
     with pytest.raises(ValueError):
         td = TimeData(data=ts, meta=template)
+
+
+def test_reference_position():
+    """Function to test time reference position"""
+    assert (
+        HERMESDataSchema()._get_reference_position(const.CDF_TIME_TT2000.value)
+        == "rotating Earth geoid"
+    )
+
+    with pytest.raises(TypeError):
+        HERMESDataSchema()._get_reference_position(const.CDF_EPOCH.value)
+
+
+def test_time_base():
+    """Function to test time base"""
+    assert HERMESDataSchema()._get_time_base(const.CDF_TIME_TT2000.value) == "J2000"
+
+    with pytest.raises(TypeError):
+        HERMESDataSchema()._get_time_base(const.CDF_EPOCH.value)
+
+
+def test_time_scale():
+    """Function to test time scale"""
+    assert (
+        HERMESDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value)
+        == "Terrestrial Time (TT)"
+    )
+
+    with pytest.raises(TypeError):
+        HERMESDataSchema()._get_time_scale(const.CDF_EPOCH.value)
+
+
+def test_time_units():
+    """Function to test time units"""
+    assert HERMESDataSchema()._get_time_units(const.CDF_TIME_TT2000.value) == "ns"
+
+    with pytest.raises(TypeError):
+        HERMESDataSchema()._get_time_units(const.CDF_EPOCH.value)

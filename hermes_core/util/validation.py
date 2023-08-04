@@ -227,8 +227,8 @@ class CDFValidator(TimeDataValidator):
         # Save the Current Format
         variable_format = cdf_file[var_name].meta["FORMAT"]
         # Get the target Format for the Variable
-        target_format = self.schema._format_helper(
-            data=cdf_file, var_name=var_name, cdftype=cdf_file[var_name].type()
+        target_format = self.schema._get_format(
+            var_data=cdf_file[var_name], cdftype=cdf_file[var_name].type()
         )
 
         if variable_format != target_format:

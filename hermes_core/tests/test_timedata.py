@@ -37,16 +37,17 @@ def get_bad_timeseries():
 
 
 def get_test_timeseries():
-    ts = TimeSeries()
-
-    # Create an astropy.Time object
-    time = np.arange(10)
-    time_col = Time(time, format="unix")
-    ts["time"] = time_col
+    ts = TimeSeries(
+        time_start="2016-03-22T12:30:31",
+        time_delta=3 * u.s,
+        data={
+            "measurement": Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+        },
+    )
 
     # Add Measurement
-    quant = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
-    ts["measurement"] = quant
+    # quant = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    # ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
             "VAR_TYPE": "metadata",
@@ -59,7 +60,7 @@ def get_test_timeseries():
 def get_test_timedata():
     ts = TimeSeries(
         time_start="2016-03-22T12:30:31",
-        time_delta=3 * u.s,
+        time_delta=3 * u.ns,
         data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)},
     )
     input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
@@ -431,6 +432,7 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
+        print(result)
         assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
         # Remove the File
