@@ -334,7 +334,6 @@ def test_format():
 
         for t, e, vmin, vmax in expected:
             v = cdf.new("var", type=t)
-            print(v)
             if vmin is not None:
                 v.attrs["VALIDMIN"] = vmin
             if vmin is not None:

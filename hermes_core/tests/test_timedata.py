@@ -432,7 +432,6 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
-        print(result)
         assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
 
         # Remove the File
