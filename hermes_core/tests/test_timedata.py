@@ -115,7 +115,6 @@ def test_timedata_valid_attrs():
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_level": "l1>Level 1",
         "Data_version": "v0.0.1",
-        "Start_time": datetime.datetime.now()
     }
     # fmt: on
 
@@ -431,7 +430,7 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
-        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
         test_file_cache_path = Path(test_file_output_path)
@@ -532,7 +531,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
         new_writer = TimeData.load(test_file_output_path)
@@ -546,7 +545,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result2 = validate(test_file_output_path2)
-        assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result2) <= 1  # Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
 
 

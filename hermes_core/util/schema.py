@@ -1322,10 +1322,10 @@ class CDFSchema(HERMESDataSchema):
     def _get_start_time(self, data):
         """
         Function to get the start time of the data contained in the CDF
-        given in format `YYYYMMDD_hhmmss`
+        given in format `YYYYMMDDThhmmss`
         """
         # Get the Start Time from the TimeSeries
-        return data["time"].to_datetime()[0]
+        return data["time"][0].isot
 
     def _get_version(self, data):
         """
