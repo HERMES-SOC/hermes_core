@@ -135,7 +135,7 @@ Section 4 of this document.
      - An optional time span may be specified as "2s" to represent a data file that spans two seconds. In this case, "10s" and "5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
    * - startTime
      - The start time of the contained data given in `ISO 8601 <https://en.wikipedia.org/wiki/ISO_8601>`_ format.
-     - `2023-05-19T00:00:03.000`
+     - `20230519T000003`
    * - vX.Y.Z
      - The 3-part version number of the data product. Full description of this identifier is provided in Section 3.1.1 of this document.
      - `v0.0.0`, `v<#.#.#>`

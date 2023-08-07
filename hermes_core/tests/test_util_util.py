@@ -5,7 +5,7 @@ from astropy.time import Time
 from hermes_core.util import util
 
 time = "2024-04-06T12:06:21"
-time_formatted = "2024-04-06T12:06:21.000"
+time_formatted = "20240406T120621"
 
 
 # fmt: off
@@ -30,16 +30,12 @@ def test_science_filename_output_b():
 
     # mode
     assert (
-        util.create_science_filename(
-            "spani", time, level="l3", mode="2s", version="2.4.5"
-        )
+        util.create_science_filename("spani", time, level="l3", mode="2s", version="2.4.5")
         == f"hermes_spn_2s_l3_{time_formatted}_v2.4.5.cdf"
     )
     # test
     assert (
-        util.create_science_filename(
-            "spani", time, level="l1", version="2.4.5", test=True
-        )
+        util.create_science_filename("spani", time, level="l1", version="2.4.5", test=True)
         == f"hermes_spn_l1test_{time_formatted}_v2.4.5.cdf"
     )
     # all options

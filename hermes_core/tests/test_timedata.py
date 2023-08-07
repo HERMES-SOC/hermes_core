@@ -29,9 +29,7 @@ def get_bad_timeseries():
     ts.add_column(col)
 
     # Add Measurement
-    col = Column(
-        data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"}
-    )
+    col = Column(data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"})
     ts.add_column(col)
     return ts
 
@@ -214,9 +212,7 @@ def test_timedata_single_measurement():
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update(
-        {"test_attr1": "test_value1", "CATDESC": "Test data"}
-    )
+    test_data["test_var1"].meta.update({"test_attr1": "test_value1", "CATDESC": "Test data"})
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -430,9 +426,7 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
-        assert len(result) <= 2
-        # Logical Source and File ID Do not Agree
-        # ISO Format not Accepted by spacepy.pycdf.istp.FileChecks.times
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
         test_file_cache_path = Path(test_file_output_path)
@@ -533,9 +527,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        assert len(result) <= 2
-        # Logical Source and File ID Do not Agree
-        # ISO Format not Accepted by spacepy.pycdf.istp.FileChecks.times
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
         new_writer = TimeData.load(test_file_output_path)
@@ -549,9 +541,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result2 = validate(test_file_output_path2)
-        assert len(result2) <= 2
-        # Logical Source and File ID Do not Agree
-        # ISO Format not Accepted by spacepy.pycdf.istp.FileChecks.times
+        assert len(result2) <= 1  # Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
 
 
