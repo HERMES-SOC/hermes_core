@@ -116,7 +116,6 @@ def test_timedata_valid_attrs():
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_level": "l1>Level 1",
         "Data_version": "v0.0.1",
-        "Start_time": datetime.datetime.now()
     }
     # fmt: on
 
@@ -432,7 +431,7 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
-        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
         test_file_cache_path = Path(test_file_output_path)
@@ -533,7 +532,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        assert len(result) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
         new_writer = TimeData.load(test_file_output_path)
@@ -547,7 +546,7 @@ def test_timedata_from_cdf():
 
         # Validate the generated CDF File
         result2 = validate(test_file_output_path2)
-        assert len(result2) <= 1  # TODO Logical Source and File ID Do not Agree
+        assert len(result2) <= 1  # Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
 
 
@@ -670,3 +669,55 @@ def test_overwrite_save():
 
         # with overwrite set there should be no error
         assert Path(td.save(output_path=tmpdirname, overwrite=True)).exists()
+
+
+def test_without_cdf_lib():
+    """Function to test TimeData Functions without the use of spacepy.pycdf libraries"""
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+    # Get Test TimeSeries
+    ts = get_test_timeseries()
+
+    # Disable CDF Libraries
+    import spacepy.pycdf as pycdf
+
+    pycdf.lib = None
+
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+
+    assert test_data.meta["CDF_Lib_version"] == "unknown version"

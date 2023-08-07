@@ -134,8 +134,8 @@ Section 4 of this document.
      - This is an optional field that may not be needed for all products. Where it is used, identifier should be short (e.q. 3-8 characters) descriptors that are helpful to end-users. If a descriptor contains multiple components, underscores are used to separate those components.
      - An optional time span may be specified as "2s" to represent a data file that spans two seconds. In this case, "10s" and "5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
    * - startTime
-     - The start time of the contained data given in "YYYYMMDD_hhmmss"
-     - `20220601_101520`
+     - The start time of the contained data given in `ISO 8601 <https://en.wikipedia.org/wiki/ISO_8601>`_ format.
+     - `20230519T000003`
    * - vX.Y.Z
      - The 3-part version number of the data product. Full description of this identifier is provided in Section 3.1.1 of this document.
      - `v0.0.0`, `v<#.#.#>`

@@ -35,9 +35,7 @@ class HERMESDataSchema:
         self._global_attr_schema = HERMESDataSchema._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
-        self._variable_attr_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
-        )
+        self._variable_attr_schema = HERMESDataSchema._load_default_variable_attr_schema()
 
         # Load Default Global Attributes
         self._default_global_attributes = HERMESDataSchema._load_default_attributes()
@@ -105,9 +103,7 @@ class HERMESDataSchema:
     def _load_default_global_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -116,9 +112,7 @@ class HERMESDataSchema:
     def _load_default_variable_attr_schema() -> dict:
         # The Default Schema file is contained in the `hermes_core/data` directory
         default_schema_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
         return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
@@ -127,13 +121,9 @@ class HERMESDataSchema:
     def _load_default_attributes():
         # The Default Attributes file is contained in the `hermes_core/data` directory
         default_attributes_path = str(
-            Path(hermes_core.__file__).parent
-            / "data"
-            / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
+            Path(hermes_core.__file__).parent / "data" / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
-        global_schema = HERMESDataSchema._load_yaml_data(
-            yaml_file_path=default_attributes_path
-        )
+        global_schema = HERMESDataSchema._load_yaml_data(yaml_file_path=default_attributes_path)
         return {
             attr_name: info["default"]
             for attr_name, info in global_schema.items()
@@ -197,12 +187,8 @@ class HERMESDataSchema:
             A template for required variable attributes that must be provided.
         """
         template = OrderedDict()
-        measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
-        )
-        for attr_name, attr_schema in measurement_attribute_schema[
-            "attribute_key"
-        ].items():
+        measurement_attribute_schema = HERMESDataSchema._load_default_variable_attr_schema()
+        for attr_name, attr_schema in measurement_attribute_schema["attribute_key"].items():
             if attr_schema["required"] and not attr_schema["derived"]:
                 template[attr_name] = None
         return template
@@ -244,9 +230,9 @@ class HERMESDataSchema:
 
         # Strip the Description of New Lines
         for attr_name in global_attribute_schema.keys():
-            global_attribute_schema[attr_name]["description"] = global_attribute_schema[
-                attr_name
-            ]["description"].strip()
+            global_attribute_schema[attr_name]["description"] = global_attribute_schema[attr_name][
+                "description"
+            ].strip()
 
         # Get all the Attributes from the Schema
         attribute_names = list(global_attribute_schema.keys())
@@ -260,9 +246,7 @@ class HERMESDataSchema:
         if attribute_name and attribute_name in info["Attribute"]:
             info = info[info["Attribute"] == attribute_name]
         elif attribute_name and attribute_name not in info["Attribute"]:
-            raise KeyError(
-                f"Cannot find Global Metadata for attribute name: {attribute_name}"
-            )
+            raise KeyError(f"Cannot find Global Metadata for attribute name: {attribute_name}")
 
         return info
 
@@ -302,16 +286,14 @@ class HERMESDataSchema:
         ------
         KeyError: If attribute_name is not a recognized global attribute.
         """
-        measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
-        )
+        measurement_attribute_schema = HERMESDataSchema._load_default_variable_attr_schema()
         measurement_attribute_key = measurement_attribute_schema["attribute_key"]
 
         # Strip the Description of New Lines
         for attr_name in measurement_attribute_key.keys():
-            measurement_attribute_key[attr_name][
-                "description"
-            ] = measurement_attribute_key[attr_name]["description"].strip()
+            measurement_attribute_key[attr_name]["description"] = measurement_attribute_key[
+                attr_name
+            ]["description"].strip()
 
         # Create New Column to describe which VAR_TYPE's require the given attribute
         for attr_name in measurement_attribute_key.keys():
@@ -338,9 +320,7 @@ class HERMESDataSchema:
         if attribute_name and attribute_name in info["Attribute"]:
             info = info[info["Attribute"] == attribute_name]
         elif attribute_name and attribute_name not in info["Attribute"]:
-            raise KeyError(
-                f"Cannot find Variable Metadata for attribute name: {attribute_name}"
-            )
+            raise KeyError(f"Cannot find Variable Metadata for attribute name: {attribute_name}")
 
         return info
 
@@ -354,9 +334,7 @@ class HERMESDataSchema:
             The input data as a well-formed array; may be the input
             data exactly.
         """
-        msg = (
-            "Data must be well-formed, regular array of number, " "string, or datetime"
-        )
+        msg = "Data must be well-formed, regular array of number, " "string, or datetime"
         try:
             d = np.asanyarray(data)
         except ValueError:
@@ -661,9 +639,7 @@ class HERMESDataSchema:
         if not guess_types:
             if var_name == "time":
                 # Guess the const CDF Data Type
-                (guess_dims, guess_types, guess_elements) = self._types(
-                    var_data.to_datetime()
-                )
+                (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
             else:
                 # Guess the const CDF Data Type
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
@@ -676,9 +652,7 @@ class HERMESDataSchema:
         measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
         measurement_attributes["FORMAT"] = self._get_format(var_data, guess_types[0])
         measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
-        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-            data, var_name
-        )
+        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(data, var_name)
         measurement_attributes["UNITS"] = self._get_units(data, var_name)
         measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
         measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
@@ -704,13 +678,9 @@ class HERMESDataSchema:
         var_data = data["time"]
         (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
 
-        time_attributes = self.derive_measurement_attributes(
-            data, "time", guess_types=guess_types
-        )
+        time_attributes = self.derive_measurement_attributes(data, "time", guess_types=guess_types)
         # Check the Attributes that can be derived
-        time_attributes["REFERENCE_POSITION"] = self._get_reference_position(
-            guess_types[0]
-        )
+        time_attributes["REFERENCE_POSITION"] = self._get_reference_position(guess_types[0])
         time_attributes["RESOLUTION"] = self._get_resolution(data)
         time_attributes["TIME_BASE"] = self._get_time_base(guess_types[0])
         time_attributes["TIME_SCALE"] = self._get_time_scale(guess_types[0])
@@ -756,6 +726,10 @@ class HERMESDataSchema:
             return self._get_logical_source(data)
         elif attr_name == "Logical_source_description":
             return self._get_logical_source_description(data)
+        elif attr_name == "HERMES_version":
+            return self._get_hermes_version(data)
+        elif attr_name == "CDF_Lib_version":
+            return self._get_cdf_lib_version(data)
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
 
@@ -862,8 +836,7 @@ class HERMESDataSchema:
                             (
                                 8 * i
                                 for i in (1, 2, 4, 8)
-                                if getattr(const, "CDF_INT{}".format(i)).value
-                                == cdftype
+                                if getattr(const, "CDF_INT{}".format(i)).value == cdftype
                             )
                         )
                         - 1
@@ -874,9 +847,7 @@ class HERMESDataSchema:
             # powers of 10 (log10(10) = 1 but needs two digits)
             # -Make sure not taking log of zero
             if minval < 0:  # Need an extra space for the negative sign
-                fmt = "I{}".format(
-                    int(math.log10(max(abs(maxval), abs(minval), 1))) + 2
-                )
+                fmt = "I{}".format(int(math.log10(max(abs(maxval), abs(minval), 1))) + 2)
             else:
                 fmt = "I{}".format(int(math.log10(maxval) if maxval != 0 else 1) + 1)
         elif cdftype == const.CDF_TIME_TT2000.value:
@@ -900,18 +871,14 @@ class HERMESDataSchema:
             # (Use maxx-minn for this...effectively uses VALIDMIN/MAX for most
             # cases.)
             if range and (minn in var_data.meta and maxx in var_data.meta):
-                if len(str(int(var_data.meta[maxx]))) >= len(
-                    str(int(var_data.meta[minn]))
-                ):
+                if len(str(int(var_data.meta[maxx]))) >= len(str(int(var_data.meta[minn]))):
                     ln = str(int(var_data.meta[maxx]))
                 else:
                     ln = str(int(var_data.meta[minn]))
             if range and ln and range < 0:  # Cover all our bases:
                 range = None
             # Switch on Range
-            if (
-                range and ln and range <= 11
-            ):  # If range <= 11, we want 2 decimal places:
+            if range and ln and range <= 11:  # If range <= 11, we want 2 decimal places:
                 # Need extra for '.', and 3 decimal places (4 extra)
                 fmt = "F{}.3".format(len([i for i in ln]) + 4)
             elif range and ln and 11 < range <= 101:
@@ -931,9 +898,7 @@ class HERMESDataSchema:
             fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(
-                "Couldn't find FORMAT for type {}".format(
-                    self.cdftypenames.get(cdftype, "UNKNOWN")
-                )
+                "Couldn't find FORMAT for type {}".format(self.cdftypenames.get(cdftype, "UNKNOWN"))
             )
         return fmt
 
@@ -952,9 +917,7 @@ class HERMESDataSchema:
         var_data = data.time
         times = len(var_data)
         if times < 2:
-            raise ValueError(
-                f"Can not derive Time Resolution, need 2 samples, found {times}."
-            )
+            raise ValueError(f"Can not derive Time Resolution, need 2 samples, found {times}.")
         # Calculate the Timedelta between two datetimes
         times = var_data.to_datetime()
         delta = times[1] - times[0]
@@ -1267,10 +1230,10 @@ class HERMESDataSchema:
     def _get_start_time(self, data):
         """
         Function to get the start time of the data contained in the CDF
-        given in format `YYYYMMDD_hhmmss`
+        given in format `YYYYMMDDThhmmss`
         """
         # Get the Start Time from the TimeSeries
-        return data["time"].to_datetime()[0]
+        return data["time"][0].isot
 
     def _get_version(self, data):
         """
@@ -1295,3 +1258,26 @@ class HERMESDataSchema:
         else:
             instr_mode = data.meta["Instrument_mode"]
         return instr_mode.lower()  # Makse sure its all lowercase
+
+    def _get_hermes_version(self, data):
+        """Function to get the version of HERMES used to generate the data"""
+        attr_name = "HERMES_version"
+        if (attr_name not in data.meta) or (not data.meta[attr_name]):
+            hermes_version = hermes_core.__version__
+        else:
+            hermes_version = data.meta[attr_name]
+        return hermes_version
+
+    def _get_cdf_lib_version(self, data):
+        """Function to get the version of CDF library used to generate the data"""
+        attr_name = "CDF_Lib_version"
+        if (attr_name not in data.meta) or (not data.meta[attr_name]):
+            try:
+                import spacepy.pycdf as pycdf
+
+                cdf_lib_version = pycdf.lib.version
+            except (ImportError, AttributeError) as e:
+                cdf_lib_version = "unknown version"
+        else:
+            cdf_lib_version = data.meta[attr_name]
+        return cdf_lib_version
