@@ -30,12 +30,16 @@ def test_science_filename_output_b():
 
     # mode
     assert (
-        util.create_science_filename("spani", time, level="l3", mode="2s", version="2.4.5")
+        util.create_science_filename(
+            "spani", time, level="l3", mode="2s", version="2.4.5"
+        )
         == f"hermes_spn_2s_l3_{time_formatted}_v2.4.5.cdf"
     )
     # test
     assert (
-        util.create_science_filename("spani", time, level="l1", version="2.4.5", test=True)
+        util.create_science_filename(
+            "spani", time, level="l1", version="2.4.5", test=True
+        )
         == f"hermes_spn_l1test_{time_formatted}_v2.4.5.cdf"
     )
     # all options

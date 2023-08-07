@@ -16,7 +16,9 @@ VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
 FILENAME_EXTENSION = ".cdf"
 
 
-def create_science_filename(instrument, time, level, version, mode="", descriptor="", test=False):
+def create_science_filename(
+    instrument, time, level, version, mode="", descriptor="", test=False
+):
     """Return a compliant filename. The format is defined as
 
     hermes_{inst}_{mode}_{level}{test}_{descriptor}_{time}_v{version}.cdf
@@ -57,7 +59,9 @@ def create_science_filename(instrument, time, level, version, mode="", descripto
         )
     # check that version is in the right format with three parts
     if len(version.split(".")) != 3:
-        raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
+        raise ValueError(
+            f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
+        )
     # check that version has integers in each part
     for item in version.split("."):
         try:
@@ -70,7 +74,9 @@ def create_science_filename(instrument, time, level, version, mode="", descripto
 
     # the parse_science_filename function depends on _ not being present elsewhere
     if ("_" in mode) or ("_" in descriptor):
-        raise ValueError("The underscore symbol _ is not allowed in mode or descriptor.")
+        raise ValueError(
+            "The underscore symbol _ is not allowed in mode or descriptor."
+        )
 
     filename = f"hermes_{hermes_core.INST_TO_SHORTNAME[instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
@@ -113,7 +119,9 @@ def parse_science_filename(filepath):
 
     if file_ext == ".bin":
         if filename_components[1] not in hermes_core.INST_TARGETNAMES:
-            raise ValueError(f"File {filename} not recognized. Not a valid target name.")
+            raise ValueError(
+                f"File {filename} not recognized. Not a valid target name."
+            )
 
         offset = 1 if len(filename_components) > 5 else 0
 
@@ -133,7 +141,9 @@ def parse_science_filename(filepath):
 
     elif file_ext == ".cdf":
         if filename_components[1] not in hermes_core.INST_SHORTNAMES:
-            raise ValueError("File {filename} not recognized. Not a valid instrument name.")
+            raise ValueError(
+                "File {filename} not recognized. Not a valid instrument name."
+            )
 
         #  reverse the dictionary to look up instrument name from the short name
         from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
