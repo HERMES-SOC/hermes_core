@@ -1,3 +1,11 @@
+CDF_Lib_version:
+  description: > 
+    Version of the CDF Binaries library used to generate the CDF File
+  default: null
+  derived: true
+  required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: false
 DOI:
   description: > 
     DOI is a persistent Unique Digital Identifier with the form
@@ -84,6 +92,14 @@ Generation_date:
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
   overwrite: true
+HERMES_version:
+  description: >
+    Version of `hermes_core` originally used to generate the given CDF File
+  default: null
+  derived: true
+  required: true # NOT Required in ISTP Guide (Derived)
+  validate: false
+  overwrite: false
 HTTP_LINK:
   description: >
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a

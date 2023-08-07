@@ -739,6 +739,10 @@ class CDFSchema(HERMESDataSchema):
             return self._get_logical_source(data)
         elif attr_name == "Logical_source_description":
             return self._get_logical_source_description(data)
+        elif attr_name == "HERMES_version":
+            return self._get_hermes_version(data)
+        elif attr_name == "CDF_Lib_version":
+            return self._get_cdf_lib_version(data)
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
 
@@ -1346,6 +1350,29 @@ class CDFSchema(HERMESDataSchema):
         else:
             instr_mode = data.meta["Instrument_mode"]
         return instr_mode.lower()  # Makse sure its all lowercase
+
+    def _get_hermes_version(self, data):
+        """Function to get the version of HERMES used to generate the data"""
+        attr_name = "HERMES_version"
+        if (attr_name not in data.meta) or (not data.meta[attr_name]):
+            hermes_version = hermes_core.__version__
+        else:
+            hermes_version = data.meta[attr_name]
+        return hermes_version
+
+    def _get_cdf_lib_version(self, data):
+        """Function to get the version of CDF library used to generate the data"""
+        attr_name = "CDF_Lib_version"
+        if (attr_name not in data.meta) or (not data.meta[attr_name]):
+            try:
+                import spacepy.pycdf as pycdf
+
+                cdf_lib_version = pycdf.lib.version
+            except (ImportError, AttributeError) as e:
+                cdf_lib_version = "unknown version"
+        else:
+            cdf_lib_version = data.meta[attr_name]
+        return cdf_lib_version
 
 
 class NetCDFSchema(HERMESDataSchema):
