@@ -67,11 +67,6 @@ class TimeData:
                 raise TypeError(
                     f"Column '{colname}' must be an astropy.Quantity object"
                 )
-            # Verify that the Column is only a single dimension
-            if len(data[colname].shape) > 1:  # If there is more than 1 Dimension
-                raise ValueError(
-                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
-                )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)

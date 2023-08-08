@@ -3,6 +3,7 @@ from pathlib import Path
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+import astropy.units as u
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
 
@@ -101,7 +102,10 @@ class CDFHandler(TimeDataIOHandler):
             # Add Global Attributes from the CDF file to TimeSeries
             input_global_attrs = {}
             for attr_name in input_file.attrs:
-                if len(input_file.attrs[attr_name]) > 1:
+                if len(input_file.attrs[attr_name]) == 0:
+                    # gAttr is not set
+                    input_global_attrs[attr_name] = ""
+                elif len(input_file.attrs[attr_name]) > 1:
                     # gAttr is a List
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][:]
                 else:
@@ -124,35 +128,37 @@ class CDFHandler(TimeDataIOHandler):
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in input_file:
                 if var_name != "Epoch":  # Since we added this separately
-                    # Extract the Variable's Data and Metadata
-                    var_data = input_file[var_name][:].copy()
+                    # Extract the Variable's Metadata
                     var_attrs = {}
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
 
                     # Check if the Variable is a Record-Variing Variable
                     if input_file[var_name].rv():
-                        # Test the the Variable has `UNITS`
-                        # If the variable has `UNITS` then it is likely a Measurement
-                        # and should be stored with Measurements
-                        if "UNITS" in var_attrs:
-                            # Add to the main TimeSeries Table
+                        try:
+                            # Extract the Variable's Data
+                            var_data = input_file[var_name][:].copy()
+                            # Create the Quantity object
+                            var_data = u.Quantity(
+                                value=var_data, unit=var_attrs["UNITS"], copy=False
+                            )
                             ts[var_name] = var_data
-                            ts[var_name].unit = var_attrs["UNITS"]
                             # Create the Metadata
                             ts[var_name].meta = OrderedDict()
                             ts[var_name].meta.update(var_attrs)
-                        # If the variable does not have `UNITS` then it is most likely Support
-                        # data and it should be stored with the Support Data
-                        else:
-                            # Create an empty dict entry for the variable
-                            support_data[var_name] = {}
-                            # Add the Variable Data
-                            support_data[var_name]["data"] = var_data
-                            # Add the Variable Metadata
-                            support_data[var_name]["meta"] = var_attrs
+                        except ValueError:
+                            warn_user(
+                                f'Record-Varying Measurement Variable {var_name} cannot be converted to an astropy.units.Quantity. UNITS were: {var_attrs["UNITS"]}'
+                            )
+                            continue
                     # Add to the non-record varying data dictionary
                     else:
+                        if len(input_file[var_name]) == 1:
+                            # No Data
+                            var_data = []
+                        else:
+                            # Extract the Variable's Data
+                            var_data = input_file[var_name][:].copy()
                         # Create an empty dict entry for the variable
                         nrv_data[var_name] = {}
                         # Add the Variable Data

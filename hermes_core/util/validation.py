@@ -170,9 +170,8 @@ class CDFValidator(TimeDataValidator):
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 # Check to see if there is an "alternate" attribute
-                if (
-                    "alternate" not in attr_schema
-                    and attr_schema["alternate"] is not None
+                if "alternate" not in attr_schema or (
+                    "alternate" in attr_schema and attr_schema["alternate"] is None
                 ):
                     variable_errors.append(
                         f"Variable: {var_name} missing '{attr_name}' attribute."
