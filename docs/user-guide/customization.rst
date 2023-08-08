@@ -9,7 +9,7 @@ The :file:`configrc` file
 
 This package uses a :file:`configrc` configuration file to customize
 certain properties. You can control a number of key features of such as
-where your data will download to. sunpy looks for this configuration file
+where your data will download to. HERMES packages look for this configuration file
 in a platform specific directory, which you can see the path for by running::
 
   >>> import hermes_core
@@ -36,8 +36,7 @@ If you do not use our developer environment, you can run the following code to s
 
   >>> from hermes_core import util
   >>> print(util.config._get_user_configdir())
-
-  /home/vscode/.config/hermes_core/
+  /home/vscode/.config/hermes_core
 
 
 .. note:: 

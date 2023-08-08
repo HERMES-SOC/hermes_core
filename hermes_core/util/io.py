@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import OrderedDict
-from datetime import datetime
+from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-import astropy.units as u
-from spacepy.pycdf import CDF
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
+
+__all__ = ["CDFHandler"]
 
 # ================================================================================================
 #                                   ABSTRACT HANDLER
@@ -85,6 +84,8 @@ class CDFHandler(TimeDataIOHandler):
         nrv_data : `dict`
             Non-record varying data contained in the file
         """
+        from spacepy.pycdf import CDF
+
         if not Path(file_path).exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
 
@@ -178,6 +179,7 @@ class CDFHandler(TimeDataIOHandler):
         path : `str`
             A path to the saved file.
         """
+        from spacepy.pycdf import CDF
 
         # Initialize a new CDF
         cdf_filename = f"{data.meta['Logical_file_id']}.cdf"
@@ -190,18 +192,20 @@ class CDFHandler(TimeDataIOHandler):
             self._convert_variable_attributes_to_cdf(data, cdf_file)
         return output_cdf_filepath
 
-    def _convert_global_attributes_to_cdf(self, data, cdf_file: CDF):
+    def _convert_global_attributes_to_cdf(self, data, cdf_file):
         # Loop though Global Attributes in target_dict
         for attr_name, attr_value in data.meta.items():
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
-            if not attr_value:
-                warn_user(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+            if attr_value is None:
+                raise ValueError(
+                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
+                )
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
 
-    def _convert_variable_attributes_to_cdf(self, data, cdf_file: CDF):
+    def _convert_variable_attributes_to_cdf(self, data, cdf_file):
         # Loop through Variable Attributes in target_dict
         for var_name, var_data in data.__iter__():
             if var_name == "time":
@@ -215,7 +219,13 @@ class CDFHandler(TimeDataIOHandler):
                 cdf_file[var_name] = var_data.value
                 # Add the Variable Attributes
                 for var_attr_name, var_attr_val in var_data.meta.items():
-                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+                    if var_attr_val is None:
+                        raise ValueError(
+                            f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                        )
+                    else:
+                        # Add the Attribute to the CDF File
+                        cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
 
 # ================================================================================================
@@ -264,7 +274,9 @@ class EphemDataHandler(TimeDataIOHandler):
                 # If we haven't parsed out the Generation Date from the File
                 if len(line.strip()) > 0 and not generation_date:
                     # Parse the Generation Data from the EphemData file.
-                    generation_date = datetime.strptime(line.strip(), "%d %b %Y %H:%M:%S")
+                    generation_date = datetime.strptime(
+                        line.strip(), "%d %b %Y %H:%M:%S"
+                    )
                 # The EphemData Name is the Seconf line We're expecting from the EphemData
                 elif len(line.strip()) > 0 and not title:
                     # Parse the Title from the EphemData file.

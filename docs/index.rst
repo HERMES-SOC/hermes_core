@@ -11,3 +11,4 @@ This is the documentation for the hermes_core Python Package.
    user-guide/index
    dev-guide/index
    api
+   examples/index
