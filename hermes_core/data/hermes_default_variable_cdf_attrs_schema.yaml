@@ -181,6 +181,7 @@ attribute_key:
     required: true
     overwrite: true
     valid_values: null
+    alternate: null
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     description: >
       This field allows software to properly format the associated data when displayed on a
