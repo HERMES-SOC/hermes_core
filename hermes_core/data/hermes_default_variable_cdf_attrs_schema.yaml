@@ -344,16 +344,6 @@ attribute_key:
     overwrite: false
     valid_values: null
     alternate: null
-time_series:
-  - TIME_BASE
-  - RESOLUTION
-  - TIME_SCALE
-  - REFERENCE_POSITION
-  - LEAP_SECONDS_INCLUDED
-  - ABSOLUTE_ERROR
-  - RELATIVE_ERROR
-  - BIN_LOCATION
-  - VAR_TYPE
 data:
   - CATDESC
   - DEPEND_0
