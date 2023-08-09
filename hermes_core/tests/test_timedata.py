@@ -102,11 +102,20 @@ def test_timedata_default():
 
 
 def test_multidimensional_data():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
 
-    with pytest.raises(ValueError):
-        _ = TimeData(ts)
+    # with pytest.raises(ValueError):
+    test_data = TimeData(ts, meta=input_attrs)
+
+    assert test_data["var"].shape == (10, 2)
 
 
 def test_timedata_valid_attrs():
@@ -246,19 +255,19 @@ def test_timedata_add_measurement():
         test_data.add_measurement(measure_name="test", data=[], meta={})
 
     # Add multi-domensional data
-    with pytest.raises(ValueError):
-        q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
-        test_data.add_measurement(measure_name="test", data=q, meta={})
+    q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
+    test_data.add_measurement(measure_name="test_md", data=q, meta={})
+    assert test_data["test_md"].shape == (10, 10, 10)
 
     # Good measurement
     q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
     q.meta = OrderedDict({"CATDESC": "Test Variable"})
     test_data.add_measurement(measure_name="test", data=q)
-    assert len(test_data) == 1 + data_len
+    assert test_data["test"].shape == (10,)
 
     # test remove_measurement
     test_data.remove_measurement("test")
-    assert len(test_data) == data_len
+    assert "test" not in test_data
 
 
 def test_timedata_plot():

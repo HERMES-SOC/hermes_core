@@ -3,6 +3,7 @@ from pathlib import Path
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+from astropy.table import Column
 import astropy.units as u
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import CDFSchema
@@ -147,24 +148,23 @@ class CDFHandler(TimeDataIOHandler):
                             ts[var_name].meta = OrderedDict()
                             ts[var_name].meta.update(var_attrs)
                         except ValueError:
-                            warn_user(
-                                f'Record-Varying Measurement Variable {var_name} cannot be converted to an astropy.units.Quantity. UNITS were: {var_attrs["UNITS"]}'
+                            # Add to the Support Data dictionary
+                            # Extract the Variable's Data
+                            var_data = input_file[var_name][:].copy()
+                            # Create a Column entry for the variable
+                            support_data[var_name] = Column(
+                                data=var_data, meta=var_attrs
                             )
-                            continue
                     # Add to the non-record varying data dictionary
                     else:
-                        if len(input_file[var_name]) == 1:
+                        if len(input_file[var_name].shape) == 0:
                             # No Data
                             var_data = []
                         else:
                             # Extract the Variable's Data
                             var_data = input_file[var_name][:].copy()
-                        # Create an empty dict entry for the variable
-                        nrv_data[var_name] = {}
-                        # Add the Variable Data
-                        nrv_data[var_name]["data"] = var_data
-                        # Add the Variable Metadata
-                        nrv_data[var_name]["meta"] = var_attrs
+                        # Create a Column entry for the variable
+                        nrv_data[var_name] = Column(data=var_data, meta=var_attrs)
 
         # Return the given TimeSeries, NRV Data
         return ts, support_data, nrv_data
@@ -212,7 +212,7 @@ class CDFHandler(TimeDataIOHandler):
                 cdf_file.attrs[attr_name] = attr_value
 
     def _convert_variable_attributes_to_cdf(self, data, cdf_file):
-        # Loop through Variable Attributes in target_dict
+        # Loop through Variable Attributes
         for var_name, var_data in data.__iter__():
             if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
@@ -233,137 +233,50 @@ class CDFHandler(TimeDataIOHandler):
                         # Add the Attribute to the CDF File
                         cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
-
-# ================================================================================================
-#                                   EPHEMERIS HANDLER
-# ================================================================================================
-
-
-class EphemDataHandler(TimeDataIOHandler):
-    """
-    A concrete implementation of TimeDataIOHandler for handling ephemeris data in `.txt` file format.
-    """
-
-    def load_data(self, file_path):
-        """
-        Load ephemeris data from a EphemData file.
-
-        Parameters:
-            file_path (str): The path to the EphemData file.
-
-        Returns:
-            data (astropy.TimeSeries): An instance of astropy.TimeSeries containing the loaded data.
-        """
-        if not Path(file_path).exists():
-            raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
-
-        file_name = Path(file_path).stem
-        mission_name, _, _, satellite, _, phase = file_name.split("_")
-
-        # Helpers
-        generation_date = None
-        title = None
-        header_parsed = False
-        separator_parsed = False
-
-        # Intermittent Format
-        columns = []
-        data = {}
-        units = {}
-
-        # Open EphemData with a context manager
-        with open(file_path) as input_file:
-            for i, line in enumerate(input_file):
-                if len(line) == 0:
-                    continue
-                # The Generation Date is the First line we're expecting from the EphemData
-                # If we haven't parsed out the Generation Date from the File
-                if len(line.strip()) > 0 and not generation_date:
-                    # Parse the Generation Data from the EphemData file.
-                    generation_date = datetime.strptime(
-                        line.strip(), "%d %b %Y %H:%M:%S"
+        # Loop through Support Data
+        for var_name, var_data in data.support_data.items():
+            # Add the Variable to the CDF File
+            cdf_file[var_name] = var_data.value
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
                     )
-                # The EphemData Name is the Seconf line We're expecting from the EphemData
-                elif len(line.strip()) > 0 and not title:
-                    # Parse the Title from the EphemData file.
-                    title = line.strip()
-                elif len(line.strip()) > 0 and not header_parsed:
-                    # Parse the Header
-                    parts = line.strip().split()
-                    i = 0
-                    while i < len(parts):
-                        column_name = parts[i]
-                        if i + 1 < len(parts) and "(" in parts[i + 1]:
-                            column_unit = parts[i + 1].strip("()")
-                            if "/" in column_unit:
-                                column_unit = " / ".join(column_unit.split("/"))
-                            column_unit = column_unit.replace("sec", "s")
-                            i += 1
-                        else:
-                            column_unit = 1
+                else:
+                    # Add the Attribute to the CDF File
+                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
-                        # Update Intermittent Structures
-                        columns.append(column_name)
-                        data[column_name] = []
-                        units[column_name] = column_unit
-                        i += 1
-                    header_parsed = True
-                elif len(line.strip()) > 0 and not separator_parsed:
-                    line = line.strip().replace(" ", "")
-                    if line == len(line) * line[0]:
-                        separator_parsed = True
-                # Now we're in the actual measurements part of the file
-                elif len(line.strip()) > 0:
-                    parts = line.strip().split()
+        # Loop through NRV Data
+        for var_name, var_data in data.nrv_data.items():
+            # Adding the Variable is different depending on whether the data is empty
+            # Documented in https://github.com/spacepy/spacepy/issues/707
+            print(var_name)
+            if len(var_data.shape) > 0 and var_data.shape[0] > 0:
+                # Add the Variable to the CDF File
+                cdf_file.new(name=var_name, data=var_data.value, recVary=False)
+            else:
+                # Add the Variable to the CDF File
+                cdf_file.new(
+                    name=var_name,
+                    data=var_data.value,
+                )
+                cdf_file[var_name].rv(False)
 
-                    # Time
-                    time_str = " ".join(parts[:4])
-                    time = datetime.strptime(time_str, "%d %b %Y %H:%M:%S.%f")
-                    data[columns[0]].append(time)
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                    )
+                else:
+                    # Add the Attribute to the CDF File
+                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
-                    for i, part in enumerate(parts[4:]):
-                        # Float
-                        value = float(part.strip())
-                        data[columns[i + 1]].append(value)
 
-        # Create a new TimeSeries
-        ts = TimeSeries()
-
-        # Add Time to the TimeSeries
-        ts["time"] = data["Time"]
-
-        # Add Columns to the TimeSeries
-        for col in columns[1:]:
-            # Create the Quantity object
-            ts[col] = data[col]
-            ts[col].unit = units[col]
-            ts[col].meta = OrderedDict({"VAR_TYPE": "data"})
-
-        # Update the Metadata of the Data Container
-        ts.meta.update(
-            {
-                "Data_level": "L1>Level 1",
-                "Data_version": "0.0.1",
-                "Descriptor": "EEA>Electron Electrostatic Analyzer",
-                "Generation_date": generation_date,
-                "Mission_group": mission_name,
-                "Phase": phase,
-                "Satellite": satellite,
-            }
-        )
-
-        # Return the given TimeSeries
-        return ts
-
-    def save_data(self, data, file_path):
-        """
-        Save ephemeris data to a EphemData file.
-
-        Parameters:
-            data (TimeData): An instance of TimeData containing the data to be saved.
-            file_path (str): The path to save the EphemData file.
-        """
-        pass
+# ================================================================================================
+#                                   NET CDF HANDLER
+# ================================================================================================
 
 
 class NetCDFHandler(TimeDataIOHandler):

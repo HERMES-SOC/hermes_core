@@ -7,10 +7,10 @@ from collections import OrderedDict
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
-from astropy.table import vstack
+from astropy.table import vstack, Column
 from astropy import units as u
 import hermes_core
-from hermes_core.util.io import CDFHandler, NetCDFHandler, EphemDataHandler
+from hermes_core.util.io import CDFHandler, NetCDFHandler
 from hermes_core.util.schema import CDFSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
@@ -198,10 +198,15 @@ class TimeData:
         """
         Function to get a measurement.
         """
-        if name not in self._data.colnames:
+        if name in self._data.colnames:
+            # Get the Data and Attrs for the named measurement
+            var_data = self._data[name]
+        elif name in self.support_data:
+            var_data = self.support_data[name]
+        elif name in self.nrv_data:
+            var_data = self.nrv_data[name]
+        else:
             raise KeyError(f"Can't find data measurement {name}")
-        # Get the Data and Attrs for the named measurement
-        var_data = self._data[name]
         return var_data
 
     def __setitem__(self, name, data):
@@ -216,7 +221,11 @@ class TimeData:
         """
         Function to see whether a measurement is in the class.
         """
-        return name in self._data.columns
+        return (
+            name in self._data.columns
+            or name in self.support_data
+            or name in self.nrv_data
+        )
 
     def __iter__(self):
         """
@@ -386,7 +395,7 @@ class TimeData:
         ----------
         measure_name: `str`
             Name of the measurement to add.
-        data: `astropy.units.Quantity`
+        data: `astropy.units.Quantity`, `astropy.table.Column`
             The data to add. Must have the same time stamps as the existing data.
         meta: `dict`, optional
             The metadata associated with the measurement.
@@ -396,23 +405,30 @@ class TimeData:
         TypeError: If var_data is not of type Quantity.
         """
         # Verify that all Measurements are `Quantity`
-        if (not isinstance(data, u.Quantity)) or (not data.unit):
+        if isinstance(data, u.Quantity) and len(data) == len(self.time):
+            self._data[measure_name] = data
+            # Add any Metadata from the original Quantity
+            self._data[measure_name].meta = self.measurement_attribute_template()
+            if hasattr(data, "meta"):
+                self._data[measure_name].meta.update(data.meta)
+            if meta:
+                self._data[measure_name].meta.update(meta)
+        # Check Support Data
+        elif (isinstance(data, Column)) and len(data) == len(self.time):
+            self.support_data[measure_name] = data
+            # Add any Metadata Passed not in the Column
+            if meta:
+                self.support_data[measure_name].meta.update(meta)
+        # Consider it Metadata
+        elif isinstance(data, Column):
+            self.nrv_data[measure_name] = data
+            # Add any Metadata Passed not in the Column
+            if meta:
+                self.nrv_data[measure_name].meta.update(meta)
+        else:
             raise TypeError(
-                f"Measurement {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
+                f"Data for Measurement {measure_name} must be an astropy.table.Column or astropy.units.Quantity."
             )
-        # Verify that the Column is only a single dimension
-        if len(data.shape) > 1:  # If there is more than 1 Dimension
-            raise ValueError(
-                f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
-            )
-
-        self._data[measure_name] = data
-        # Add any Metadata from the original Quantity
-        self._data[measure_name].meta = self.measurement_attribute_template()
-        if hasattr(data, "meta"):
-            self._data[measure_name].meta.update(data.meta)
-        if meta:
-            self._data[measure_name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
@@ -426,7 +442,14 @@ class TimeData:
         measure_name: `str`
             Name of the measurement to remove.
         """
-        self._data.remove_column(measure_name)
+        if measure_name in self._data.columns:
+            self._data.remove_column(measure_name)
+        elif measure_name in self.support_data:
+            self.support_data.pop(measure_name)
+        elif measure_name in self.nrv_data:
+            self.nrv_data.pop(measure_name)
+        else:
+            raise ValueError(f"Data for Measurement {measure_name} not found.")
 
     def plot(self, axes=None, columns=None, subplots=True, **plot_args):
         """
@@ -621,8 +644,6 @@ class TimeData:
             handler = CDFHandler()
         elif file_extension == ".nc":
             handler = NetCDFHandler()
-        elif file_extension == ".txt":
-            handler = EphemDataHandler()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
