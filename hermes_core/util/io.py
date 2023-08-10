@@ -134,40 +134,61 @@ class CDFHandler(TimeDataIOHandler):
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
 
-                    # Check if the Variable is a Record-Variing Variable
                     if input_file[var_name].rv():
-                        try:
-                            # Extract the Variable's Data
-                            var_data = input_file[var_name][:].copy()
-                            # Create the Quantity object
-                            var_data = u.Quantity(
-                                value=var_data, unit=var_attrs["UNITS"], copy=False
-                            )
-                            ts[var_name] = var_data
-                            # Create the Metadata
-                            ts[var_name].meta = OrderedDict()
-                            ts[var_name].meta.update(var_attrs)
-                        except ValueError:
-                            # Add to the Support Data dictionary
-                            # Extract the Variable's Data
-                            var_data = input_file[var_name][:].copy()
-                            # Create a Column entry for the variable
-                            support_data[var_name] = Column(
-                                data=var_data, meta=var_attrs
-                            )
-                    # Add to the non-record varying data dictionary
-                    else:
-                        if len(input_file[var_name].shape) == 0:
-                            # No Data
-                            var_data = []
+                        # Extract the Variable's Data
+                        var_data = input_file[var_name][:].copy()
+                        # See if it is `data` or `support_data`
+                        if "UNITS" in var_attrs and len(var_data == len(ts["time"])):
+                            # Load as Record-Varying `data`
+                            try:
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
+                                )
+                            except ValueError:
+                                warn_user(
+                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Loading as Support Data."
+                                )
+                                self._load_support_data_variable(
+                                    support_data, var_name, var_data, var_attrs
+                                )
                         else:
-                            # Extract the Variable's Data
-                            var_data = input_file[var_name][:].copy()
-                        # Create a Column entry for the variable
-                        nrv_data[var_name] = Column(data=var_data, meta=var_attrs)
+                            # Load as `support_data`
+                            self._load_support_data_variable(
+                                support_data, var_name, var_data, var_attrs
+                            )
+
+                    else:
+                        # Load NRV Data as `metadata`
+                        self._load_metadata_variable(
+                            nrv_data, input_file, var_name, var_attrs
+                        )
 
         # Return the given TimeSeries, NRV Data
         return ts, support_data, nrv_data
+
+    def _load_data_variable(self, ts, var_name, var_data, var_attrs):
+        # Create the Quantity object
+        var_data = u.Quantity(value=var_data, unit=var_attrs["UNITS"], copy=False)
+        ts[var_name] = var_data
+        # Create the Metadata
+        ts[var_name].meta = OrderedDict()
+        ts[var_name].meta.update(var_attrs)
+
+    def _load_support_data_variable(self, support_data, var_name, var_data, var_attrs):
+        # Create a Column entry for the variable
+        support_data[var_name] = Column(data=var_data, meta=var_attrs)
+
+    def _load_metadata_variable(self, nrv_data, input_file, var_name, var_attrs):
+        # If the Var Data is Scalar
+        if len(input_file[var_name].shape) == 0:
+            # No Data
+            var_data = input_file[var_name][...]
+        # Otherwise its an array
+        else:
+            # Extract the Variable's Data
+            var_data = input_file[var_name][:].copy()
+        # Create a Column entry for the variable
+        nrv_data[var_name] = Column(data=var_data, meta=var_attrs)
 
     def save_data(self, data, file_path):
         """
@@ -251,7 +272,6 @@ class CDFHandler(TimeDataIOHandler):
         for var_name, var_data in data.nrv_data.items():
             # Adding the Variable is different depending on whether the data is empty
             # Documented in https://github.com/spacepy/spacepy/issues/707
-            print(var_name)
             if len(var_data.shape) > 0 and var_data.shape[0] > 0:
                 # Add the Variable to the CDF File
                 cdf_file.new(name=var_name, data=var_data.value, recVary=False)

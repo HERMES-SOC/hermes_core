@@ -309,83 +309,85 @@ class TimeData:
 
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
-            # If the attribute is set, check if we want to overwrite it
-            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
-                # We want to overwrite if:
-                #   1) The actual value is not the derived value
-                #   2) The schema marks this attribute to be overwriten
-                if (
-                    self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data.meta[attr_name] = attr_value
-            # If the attribute is not set, set it
-            else:
-                self._data.meta[attr_name] = attr_value
+            self._update_global_attribute(attr_name, attr_value)
 
         # Global Attributes
         for attr_name, attr_value in self.schema.derive_global_attributes(
             self._data
         ).items():
-            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
-                if (
-                    self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data.meta[attr_name] = attr_value
-            else:
-                self._data.meta[attr_name] = attr_value
+            self._update_global_attribute(attr_name, attr_value)
 
         # Time Measurement Attributes
         for attr_name, attr_value in self.schema.derive_time_attributes(
             self._data
         ).items():
-            if (
-                attr_name in self._data["time"].meta
-                and self._data["time"].meta[attr_name] is not None
-            ):
-                attr_schema = self.schema.variable_attribute_schema["attribute_key"][
-                    attr_name
-                ]
-                if (
-                    self._data["time"].meta[attr_name] != attr_value
-                    and attr_schema["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data["time"].meta[attr_name] = attr_value
-            else:
-                self._data["time"].meta[attr_name] = attr_value
+            self._update_variable_attribute(
+                var_name="time", attr_name=attr_name, attr_value=attr_value
+            )
 
         # Other Measurement Attributes
         for col in [col for col in self._data.columns if col != "time"]:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
                 self._data, col
             ).items():
-                if (
-                    attr_name in self._data[col].meta
-                    and self._data[col].meta[attr_name] is not None
-                ):
-                    attr_schema = self.schema.variable_attribute_schema[
-                        "attribute_key"
-                    ][attr_name]
-                    if (
-                        self._data[col].meta[attr_name] != attr_value
-                        and attr_schema["overwrite"]
-                    ):
-                        warn_user(
-                            f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
-                        )
-                        self._data[col].meta[attr_name] = attr_value
-                else:
-                    self._data[col].meta[attr_name] = attr_value
+                self._update_variable_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
+        # Support Data
+        for col in self.support_data:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self.support_data, col
+            ).items():
+                self._update_variable_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
+        # NRV Data
+        for col in self.nrv_data:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self.nrv_data, col
+            ).items():
+                self._update_variable_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
+    def _update_global_attribute(self, attr_name, attr_value):
+        # If the attribute is set, check if we want to overwrite it
+        if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
+            # We want to overwrite if:
+            #   1) The actual value is not the derived value
+            #   2) The schema marks this attribute to be overwriten
+            if (
+                self._data.meta[attr_name] != attr_value
+                and self.schema.global_attribute_schema[attr_name]["overwrite"]
+            ):
+                warn_user(
+                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                )
+                self._data.meta[attr_name] = attr_value
+        # If the attribute is not set, set it
+        else:
+            self._data.meta[attr_name] = attr_value
+
+    def _update_variable_attribute(self, var_name, attr_name, attr_value):
+        if (
+            attr_name in self[var_name].meta
+            and self[var_name].meta[attr_name] is not None
+        ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                attr_name
+            ]
+            if (
+                self[var_name].meta[attr_name] != attr_value
+                and attr_schema["overwrite"]
+            ):
+                warn_user(
+                    f"Overiding {var_name} Attribute {attr_name} : {self[var_name].meta[attr_name]} -> {attr_value}"
+                )
+                self[var_name].meta[attr_name] = attr_value
+        else:
+            self[var_name].meta[attr_name] = attr_value
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """

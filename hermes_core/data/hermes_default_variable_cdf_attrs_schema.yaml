@@ -343,16 +343,6 @@ attribute_key:
     overwrite: false
     valid_values: null
     alternate: null
-time_series:
-  - TIME_BASE
-  - RESOLUTION
-  - TIME_SCALE
-  - REFERENCE_POSITION
-  - LEAP_SECONDS_INCLUDED
-  - ABSOLUTE_ERROR
-  - RELATIVE_ERROR
-  - BIN_LOCATION
-  - VAR_TYPE
 data:
   - CATDESC
   - DEPEND_0
@@ -371,6 +361,7 @@ support_data:
   - FIELDNAM
   - FILLVAL
   - FORMAT
+  - LABLAXIS
   - SI_CONVERSION
   - UNITS
   - VALIDMIN
@@ -379,5 +370,6 @@ support_data:
 metadata:
   - CATDESC
   - FIELDNAM
+  - FILLVAL
   - FORMAT
   - VAR_TYPE

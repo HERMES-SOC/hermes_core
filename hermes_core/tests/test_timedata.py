@@ -49,8 +49,8 @@ def get_test_timeseries():
     ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
-            "VAR_TYPE": "metadata",
-            "CATDESC": "Test Metadata",
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
         }
     )
     return ts
@@ -112,10 +112,30 @@ def test_multidimensional_data():
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
 
-    # with pytest.raises(ValueError):
     test_data = TimeData(ts, meta=input_attrs)
 
     assert test_data["var"].shape == (10, 2)
+
+
+def test_suport_nrv_data():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+    ts = get_test_timeseries()
+    support_data = {"support_var": Column(data=[1, 2, 3])}
+    nrv_data = {"nrv_var": Column(data=[1, 2, 3])}
+
+    # Create TimeData
+    test_data = TimeData(
+        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
+    )
+
+    assert "support_var" in test_data
+    assert "nrv_var" in test_data
 
 
 def test_timedata_valid_attrs():
@@ -383,8 +403,20 @@ def test_timedata_generate_valid_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
+    support_data = {"support_var": Quantity(value=[1, 2, 3], unit="km")}
+    support_data["support_var"].meta = OrderedDict(
+        {"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"}
+    )
+    nrv_data = {
+        "nrv_var": Column(
+            data=[1, 2, 3],
+            meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+        )
+    }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = TimeData(
+        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
+    )
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -439,6 +471,7 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
+        print(result)
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
@@ -485,8 +518,20 @@ def test_timedata_from_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
+    support_data = {"support_var": Quantity(value=[1, 2, 3], unit="km")}
+    support_data["support_var"].meta = OrderedDict(
+        {"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"}
+    )
+    nrv_data = {
+        "nrv_var": Column(
+            data=[1, 2, 3],
+            meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+        )
+    }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = TimeData(
+        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
+    )
 
     # Add the Time column
     test_data["time"].meta.update(

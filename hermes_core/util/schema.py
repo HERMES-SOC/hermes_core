@@ -17,6 +17,7 @@ from astropy import units as u
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
+from hermes_core.util.exceptions import warn_user
 
 __all__ = ["HERMESDataSchema", "CDFSchema"]
 
@@ -661,20 +662,47 @@ class CDFSchema(HERMESDataSchema):
         measurement_attributes = OrderedDict()
 
         # Check the Attributes that can be derived
-        if not var_name == "time":
-            measurement_attributes["DEPEND_0"] = self._get_depend(data)
-        measurement_attributes["DISPLAY_TYPE"] = self._get_display_type(data, var_name)
-        measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
-        measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
-        measurement_attributes["FORMAT"] = self._get_format(data, var_name)
-        measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
-        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-            data, var_name
-        )
-        measurement_attributes["UNITS"] = self._get_units(data, var_name)
-        measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
-        measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
-        measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        var_type = self._get_var_type(data, var_name)
+
+        if var_type == "data":
+            if not var_name == "time":
+                measurement_attributes["DEPEND_0"] = self._get_depend(data)
+            measurement_attributes["DISPLAY_TYPE"] = self._get_display_type(
+                data, var_name
+            )
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
+            measurement_attributes["FORMAT"] = self._get_format(data, var_name)
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
+                data, var_name
+            )
+            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
+            measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        elif var_type == "support_data":
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
+            measurement_attributes["FORMAT"] = self._get_format(data, var_name)
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
+                data, var_name
+            )
+            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
+            measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        elif var_type == "metadata":
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
+            measurement_attributes["FORMAT"] = self._get_format(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        else:
+            warn_user(
+                f"Variable {var_name} has unrecognizable VAR_TYPE ({var_type}). Cannot Derive Metadata for Variable."
+            )
+
         return measurement_attributes
 
     def derive_time_attributes(self, data):
@@ -994,8 +1022,18 @@ class CDFSchema(HERMESDataSchema):
             conversion_rate = time_unit.to(u.s)
             si_conversion = f"{conversion_rate:e}>{u.s}"
         else:
-            conversion_rate = var_data.unit.to(var_data.si.unit)
-            si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+            # Get the Units as a String
+            var_unit_str = self._get_units(data, var_name)
+            try:
+                var_unit = u.Unit(var_unit_str)
+                si_unit = var_unit.si.bases[0]
+                conversion_rate = var_unit.to(si_unit)
+                si_conversion = f"{conversion_rate:e}>{si_unit}"
+            except IndexError:
+                warn_user(
+                    f"Cannot Generate SI Conversion for Variable {var_name} with Units {var_unit_str}. Consider making this Variable 'metadata' type."
+                )
+                si_conversion = ""
         return si_conversion
 
     def _get_time_base(self, data):
@@ -1037,8 +1075,11 @@ class CDFSchema(HERMESDataSchema):
         var_data = data[var_name]
         unit = ""
         # Get the Unit from the TimeSeries Quantity if it exists
-        if hasattr(var_data, "unit"):
+        if hasattr(var_data, "unit") and var_data.unit is not None:
             unit = var_data.unit.to_string()
+        # Try to ge the UNITS from the metadata
+        elif "UNITS" in var_data.meta and var_data.meta["UNITS"] is not None:
+            unit = var_data.meta["UNITS"]
         return unit
 
     def _get_validmin(self, data, var_name):
@@ -1078,7 +1119,14 @@ class CDFSchema(HERMESDataSchema):
             return maxval
 
     def _get_var_type(self, data, var_name):
-        return "data"
+        # Get the Variable Data
+        var_data = data[var_name]
+        attr_name = "VAR_TYPE"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            var_type = "data"
+        else:
+            var_type = var_data.meta[attr_name]
+        return var_type
 
     # =============================================================================================
     #                             GLOBAL METADATA DERIVATIONS
