@@ -270,18 +270,16 @@ class CDFHandler(TimeDataIOHandler):
 
         # Loop through NRV Data
         for var_name, var_data in data.nrv_data.items():
-            # Adding the Variable is different depending on whether the data is empty
+            # Guess the data type to store
             # Documented in https://github.com/spacepy/spacepy/issues/707
-            if len(var_data.shape) > 0 and var_data.shape[0] > 0:
-                # Add the Variable to the CDF File
-                cdf_file.new(name=var_name, data=var_data.value, recVary=False)
-            else:
-                # Add the Variable to the CDF File
-                cdf_file.new(
-                    name=var_name,
-                    data=var_data.value,
-                )
-                cdf_file[var_name].rv(False)
+            _, var_data_types, _ = self.schema._types(var_data)
+            # Add the Variable to the CDF File
+            cdf_file.new(
+                name=var_name,
+                data=var_data.value,
+                type=var_data_types[0],
+                recVary=False,
+            )
 
             # Add the Variable Attributes
             for var_attr_name, var_attr_val in var_data.meta.items():

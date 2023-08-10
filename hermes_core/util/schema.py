@@ -1023,17 +1023,11 @@ class CDFSchema(HERMESDataSchema):
             si_conversion = f"{conversion_rate:e}>{u.s}"
         else:
             # Get the Units as a String
-            var_unit_str = self._get_units(data, var_name)
-            try:
-                var_unit = u.Unit(var_unit_str)
-                si_unit = var_unit.si.bases[0]
-                conversion_rate = var_unit.to(si_unit)
-                si_conversion = f"{conversion_rate:e}>{si_unit}"
-            except IndexError:
-                warn_user(
-                    f"Cannot Generate SI Conversion for Variable {var_name} with Units {var_unit_str}. Consider making this Variable 'metadata' type."
-                )
-                si_conversion = ""
+            if isinstance(var_data, u.Quantity):
+                conversion_rate = var_data.unit.to(var_data.si.unit)
+                si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+            else:
+                si_conversion = " > "
         return si_conversion
 
     def _get_time_base(self, data):
