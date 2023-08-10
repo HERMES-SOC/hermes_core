@@ -177,10 +177,10 @@ def test_global_attribute_template():
 
     # good inputs
     template = TimeData.global_attribute_template(
-        instr_name="eea", data_level="l2", version="1.3.6"
+        instr_name="eea", data_level="ql", version="1.3.6"
     )
     assert template["Descriptor"] == "EEA>Electron Electrostatic Analyzer"
-    assert template["Data_level"] == "L2>Level 2"
+    assert template["Data_level"] == "QL>Quicklook"
     assert template["Data_version"] == "1.3.6"
 
 
@@ -285,9 +285,38 @@ def test_timedata_add_measurement():
     test_data.add_measurement(measure_name="test", data=q)
     assert test_data["test"].shape == (10,)
 
+    # Add Support Data
+    c = Column(data=random(size=(10)))
+    test_data.add_measurement(
+        measure_name="Test Support Data",
+        data=c,
+        meta={"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"},
+    )
+    assert test_data["Test Support Data"].shape == (10,)
+
+    # Add Test Metadata
+    c = Column(data=[1])
+    test_data.add_measurement(
+        measure_name="Test Metadata",
+        data=c,
+        meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+    )
+    assert test_data["Test Metadata"].shape == (1,)
+
     # test remove_measurement
     test_data.remove_measurement("test")
     assert "test" not in test_data
+
+    # Test remove Support Data
+    test_data.remove_measurement("Test Support Data")
+    assert "Test Support Data" not in test_data
+
+    # Test Remove Metadata
+    test_data.remove_measurement("Test Metadata")
+    assert "Test Metadata" not in test_data
+
+    with pytest.raises(ValueError):
+        test_data.remove_measurement("bad_variable")
 
 
 def test_timedata_plot():

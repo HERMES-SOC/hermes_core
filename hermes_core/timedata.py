@@ -125,14 +125,11 @@ class TimeData:
         units = {}
         for name in self._data.columns:
             var_data = self._data[name]
-
             # Get the Unit
             if hasattr(var_data, "unit"):
                 unit = var_data.unit
-            elif "UNITS" in var_data.meta and var_data.meta["UNITS"]:
-                unit = var_data.meta["UNITS"]
             else:
-                unit = None
+                unit = var_data.meta["UNITS"]
             units[name] = unit
         return OrderedDict(units)
 
