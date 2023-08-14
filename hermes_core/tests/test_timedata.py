@@ -803,3 +803,6 @@ def test_without_cdf_lib():
     test_data = TimeData(ts, meta=input_attrs)
 
     assert test_data.meta["CDF_Lib_version"] == "unknown version"
+
+    # Reset/ Re-Enable CDF Libraries
+    pycdf.lib = pycdf.Library(pycdf._libpath, pycdf._library)

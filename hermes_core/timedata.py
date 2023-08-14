@@ -10,8 +10,8 @@ from astropy.timeseries import TimeSeries
 from astropy.table import vstack, Column
 from astropy import units as u
 import hermes_core
-from hermes_core.util.io import CDFHandler, NetCDFHandler
-from hermes_core.util.schema import CDFSchema
+from hermes_core.util.io import CDFHandler
+from hermes_core.util.schema import HERMESDataSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
 
@@ -100,7 +100,7 @@ class TimeData:
             self.nrv_data = {}
 
         # Derive Metadata
-        self.schema = CDFSchema()
+        self.schema = HERMESDataSchema()
         self._derive_metadata()
 
     @property
@@ -252,7 +252,7 @@ class TimeData:
         template : `collections.OrderedDict`
             A template for required global attributes.
         """
-        meta = CDFSchema.global_attribute_template()
+        meta = HERMESDataSchema.global_attribute_template()
 
         # Check the Optional Instrument Name
         if instr_name:
@@ -297,11 +297,11 @@ class TimeData:
         template : `collections.OrderedDict`
             A template for required variable attributes that must be provided.
         """
-        return CDFSchema.measurement_attribute_template()
+        return HERMESDataSchema.measurement_attribute_template()
 
     def _derive_metadata(self):
         """
-        Funtion to derive global and measurement metadata based on a CDFSchema
+        Funtion to derive global and measurement metadata based on a HERMESDataSchema
         """
 
         # Get Default Metadata
@@ -641,8 +641,6 @@ class TimeData:
         # Create the appropriate handler object based on file type
         if file_extension == ".cdf":
             handler = CDFHandler()
-        elif file_extension == ".nc":
-            handler = NetCDFHandler()
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
