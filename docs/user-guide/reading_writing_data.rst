@@ -186,7 +186,7 @@ lest this subset of global metadata attributes.
 Derived Global Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.util.schema.CDFSchema` class derives several global metadata 
+The :py:class:`~hermes_core.util.schema.HERMESDataSchema` class derives several global metadata 
 attributes required for ISTP compliance. The following global attribtues are derived:
 
 - `Data_type`
@@ -269,7 +269,7 @@ to be provided upon instantiation:
 Derived Variable Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.util.schema.CDFSchema` class derives several variable metadata
+The :py:class:`~hermes_core.util.schema.HERMESDataSchema` class derives several variable metadata
 attributes required for ISTP compliance.
 
 -  `TIME_BASE`

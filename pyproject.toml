@@ -48,7 +48,8 @@ dev = [
 
 docs = [
   'sphinx',
-  'sphinx-automodapi'
+  'sphinx-automodapi',
+  'sphinx-copybutton'
 ]
 
 test = [

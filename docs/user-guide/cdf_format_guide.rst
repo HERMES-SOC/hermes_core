@@ -134,8 +134,8 @@ Section 4 of this document.
      - This is an optional field that may not be needed for all products. Where it is used, identifier should be short (e.q. 3-8 characters) descriptors that are helpful to end-users. If a descriptor contains multiple components, underscores are used to separate those components.
      - An optional time span may be specified as "2s" to represent a data file that spans two seconds. In this case, "10s" and "5m" are other expected values that correspond with ten seconds and 5 minutes respectively.
    * - startTime
-     - The start time of the contained data given in "YYYYMMDD_hhmmss"
-     - `20220601_101520`
+     - The start time of the contained data given in `ISO 8601 <https://en.wikipedia.org/wiki/ISO_8601>`_ format.
+     - `20230519T000003`
    * - vX.Y.Z
      - The 3-part version number of the data product. Full description of this identifier is provided in Section 3.1.1 of this document.
      - `v0.0.0`, `v<#.#.#>`
@@ -200,12 +200,12 @@ information is provided:
 * description: (`str`) A brief description of the attribute
 * default: (`str`) The default value used if none is provided
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.CDFSchema` class
+  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
 * validate: (`bool`) Whether the attribute is included in the 
   :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that 
   are required are validated)
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 
@@ -528,9 +528,9 @@ information is provided:
 
 * description: (`str`) A brief description of the attribute
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.CDFSchema` class
+  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 * valid_values: (`list`) List of allowed values the attribute can take for HERMES products,
