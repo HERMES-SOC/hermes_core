@@ -18,7 +18,7 @@ import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
 
-__all__ = ["HERMESDataSchema", "CDFSchema"]
+__all__ = ["HERMESDataSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
@@ -217,12 +217,12 @@ class HERMESDataSchema:
         - description: (`str`) A brief description of the attribute
         - default: (`str`) The default value used if none is provided
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.CDFSchema` class
+            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
         - validate: (`bool`) Whether the attribute is included in the
             :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
             are required are validated)
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
 
@@ -275,9 +275,9 @@ class HERMESDataSchema:
 
         - description: (`str`) A brief description of the attribute
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.CDFSchema` class
+            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
         - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
@@ -344,19 +344,13 @@ class HERMESDataSchema:
 
         return info
 
-
-class CDFSchema(HERMESDataSchema):
-    """Schema for CDF files."""
-
-    def __init__(self):
-        super().__init__()
-
-    def check_well_formed(data):
+    @staticmethod
+    def _check_well_formed(data):
         """Checks if input data is well-formed, regular array
 
         Returns
         -------
-        :class:`~numpy.ndarray`
+        :class:`~numpy.ndarray`s
             The input data as a well-formed array; may be the input
             data exactly.
         """
@@ -420,7 +414,7 @@ class CDFSchema(HERMESDataSchema):
         @raise ValueError: if L{data} has irregular dimensions
 
         """
-        d = CDFSchema.check_well_formed(data)
+        d = HERMESDataSchema._check_well_formed(data)
         dims = d.shape
         elements = 1
         types = []
@@ -470,7 +464,7 @@ class CDFSchema(HERMESDataSchema):
                 for t in trytypes:
                     try:
                         newd = d.astype(dtype=t)
-                    except ValueError:  # Failure to cast, try next type
+                    except TypeError:  # Failure to cast, try next type
                         continue
                     if (newd == d).all():  # Values preserved, use this type
                         d = newd
@@ -642,7 +636,7 @@ class CDFSchema(HERMESDataSchema):
             raise ValueError("Unknown data type: {}".format(cdftype))
         return (inf.min, inf.max)
 
-    def derive_measurement_attributes(self, data, var_name):
+    def derive_measurement_attributes(self, data, var_name, guess_types=None):
         """
         Function to derive metadata for the given measurement.
 
@@ -652,6 +646,8 @@ class CDFSchema(HERMESDataSchema):
             An instance of `TimeData` to derive metadata from
         var_name : `str`
             The name of the measurement to derive metadata for
+        guess_types : `list[int]`, optional
+            Guessed CDF Type of the variable
 
         Returns
         -------
@@ -660,21 +656,33 @@ class CDFSchema(HERMESDataSchema):
         """
         measurement_attributes = OrderedDict()
 
+        # Get the Variable Data
+        var_data = data[var_name]
+        if not guess_types:
+            if var_name == "time":
+                # Guess the const CDF Data Type
+                (guess_dims, guess_types, guess_elements) = self._types(
+                    var_data.to_datetime()
+                )
+            else:
+                # Guess the const CDF Data Type
+                (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
+
         # Check the Attributes that can be derived
         if not var_name == "time":
-            measurement_attributes["DEPEND_0"] = self._get_depend(data)
-        measurement_attributes["DISPLAY_TYPE"] = self._get_display_type(data, var_name)
-        measurement_attributes["FIELDNAM"] = self._get_fieldnam(data, var_name)
-        measurement_attributes["FILLVAL"] = self._get_fillval(data, var_name)
-        measurement_attributes["FORMAT"] = self._get_format(data, var_name)
+            measurement_attributes["DEPEND_0"] = self._get_depend()
+        measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
+        measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
+        measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
+        measurement_attributes["FORMAT"] = self._get_format(var_data, guess_types[0])
         measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
         measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
             data, var_name
         )
         measurement_attributes["UNITS"] = self._get_units(data, var_name)
-        measurement_attributes["VALIDMIN"] = self._get_validmin(data, var_name)
-        measurement_attributes["VALIDMAX"] = self._get_validmax(data, var_name)
-        measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
+        measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
+        measurement_attributes["VAR_TYPE"] = self._get_var_type()
         return measurement_attributes
 
     def derive_time_attributes(self, data):
@@ -691,13 +699,22 @@ class CDFSchema(HERMESDataSchema):
         attributes : `OrderedDict`
             A dict containing `key: value` pairs of time metadata attributes.
         """
-        time_attributes = self.derive_measurement_attributes(data, "time")
+
+        # Get the Variable Data
+        var_data = data["time"]
+        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+
+        time_attributes = self.derive_measurement_attributes(
+            data, "time", guess_types=guess_types
+        )
         # Check the Attributes that can be derived
-        time_attributes["REFERENCE_POSITION"] = self._get_reference_position(data)
+        time_attributes["REFERENCE_POSITION"] = self._get_reference_position(
+            guess_types[0]
+        )
         time_attributes["RESOLUTION"] = self._get_resolution(data)
-        time_attributes["TIME_BASE"] = self._get_time_base(data)
-        time_attributes["TIME_SCALE"] = self._get_time_scale(data)
-        time_attributes["UNITS"] = self._get_time_units(data)
+        time_attributes["TIME_BASE"] = self._get_time_base(guess_types[0])
+        time_attributes["TIME_SCALE"] = self._get_time_scale(guess_types[0])
+        time_attributes["UNITS"] = self._get_time_units(guess_types[0])
         return time_attributes
 
     def derive_global_attributes(self, data):
@@ -750,37 +767,28 @@ class CDFSchema(HERMESDataSchema):
     #                             VARIABLE METADATA DERIVATIONS
     # =============================================================================================
 
-    def _get_depend(self, data):
+    def _get_depend(self):
         return "Epoch"
 
-    def _get_display_type(self, data, var_name):
+    def _get_display_type(self):
         return "time_series"
 
-    def _get_fieldnam(self, data, var_name):
+    def _get_fieldnam(self, var_name):
         if var_name != "time":
             return deepcopy(var_name)
         else:
             return "Epoch"
 
-    def _get_fillval(self, data, var_name):
+    def _get_fillval(self, guess_type):
         # Get the Variable Data
-        var_data = data[var_name]
-        if var_name == "time":
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(
-                var_data.to_datetime()
-            )
-            # Get the FILLVAL for the gussed data type
-            fillval = self._fillval_helper(data, cdf_type=guess_types[0])
+        if guess_type == const.CDF_TIME_TT2000.value:
             return datetime.datetime(9999, 12, 31, 23, 59, 59, 999999)
         else:
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the FILLVAL for the gussed data type
-            fillval = self._fillval_helper(data, cdf_type=guess_types[0])
+            fillval = self._fillval_helper(cdf_type=guess_type)
             return fillval
 
-    def _fillval_helper(self, data, cdf_type):
+    def _fillval_helper(self, cdf_type):
         # Fill value, indexed by the CDF type (numeric)
         fillvals = {}
         # Integers
@@ -806,25 +814,9 @@ class CDFSchema(HERMESDataSchema):
         value = fillvals[cdf_type]
         return value
 
-    def _get_format(self, data, var_name):
-        # Get the Variable Data
-        var_data = data[var_name]
-        if var_name == "time":
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(
-                var_data.to_datetime()
-            )
-            return self._format_helper(data, var_name, guess_types[0])
-        else:
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
-            return self._format_helper(data, var_name, guess_types[0])
-
-    def _format_helper(self, data, var_name, cdftype):
+    def _get_format(self, var_data, cdftype):
         minn = "VALIDMIN"
         maxx = "VALIDMAX"
-        # Get the Variable Data
-        var_data = data[var_name]
 
         if cdftype in (
             const.CDF_INT1.value,
@@ -943,25 +935,20 @@ class CDFSchema(HERMESDataSchema):
             fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(
-                "Couldn't find FORMAT for {} of type {}".format(
-                    var_name, self.cdftypenames.get(cdftype, "UNKNOWN")
+                "Couldn't find FORMAT for type {}".format(
+                    self.cdftypenames.get(cdftype, "UNKNOWN")
                 )
             )
         return fmt
 
     def _get_lablaxis(self, data, var_name):
-        # return f"{var_name} [{data[var_name].unit}]"
         return f"{var_name} [{self._get_units(data, var_name)}]"
 
-    def _get_reference_position(self, data):
-        # Get the Variable Data
-        var_data = data.time
-        # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
-        if guess_types[0] == const.CDF_TIME_TT2000.value:
+    def _get_reference_position(self, guess_type):
+        if guess_type == const.CDF_TIME_TT2000.value:
             return "rotating Earth geoid"
         else:
-            msg = f"Reference Position for Time type ({guess_types[0]}) not found."
+            msg = f"Reference Position for Time type ({guess_type}) not found."
             raise TypeError(msg)
 
     def _get_resolution(self, data):
@@ -983,54 +970,30 @@ class CDFSchema(HERMESDataSchema):
         # Get the Variable Data
         var_data = data[var_name]
         if var_name == "time":
-            time_unit_str = self._get_time_units(data)
-            time_unit = u.s
-            if time_unit_str == "ms":
-                time_unit = u.ms
-            if time_unit_str == "ns":
-                time_unit = u.ns
-            if time_unit_str == "ps":
-                time_unit = u.ns
-            conversion_rate = time_unit.to(u.s)
+            conversion_rate = u.ns.to(u.s)
             si_conversion = f"{conversion_rate:e}>{u.s}"
         else:
             conversion_rate = var_data.unit.to(var_data.si.unit)
             si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
         return si_conversion
 
-    def _get_time_base(self, data):
-        # Get the Variable Data
-        var_data = data.time
-        # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
-        if guess_types[0] == const.CDF_TIME_TT2000.value:
+    def _get_time_base(self, guess_type):
+        if guess_type == const.CDF_TIME_TT2000.value:
             return "J2000"
         else:
-            raise TypeError(f"Time Base for Time type ({guess_types[0]}) not found.")
+            raise TypeError(f"Time Base for Time type ({guess_type}) not found.")
 
-    def _get_time_scale(self, data):
-        # Get the Variable Data
-        var_data = data.time
-        # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
-        if guess_types[0] == const.CDF_TIME_TT2000.value:
+    def _get_time_scale(self, guess_type):
+        if guess_type == const.CDF_TIME_TT2000.value:
             return "Terrestrial Time (TT)"
         else:
-            raise TypeError(f"Time Scale for Time type ({guess_types[0]}) not found.")
+            raise TypeError(f"Time Scale for Time type ({guess_type}) not found.")
 
-    def _get_time_units(self, data):
-        # Get the Variable Data
-        var_data = data.time
-        # Guess the const CDF Data Type
-        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
-        if guess_types[0] == const.CDF_EPOCH.value:
-            return "ms"
-        if guess_types[0] == const.CDF_TIME_TT2000.value:
+    def _get_time_units(self, guess_type):
+        if guess_type == const.CDF_TIME_TT2000.value:
             return "ns"
-        if guess_types[0] == const.CDF_EPOCH16.value:
-            return "ps"
         else:
-            raise TypeError(f"Time Units for Time type ({guess_types[0]}) not found.")
+            raise TypeError(f"Time Units for Time type ({guess_type}) not found.")
 
     def _get_units(self, data, var_name):
         # Get the Variable Data
@@ -1041,43 +1004,29 @@ class CDFSchema(HERMESDataSchema):
             unit = var_data.unit.to_string()
         return unit
 
-    def _get_validmin(self, data, var_name):
+    def _get_validmin(self, guess_type):
         # Get the Variable Data
-        var_data = data[var_name]
-        if var_name == "time":
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(
-                var_data.to_datetime()
-            )
+        if guess_type == const.CDF_TIME_TT2000.value:
             # Get the Min Value
-            minval, maxval = self._get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_type)
             return minval + datetime.timedelta(seconds=1)
         else:
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Min Value
-            minval, maxval = self._get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_type)
             return minval
 
-    def _get_validmax(self, data, var_name):
+    def _get_validmax(self, guess_type):
         # Get the Variable Data
-        var_data = data[var_name]
-        if var_name == "time":
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(
-                var_data.to_datetime()
-            )
+        if guess_type == const.CDF_TIME_TT2000.value:
             # Get the Max Value
-            minval, maxval = self._get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_type)
             return maxval - datetime.timedelta(seconds=1)
         else:
-            # Guess the const CDF Data Type
-            (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             # Get the Max Value
-            minval, maxval = self._get_minmax(guess_types[0])
+            minval, maxval = self._get_minmax(guess_type)
             return maxval
 
-    def _get_var_type(self, data, var_name):
+    def _get_var_type(self):
         return "data"
 
     # =============================================================================================
@@ -1373,33 +1322,3 @@ class CDFSchema(HERMESDataSchema):
         else:
             cdf_lib_version = data.meta[attr_name]
         return cdf_lib_version
-
-
-class NetCDFSchema(HERMESDataSchema):
-    """Schema for NetCDF files."""
-
-    @property
-    def global_attribute_schema(self):
-        """Schema for global attributes of the file."""
-        return {
-            "attribute1": {"type": "string", "required": True},
-            "attribute2": {"type": "int", "required": False},
-            # Define more global attributes and their schemas
-        }
-
-    @property
-    def variable_attribute_schema(self):
-        """Schema for variable attributes of the file."""
-        return {
-            "variable1": {
-                "attribute1": {"type": "float", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable1 and their schemas
-            },
-            "variable2": {
-                "attribute1": {"type": "int", "required": True},
-                "attribute2": {"type": "string", "required": False},
-                # Define more attributes for variable2 and their schemas
-            },
-            # Define more variables and their attribute schemas
-        }

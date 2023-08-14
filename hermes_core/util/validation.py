@@ -1,8 +1,8 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
-from spacepy.pycdf import CDF
+from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
-from hermes_core.util.schema import CDFSchema
+from hermes_core.util.schema import HERMESDataSchema
 
 __all__ = ["validate", "CDFValidator"]
 
@@ -27,8 +27,6 @@ def validate(filepath):
     # Create the appropriate validator object based on file type
     if file_extension == ".cdf":
         validator = CDFValidator()
-    elif file_extension == ".nc":
-        validator = NetCDFValidator()
     else:
         raise ValueError(f"Unsupported file type: {file_extension}")
 
@@ -68,7 +66,7 @@ class CDFValidator(TimeDataValidator):
         super().__init__()
 
         # CDF Schema
-        self.schema = CDFSchema()
+        self.schema = HERMESDataSchema()
 
     def validate(self, file_path):
         """
@@ -89,7 +87,7 @@ class CDFValidator(TimeDataValidator):
 
         try:
             # Open CDF file with context manager
-            with CDF(file_path) as cdf_file:
+            with CDF(file_path, readonly=True) as cdf_file:
                 # Verify that all `required` global attributes in the schema are present
                 global_attr_validation_errors = self._validate_global_attr_schema(
                     cdf_file=cdf_file
@@ -106,7 +104,7 @@ class CDFValidator(TimeDataValidator):
                 file_checks_errors = self._file_checks(cdf_file=cdf_file)
                 validation_errors.extend(file_checks_errors)
 
-        except IOError:
+        except CDFError:
             validation_errors.append(f"Could not open CDF File at path: {file_path}")
 
         return validation_errors
@@ -121,6 +119,18 @@ class CDFValidator(TimeDataValidator):
         for attr_name, attr_schema in self.schema.global_attribute_schema.items():
             # If it is a required attribute and not present
             if attr_schema["validate"] and (attr_name not in cdf_file.attrs):
+                global_attr_validation_errors.append(
+                    f"Required attribute ({attr_name}) not present in global attributes.",
+                )
+            # If it is a required attribute but null
+            if (
+                attr_schema["validate"]
+                and (attr_name in cdf_file.attrs)
+                and (
+                    (cdf_file.attrs[attr_name][0] == "")
+                    or (cdf_file.attrs[attr_name][0] is None)
+                )
+            ):
                 global_attr_validation_errors.append(
                     f"Required attribute ({attr_name}) not present in global attributes.",
                 )
@@ -170,10 +180,7 @@ class CDFValidator(TimeDataValidator):
             # If it is a required attribute and not present
             if attr_schema["required"] and attr_name not in var_data.attrs:
                 # Check to see if there is an "alternate" attribute
-                if (
-                    "alternate" not in attr_schema
-                    and attr_schema["alternate"] is not None
-                ):
+                if attr_schema["alternate"] is None:
                     variable_errors.append(
                         f"Variable: {var_name} missing '{attr_name}' attribute."
                     )
@@ -220,8 +227,8 @@ class CDFValidator(TimeDataValidator):
         # Save the Current Format
         variable_format = cdf_file[var_name].meta["FORMAT"]
         # Get the target Format for the Variable
-        target_format = self.schema._format_helper(
-            data=cdf_file, var_name=var_name, cdftype=cdf_file[var_name].type()
+        target_format = self.schema._get_format(
+            var_data=cdf_file[var_name], cdftype=cdf_file[var_name].type()
         )
 
         if variable_format != target_format:
@@ -298,26 +305,3 @@ class CDFValidator(TimeDataValidator):
                 )
 
         return variable_checks_errors
-
-
-class NetCDFValidator(TimeDataValidator):
-    """
-    Validator for NetCDF files.
-    """
-
-    def validate(self, file_path):
-        """
-        Validate the NetCDF file.
-
-        Parameters
-        ----------
-        file_path : `str`
-            The path to the NetCDF file.
-
-        Returns
-        -------
-        errors : `list[str]`
-            A list of validation errors returned. A valid file will result in an emppty list being returned.
-        """
-        # Validation logic for NetCDF files
-        pass

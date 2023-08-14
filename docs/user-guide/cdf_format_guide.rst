@@ -200,12 +200,12 @@ information is provided:
 * description: (`str`) A brief description of the attribute
 * default: (`str`) The default value used if none is provided
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.CDFSchema` class
+  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
 * validate: (`bool`) Whether the attribute is included in the 
   :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that 
   are required are validated)
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 
@@ -528,9 +528,9 @@ information is provided:
 
 * description: (`str`) A brief description of the attribute
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.CDFSchema` class
+  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.CDFSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 * valid_values: (`list`) List of allowed values the attribute can take for HERMES products,
