@@ -114,12 +114,20 @@ class TimeData:
             self.support_data = support_data
         else:
             self.support_data = {}
+        # Update Meta Attrs
+        for col in self.support_data:
+            if not hasattr(support_data[col], "meta"):
+                self.support_data[col].meta = OrderedDict()
 
         # Copy the Non-Record Varying Data
         if nrv_data:
             self.nrv_data = nrv_data
         else:
             self.nrv_data = {}
+        # Update Meta Attrs
+        for col in self.nrv_data:
+            if not hasattr(nrv_data[col], "meta"):
+                self.nrv_data[col].meta = OrderedDict()
 
         # Derive Metadata
         self.schema = HERMESDataSchema()
