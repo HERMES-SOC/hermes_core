@@ -483,6 +483,7 @@ convenience.
 * FIELDNAM
 * FILLVAL (if time varying)
 * FORMAT/FORM_PTR
+* LABLAXIS or LABL_PTR_i
 * SI_CONVERSION
 * UNITS/UNIT_PTR
 * VALIDMIN (if time varying)
