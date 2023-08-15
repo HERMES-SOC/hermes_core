@@ -126,6 +126,18 @@ def test_suport_nrv_data():
     }
     # fmt: on
     ts = get_test_timeseries()
+
+    # Bad Support
+    support_data = {"support_var": [1, 2, 3]}
+    with pytest.raises(TypeError):
+        _ = TimeData(ts, support_data=support_data, meta=input_attrs)
+
+    # Bad NRV
+    nrv_data = {"nrv_var": [1, 2, 3]}
+    with pytest.raises(TypeError):
+        _ = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
+
+    # Good Support and NRV
     support_data = {"support_var": Column(data=[1, 2, 3])}
     nrv_data = {"nrv_var": Column(data=[1, 2, 3])}
 

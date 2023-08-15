@@ -156,7 +156,6 @@ class CDFHandler(TimeDataIOHandler):
                             self._load_support_data_variable(
                                 support_data, var_name, var_data, var_attrs
                             )
-
                     else:
                         # Load NRV Data as `metadata`
                         self._load_metadata_variable(

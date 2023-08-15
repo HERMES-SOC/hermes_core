@@ -65,8 +65,30 @@ class TimeData:
             # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(
-                    f"Column '{colname}' must be an astropy.Quantity object"
+                    f"Column '{colname}' must be an astropy.units.Quantity object"
                 )
+
+        # Check Support Data
+        if support_data:
+            for colname in support_data:
+                if not (
+                    isinstance(support_data[colname], Column)
+                    or isinstance(support_data[colname], u.Quantity)
+                ):
+                    raise TypeError(
+                        f"Column '{colname}' must be an astropy.table.Column or astropy.units.Quantity object"
+                    )
+
+        # Check NRV Data
+        if nrv_data:
+            for colname in nrv_data:
+                if not (
+                    isinstance(nrv_data[colname], Column)
+                    or isinstance(nrv_data[colname], u.Quantity)
+                ):
+                    raise TypeError(
+                        f"Column '{colname}' must be an astropy.table.Column or astropy.units.Quantity object"
+                    )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
