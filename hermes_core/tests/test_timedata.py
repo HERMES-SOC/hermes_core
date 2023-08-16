@@ -643,7 +643,7 @@ def test_timedata_from_cdf():
         assert len(result) == len(result2)
 
 
-def test_timedata_from_invalid_cdf():
+def test_timedata_idempotency():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -684,32 +684,64 @@ def test_timedata_from_invalid_cdf():
     test_data = get_test_timedata()
     test_data.meta.update(input_attrs)
 
+    # Induce a Bad (Null) Global Attribute
+    test_data.meta["Test Null Attr"] = ""
+
+    # Induce an NRV Variable
+    test_data["NRV_var"] = Column(["Test NRV Data"])
+    test_data["NRV_var"].meta["UNITS"] = "m"
+
+    # Induce a Variable with Bad UNITS
+    test_data["Bad_units_var"] = Column([1, 2, 3, 4])
+    test_data["Bad_units_var"].meta["UNITS"] = "Not A Unit"
+
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_data_cols = test_data.columns
         test_data_meta_keys = list(test_data.meta.keys())
         test_file_output_path = test_data.save(output_path=tmpdirname)
 
-        test_cdf = CDF(test_file_output_path, readonly=False)
-
-        # Induce a Bad (Null) Global Attribute
-        test_cdf.meta["Test Null Attr"] = ""
-
-        # Induce an NRV Variable
-        test_cdf["NRV_var"] = ["Test NRV Data"]
-        test_cdf["NRV_var"].meta["UNITS"] = "m"
-
-        # Induce a Variable with Bad UNITS
-        test_cdf["Bad_units_var"] = [1, 2, 3, 4]
-        test_cdf["Bad_units_var"].meta["UNITS"] = "Not A Unit"
-
-        # Save the CDF
-        test_cdf.close()
-
         # Try loading the *Invalid* CDF File
         loaded_data = TimeData.load(test_file_output_path)
 
-        assert len(loaded_data.columns) == len(test_data.columns)
-        assert len(loaded_data.meta.keys()) == 1 + len(test_data_meta_keys)
+        assert len(test_data) == len(loaded_data)
+        assert test_data.shape == loaded_data.shape
+        assert len(test_data.meta) == len(loaded_data.meta)
+
+        for attr in test_data.meta:
+            assert attr in loaded_data.meta
+
+        for var in test_data.columns:
+            print(var)
+            assert var in loaded_data.columns
+            assert len(test_data[var]) == len(loaded_data[var])
+            assert len(test_data[var].meta) == len(loaded_data[var].meta)
+            assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
+
+        for var in test_data.support_data:
+            print(var)
+            assert var in loaded_data.support_data
+            assert len(test_data.support_data[var]) == len(
+                loaded_data.support_data[var]
+            )
+            assert len(test_data.support_data[var].meta) == len(
+                loaded_data.support_data[var].meta
+            )
+            assert (
+                test_data.support_data[var].meta["VAR_TYPE"]
+                == loaded_data.support_data[var].meta["VAR_TYPE"]
+            )
+
+        for var in test_data.nrv_data:
+            print(var)
+            assert var in loaded_data.nrv_data
+            assert test_data.nrv_data[var].shape == loaded_data.nrv_data[var].shape
+            assert len(test_data.nrv_data[var].meta) == len(
+                loaded_data.nrv_data[var].meta
+            )
+            assert (
+                test_data.nrv_data[var].meta["VAR_TYPE"]
+                == loaded_data.nrv_data[var].meta["VAR_TYPE"]
+            )
 
 
 @pytest.mark.parametrize(
