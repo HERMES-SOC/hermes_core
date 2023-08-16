@@ -134,9 +134,9 @@ class CDFHandler(TimeDataIOHandler):
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
 
+                    # Extract the Variable's Data
+                    var_data = input_file[var_name][...]
                     if input_file[var_name].rv():
-                        # Extract the Variable's Data
-                        var_data = input_file[var_name][:].copy()
                         # See if it is `data` or `support_data`
                         if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
                             # Load as Record-Varying `data`
@@ -159,7 +159,7 @@ class CDFHandler(TimeDataIOHandler):
                     else:
                         # Load NRV Data as `metadata`
                         self._load_metadata_variable(
-                            nrv_data, input_file, var_name, var_attrs
+                            nrv_data, var_name, var_data, var_attrs
                         )
 
         # Return the given TimeSeries, NRV Data
@@ -177,15 +177,7 @@ class CDFHandler(TimeDataIOHandler):
         # Create a Column entry for the variable
         support_data[var_name] = Column(data=var_data, meta=var_attrs)
 
-    def _load_metadata_variable(self, nrv_data, input_file, var_name, var_attrs):
-        # If the Var Data is Scalar
-        if len(input_file[var_name].shape) == 0:
-            # No Data
-            var_data = input_file[var_name][...]
-        # Otherwise its an array
-        else:
-            # Extract the Variable's Data
-            var_data = input_file[var_name][:].copy()
+    def _load_metadata_variable(self, nrv_data, var_name, var_data, var_attrs):
         # Create a Column entry for the variable
         nrv_data[var_name] = Column(data=var_data, meta=var_attrs)
 
