@@ -711,14 +711,12 @@ def test_timedata_idempotency():
             assert attr in loaded_data.meta
 
         for var in test_data.columns:
-            print(var)
             assert var in loaded_data.columns
             assert len(test_data[var]) == len(loaded_data[var])
             assert len(test_data[var].meta) == len(loaded_data[var].meta)
             assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
 
         for var in test_data.support_data:
-            print(var)
             assert var in loaded_data.support_data
             assert len(test_data.support_data[var]) == len(
                 loaded_data.support_data[var]
@@ -732,7 +730,6 @@ def test_timedata_idempotency():
             )
 
         for var in test_data.nrv_data:
-            print(var)
             assert var in loaded_data.nrv_data
             assert test_data.nrv_data[var].shape == loaded_data.nrv_data[var].shape
             assert len(test_data.nrv_data[var].meta) == len(
