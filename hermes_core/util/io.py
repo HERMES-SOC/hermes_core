@@ -138,7 +138,7 @@ class CDFHandler(TimeDataIOHandler):
                         # Extract the Variable's Data
                         var_data = input_file[var_name][:].copy()
                         # See if it is `data` or `support_data`
-                        if "UNITS" in var_attrs and len(var_data == len(ts["time"])):
+                        if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
                             # Load as Record-Varying `data`
                             try:
                                 self._load_data_variable(
