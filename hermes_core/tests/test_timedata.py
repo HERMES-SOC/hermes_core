@@ -12,7 +12,7 @@ from astropy.table import Column
 from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
-from spacepy.pycdf import CDFError
+from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 import hermes_core
 from hermes_core.timedata import TimeData
@@ -512,7 +512,6 @@ def test_timedata_generate_valid_cdf():
 
         # Validate the generated CDF File
         result = validate(filepath=test_file_output_path)
-        print(result)
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
@@ -642,6 +641,75 @@ def test_timedata_from_cdf():
         result2 = validate(test_file_output_path2)
         assert len(result2) <= 1  # Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
+
+
+def test_timedata_from_invalid_cdf():
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+    # Generate a base TimeData object
+    test_data = get_test_timedata()
+    test_data.meta.update(input_attrs)
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_data_cols = test_data.columns
+        test_data_meta_keys = list(test_data.meta.keys())
+        test_file_output_path = test_data.save(output_path=tmpdirname)
+
+        test_cdf = CDF(test_file_output_path, readonly=False)
+
+        # Induce a Bad (Null) Global Attribute
+        test_cdf.meta["Test Null Attr"] = ""
+
+        # Induce an NRV Variable
+        test_cdf["NRV_var"] = ["Test NRV Data"]
+        test_cdf["NRV_var"].meta["UNITS"] = "m"
+
+        # Induce a Variable with Bad UNITS
+        test_cdf["Bad_units_var"] = [1, 2, 3, 4]
+        test_cdf["Bad_units_var"].meta["UNITS"] = "Not A Unit"
+
+        # Save the CDF
+        test_cdf.close()
+
+        # Try loading the *Invalid* CDF File
+        loaded_data = TimeData.load(test_file_output_path)
+
+        assert len(loaded_data.columns) == len(test_data.columns)
+        assert len(loaded_data.meta.keys()) == 1 + len(test_data_meta_keys)
 
 
 @pytest.mark.parametrize(
