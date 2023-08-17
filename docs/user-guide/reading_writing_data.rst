@@ -348,29 +348,17 @@ Plotting Spectrograms
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> from hermes_core.timedata import TimeData
-    >>> bx = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=99)]).cumsum(0)
-    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": u.Quantity(bx, "nanoTesla", dtype=np.int16)})
+    >>> energy_bins = u.Quantity([2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000], 'eV', dtype='int')
+    >>> col_names = [f'{this_e}-{next_e}' for this_e, next_e in zip(energy_bins, energy_bins[1:])]
+    >>> spectra = u.Quantity(np.stack([np.arange(100) + i*2 for i, this_arr in enumerate(np.arange(10))]), 'm/s', dtype='int16')
+    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={col_names[0]: spectra[:, 0]})
     >>> input_attrs = TimeData.global_attribute_template("merit", "l1", "1.0.0")
+    >>> input_attrs.update({"DEPEND_1": energy_bins})
     >>> timedata = TimeData(data=ts, meta=input_attrs)
-    >>> # Add Main Spectra
-    >>> spectra = np.sin(np.random.random(size=(100, 10))+1)
-    >>> q = u.Quantity(value=spectra, unit="keV/(cm^2 s sr keV)")
-    >>> q.meta = OrderedDict(
-    >>>     {"CATDESC": "energy spectrum", "LABLAXIS": "DEF", "DEPEND_1": "dis_energy"}
-    >>> )
-    >>> timedata.add_measurement(measure_name="energyspectr", data=q)
-    >>> # Add Support
-    >>> bins = np.repeat([[2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0]], 100, axis=0)
-    >>> q = u.Quantity(value=bins, unit="eV")
-    >>> q.meta = OrderedDict(
-    >>>     {
-    >>>         "CATDESC": "spectrum energies",
-    >>>         "LABLAXIS": "energy",
-    >>>     }
-    >>> )
-    >>> timedata.add_measurement(measure_name="dis_energy", data=q)
+    >>> for i, this_col in enumerate(col_names[1:]):
+    >>>     timedata.add_measurement(measure_name=this_col, data=spectra[:, i+1])
     >>> fig = plt.figure()
-    >>> timedata.plot_spectrogram(column="energyspectr") # doctest: +SKIP
+    >>> timedata.plot_spectrogram() # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
 
 Writing a CDF File

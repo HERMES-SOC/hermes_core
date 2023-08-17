@@ -411,7 +411,7 @@ class TimeData:
         """
         self._data.remove_column(measure_name)
 
-    def plot_spectrogram(self, column, axes=None, **plot_args):
+    def plot_spectrogram(self, axes=None, **plot_args):
         """
         Plot the spectrogram.
 
@@ -419,8 +419,6 @@ class TimeData:
         ----------
         axes : `matplotlib.axis.Axes`, optional
             The axes where the plot will be added.
-        column: `str`
-            The Column name
         plot_args :
             Arguments pass to the plot call `pcolormesh`.
 
@@ -437,26 +435,23 @@ class TimeData:
         else:
             fig = axes.get_figure()
 
-        if column in self.columns:
-            data = self.data[column].value.T
-        else:
-            raise KeyError(f"No Data for Column {column}")
+        colnames = self.data.colnames
+        #  TODO: there must be a better way to grab all columns (except time)
+        # and put them in a numpy array...
+        data = np.stack([this_col.value for this_col in self.data[list(colnames[1:])].itercols()])
+
         quantity_support()
         time_support()
 
-        # Create Title
         title = f'{self.meta["Mission_group"]} {self.meta["Descriptor"]} {self.meta["Data_level"]}'
-        # Times
+        #  TODO: the following command is extremely slow and should NOT be necessary with time_support enabled
         times = self.time.to_datetime()
         # Assume the Energy Bins are in DEPEND_1
-        bin_ctr_var = self.data[column].meta["DEPEND_1"]
-        bins = self.data[bin_ctr_var].value.mean(axis=0)
+        bins = self.data.meta["DEPEND_1"]
 
-        # Set the Scale
         plt.yscale("log")
-        # Add the Title
         axes.set_title(title)
-        # Plot Bounds
+        # Set the bounds of the plot area
         axes.plot(
             times[[0, -1]],
             bins[[0, -1]],
@@ -467,17 +462,17 @@ class TimeData:
         cmesh = axes.pcolormesh(
             times,
             bins,
-            data[:-1, :-1],
+            data[:, :-1],
             norm="symlog",
             **plot_args,
         )
         # Setup the Time Axis
         self._setup_x_axis(axes)
         # Setup Y-Axis
-        y_label = f'{self.data[bin_ctr_var].meta["LABLAXIS"]} ({self.data[bin_ctr_var].meta["UNITS"]})'
+        y_label = f'{self.data[colnames[1]].unit}'
         axes.set_ylabel(y_label)
         # Add Colorbar
-        colorbar_label = f'{self.data[column].meta["UNITS"]}'
+        colorbar_label = f'{self.data[colnames[1]].unit}'
         fig.colorbar(cmesh, label=colorbar_label)
 
         return axes
