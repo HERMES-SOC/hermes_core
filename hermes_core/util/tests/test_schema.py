@@ -49,7 +49,9 @@ def test_hermes_data_schema():
     # Measurement Attribute Info
     assert schema.measurement_attribute_info() is not None
     assert isinstance(schema.measurement_attribute_info(), Table)
-    assert isinstance(schema.measurement_attribute_info(attribute_name="CATDESC"), Table)
+    assert isinstance(
+        schema.measurement_attribute_info(attribute_name="CATDESC"), Table
+    )
     with pytest.raises(KeyError):
         _ = schema.measurement_attribute_info(attribute_name="NotAnAttribute")
 
@@ -393,7 +395,8 @@ def test_time_base():
 def test_time_scale():
     """Function to test time scale"""
     assert (
-        HERMESDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value) == "Terrestrial Time (TT)"
+        HERMESDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value)
+        == "Terrestrial Time (TT)"
     )
 
     with pytest.raises(TypeError):

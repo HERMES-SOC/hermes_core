@@ -248,7 +248,9 @@ class JSONDataHandler(TimeDataIOHandler):
         import json
 
         if not Path(file_path).exists():
-            raise FileNotFoundError(f"JSON Data Could not be loaded from path: {file_path}")
+            raise FileNotFoundError(
+                f"JSON Data Could not be loaded from path: {file_path}"
+            )
 
         # Create a new TimeSeries
         ts = TimeSeries()
@@ -273,7 +275,9 @@ class JSONDataHandler(TimeDataIOHandler):
 
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
-                metadata_attrs = filter(lambda key: key != "DAT", list(data["EPOCH_"].keys()))
+                metadata_attrs = filter(
+                    lambda key: key != "DAT", list(data["EPOCH_"].keys())
+                )
                 for attr_name in metadata_attrs:
                     ts["time"].meta[attr_name] = data["EPOCH_"][attr_name]
 
@@ -313,7 +317,9 @@ class JSONDataHandler(TimeDataIOHandler):
                 ts[key].meta = OrderedDict()
                 # Get all the Metadata Attributs
                 # This should be all the keys except for the "DAT" key which holds the measurement data
-                metadata_attrs = filter(lambda key: key != "DAT", list(measurement_variable.keys()))
+                metadata_attrs = filter(
+                    lambda key: key != "DAT", list(measurement_variable.keys())
+                )
                 # Loop through the Metadata Attributes
                 for attr_name in metadata_attrs:
                     # Add the Variable attribute to the Variable's Metadata in the TimeSeries
@@ -378,7 +384,9 @@ class JSONDataHandler(TimeDataIOHandler):
             # Make sure the Value is not None
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
-                raise ValueError(f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} ")
+                raise ValueError(
+                    f"Cannot Add gAttr: {attr_name}. Value was {str(attr_value)} "
+                )
             else:
                 # Add the Attribute to the JSON File
                 if isinstance(attr_value, datetime):
@@ -453,7 +461,9 @@ class CSVDataHandler(TimeDataIOHandler):
         """
 
         if not Path(file_path).exists():
-            raise FileNotFoundError(f"CSV Data Could not be loaded from path: {file_path}")
+            raise FileNotFoundError(
+                f"CSV Data Could not be loaded from path: {file_path}"
+            )
 
         # Initialize empty lists for the Header and Table of the CSV input
         header, table = [], []
@@ -476,7 +486,9 @@ class CSVDataHandler(TimeDataIOHandler):
         columns, data, units = self._convert_table_contents(table)
 
         # Convert the Metadata from the header Python types
-        variable_types, global_attrs, variable_attrs = self._convert_header_metadata(header)
+        variable_types, global_attrs, variable_attrs = self._convert_header_metadata(
+            header
+        )
 
         # Create a new TimeSeries
         ts = TimeSeries()
@@ -588,7 +600,9 @@ class CSVDataHandler(TimeDataIOHandler):
         elif attr_type in self.schema.timetypes:
             return datetime.fromisoformat(attr_value)
         elif attr_type in self.schema.numpytypedict:
-            return np.array([attr_value]).astype(self.schema.numpytypedict[attr_type])[0]
+            return np.array([attr_value]).astype(self.schema.numpytypedict[attr_type])[
+                0
+            ]
 
         return attr_value
 
@@ -602,7 +616,9 @@ class CSVDataHandler(TimeDataIOHandler):
         elif isinstance(attr_value, list) and len(attr_value) > 1:
             attr_list = []
             for part in attr_value:
-                part_value = self._convert_attribute_to_type(part.strip("[]' "), type_value)
+                part_value = self._convert_attribute_to_type(
+                    part.strip("[]' "), type_value
+                )
                 attr_list.append(part_value)
             # Set the Attr Value to the Newly Parsed List
             attr_value = attr_list
@@ -707,7 +723,9 @@ class CSVDataHandler(TimeDataIOHandler):
         # Loop through the Variables in the TimeData container
         for column_name in data.columns:
             # Get the Data Type for the variable
-            (guess_dims, guess_types, guess_elements) = self.schema.types(data[column_name].value)
+            (guess_dims, guess_types, guess_elements) = self.schema.types(
+                data[column_name].value
+            )
             var_type = self.schema.cdftypenames[guess_types[0]]
 
             # Write a tag for the specific variable
@@ -715,12 +733,16 @@ class CSVDataHandler(TimeDataIOHandler):
             # Loop through the Variable Attributes for the Variable
             for attr_name, attr_value in data[column_name].meta.items():
                 # Guess the const CDF Data Type
-                (guess_dims, guess_types, guess_elements) = self.schema.types(attr_value)
+                (guess_dims, guess_types, guess_elements) = self.schema.types(
+                    attr_value
+                )
                 attr_type = self.schema.cdftypenames[guess_types[0]]
 
                 # Add the Attribute to the CSV File
                 if isinstance(attr_value, datetime):
-                    csv_file.write(f"#{attr_name},{attr_value.isoformat()},{attr_type}\n")
+                    csv_file.write(
+                        f"#{attr_name},{attr_value.isoformat()},{attr_type}\n"
+                    )
                 else:
                     csv_file.write(f"#{attr_name},{attr_value},{attr_type}\n")
 
