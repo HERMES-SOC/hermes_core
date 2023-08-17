@@ -21,7 +21,6 @@ def get_test_timedata():
             "Descriptor": "EEA>Electron Electrostatic Analyzer",
             "Data_level": "l1>Level 1",
             "Data_version": "v0.0.1",
-            "Start_time": datetime.datetime.now(),
             "MODS": [
                 "v0.0.0 - Original version.",
                 "v1.0.0 - Include trajectory vectors and optics state.",
@@ -42,8 +41,8 @@ def get_test_timedata():
     ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
-            "VAR_TYPE": "metadata",
-            "CATDESC": "Test Metadata",
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
         }
     )
     timedata = TimeData(data=ts)
@@ -96,6 +95,5 @@ def test_csv_io():
 
         assert td.shape == td_loaded.shape
 
-        print(test_file_output_path)
         with pytest.raises(FileExistsError):
             td_loaded.save(output_path=tmpdirname, file_extension=".csv")

@@ -181,6 +181,7 @@ attribute_key:
     required: true
     overwrite: true
     valid_values: null
+    alternate: null
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
     description: >
       This field allows software to properly format the associated data when displayed on a
@@ -343,16 +344,6 @@ attribute_key:
     overwrite: false
     valid_values: null
     alternate: null
-time_series:
-  - TIME_BASE
-  - RESOLUTION
-  - TIME_SCALE
-  - REFERENCE_POSITION
-  - LEAP_SECONDS_INCLUDED
-  - ABSOLUTE_ERROR
-  - RELATIVE_ERROR
-  - BIN_LOCATION
-  - VAR_TYPE
 data:
   - CATDESC
   - DEPEND_0
