@@ -510,8 +510,6 @@ class CSVDataHandler(TimeDataIOHandler):
                 warn_user(f"Cannot identify unit for column {column_name}.")
 
         # Initialize Global Metadata Dict
-        if not hasattr(ts, "meta"):
-            ts.meta = OrderedDict()
         ts.meta.update(global_attrs)
 
         # Initialize Variable Metadata Dicts
@@ -603,7 +601,6 @@ class CSVDataHandler(TimeDataIOHandler):
             return np.array([attr_value]).astype(self.schema.numpytypedict[attr_type])[
                 0
             ]
-
         return attr_value
 
     def _parse_attribute_value(self, attr_value, attr_type):

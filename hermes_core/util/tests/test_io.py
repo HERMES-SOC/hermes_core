@@ -4,6 +4,7 @@ from collections import OrderedDict
 from pathlib import Path
 import datetime
 import pytest
+import json
 import numpy as np
 from numpy.random import random
 import tempfile
@@ -50,6 +51,7 @@ def get_test_timedata():
 
 
 def test_cdf_io():
+    """Test CDF IO Handler on Default Data"""
     # Get Test Datas
     td = get_test_timedata()
 
@@ -67,6 +69,7 @@ def test_cdf_io():
 
 
 def test_json_io():
+    """Test JSON IO Handler on Default Data"""
     # Get Test Datas
     td = get_test_timedata()
 
@@ -83,7 +86,115 @@ def test_json_io():
             td_loaded.save(output_path=tmpdirname, file_extension=".json")
 
 
+def test_json_bad_file_path():
+    """Test Loading JSON from a non-existant file"""
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Try loading from non-existant_path
+        with pytest.raises(FileNotFoundError):
+            _ = TimeData.load(tmpdirname + "non_existant_file.json")
+
+
+def test_json_list_data():
+    """
+    Test Loading Data that is a List of Data objects.
+    NOTE: This is how SPDF outputs it's JSON data.
+    """
+    # Get Test Datas
+    td = get_test_timedata()
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Convert TimeData the to a JSON File
+        test_file_output_path = td.save(output_path=tmpdirname, file_extension=".json")
+
+        json_data = {}
+        # Load the JSON file as JSON
+        with open(test_file_output_path) as json_file:
+            json_data = json.load(json_file)
+
+        # Induce JSON List of Data
+        mod_json_data = [json_data]
+
+        # Save the Modified JSON
+        with open(test_file_output_path, "w") as json_file:
+            json.dump(mod_json_data, json_file)
+
+        # Make sure we can load the modified JSON
+        td_loaded = TimeData.load(test_file_output_path)
+
+        assert len(td) == len(td_loaded)
+        assert td.shape == td_loaded.shape
+        assert len(td.meta) == len(td_loaded.meta)
+
+        for attr in td.meta:
+            assert attr in td_loaded.meta
+
+        for var in td.columns:
+            assert var in td_loaded.columns
+            assert len(td[var]) == len(td_loaded[var])
+            assert len(td[var].meta) == len(td_loaded[var].meta)
+            assert td[var].meta["VAR_TYPE"] == td_loaded[var].meta["VAR_TYPE"]
+
+
+def test_json_nrv_data():
+    """
+    Test Loading Non-Record-Varying data with JSON IO Handler
+    """
+    # Get Test Datas
+    td = get_test_timedata()
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Convert TimeData the to a JSON File
+        test_file_output_path = td.save(output_path=tmpdirname, file_extension=".json")
+
+        json_data = {}
+        # Load the JSON file as JSON
+        with open(test_file_output_path) as json_file:
+            json_data = json.load(json_file)
+
+        # Add Non-Record-Varying Variable
+        json_data["Test_NRV_Var"] = {"DAT": [1, 2, 3]}
+
+        # Save the Modified JSON
+        with open(test_file_output_path, "w") as json_file:
+            json.dump(json_data, json_file)
+
+        # Make sure we can load the modified JSON
+        td_loaded = TimeData.load(test_file_output_path)
+
+        assert "Test_NRV_Var" not in td_loaded
+
+
+def test_json_multi_dim_data():
+    """
+    Test Loading Multi-Dimensional data with JSON IO Handler
+    """
+    # Get Test Datas
+    td = get_test_timedata()
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Convert TimeData the to a JSON File
+        test_file_output_path = td.save(output_path=tmpdirname, file_extension=".json")
+
+        json_data = {}
+        # Load the JSON file as JSON
+        with open(test_file_output_path) as json_file:
+            json_data = json.load(json_file)
+
+        # Add Non-Record-Varying Variable
+        json_data["Test_multi_dim_Var"] = {"DAT": random(size=(10, 2)).tolist()}
+
+        # Save the Modified JSON
+        with open(test_file_output_path, "w") as json_file:
+            json.dump(json_data, json_file)
+
+        # Make sure we can load the modified JSON
+        td_loaded = TimeData.load(test_file_output_path)
+
+        assert "Test_multi_dim_Var" not in td_loaded
+
+
 def test_csv_io():
+    """Test CSV IO Handler on Default Data"""
     # Get Test Datas
     td = get_test_timedata()
 
@@ -97,3 +208,11 @@ def test_csv_io():
 
         with pytest.raises(FileExistsError):
             td_loaded.save(output_path=tmpdirname, file_extension=".csv")
+
+
+def test_csv_bad_file_path():
+    """Test Loading CSV from a non-existant file"""
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Try loading from non-existant_path
+        with pytest.raises(FileNotFoundError):
+            _ = TimeData.load(tmpdirname + "non_existant_file.csv")
