@@ -357,7 +357,6 @@ Plotting Spectrograms
     >>> timedata = TimeData(data=ts, meta=input_attrs)
     >>> for i, this_col in enumerate(col_names[1:]):
     >>>     timedata.add_measurement(measure_name=this_col, data=spectra[:, i+1])
-    >>> fig = plt.figure()
     >>> timedata.plot_spectrogram() # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
 
