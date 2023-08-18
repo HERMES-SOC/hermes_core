@@ -7,7 +7,7 @@ measurement data easier when reading and writing CDF data.
 
 .. code-block:: python
 
-    from typing import OrderedDict
+    from collections import OrderedDict
     import numpy as np
     import astropy.units as u
     from astropy.timeseries import TimeSeries
