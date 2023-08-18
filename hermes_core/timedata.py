@@ -438,7 +438,9 @@ class TimeData:
         colnames = self.data.colnames
         #  TODO: there must be a better way to grab all columns (except time)
         # and put them in a numpy array...
-        data = np.stack([this_col.value for this_col in self.data[list(colnames[1:])].itercols()])
+        data = np.stack(
+            [this_col.value for this_col in self.data[list(colnames[1:])].itercols()]
+        )
 
         quantity_support()
         time_support()
@@ -469,10 +471,10 @@ class TimeData:
         # Setup the Time Axis
         self._setup_x_axis(axes)
         # Setup Y-Axis
-        y_label = f'{self.data[colnames[1]].unit}'
+        y_label = f"{self.meta['DEPEND_1'].unit}"
         axes.set_ylabel(y_label)
         # Add Colorbar
-        colorbar_label = f'{self.data[colnames[1]].unit}'
+        colorbar_label = f"{self.data[colnames[1]].unit}"
         fig.colorbar(cmesh, label=colorbar_label)
 
         return axes
