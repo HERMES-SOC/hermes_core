@@ -20,6 +20,8 @@ from hermes_core.util.validation import validate
 
 
 def get_bad_timeseries():
+    """Return a bad time series object.
+    TODO: describe how it is bad."""
     ts = TimeSeries()
 
     # Create an astropy.Time object
@@ -37,6 +39,7 @@ def get_bad_timeseries():
 
 
 def get_test_timeseries():
+    """Return a good timeseries."""
     ts = TimeSeries()
 
     # Create an astropy.Time object
@@ -65,6 +68,7 @@ def get_test_timeseries():
 
 
 def get_test_timedata():
+    """Return a timedata object with just one column."""
     ts = TimeSeries(
         time_start="2016-03-22T12:30:31",
         time_delta=3 * u.s,
@@ -73,6 +77,33 @@ def get_test_timedata():
     input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
     timedata = TimeData(data=ts, meta=input_attrs)
     timedata["Bx"].meta.update({"CATDESC": "Test"})
+    return timedata
+
+
+def get_test_timedata_spectral_multicolumn():
+    """Return a timedata object with multiple columns like a spectrum."""
+    energy_bins = u.Quantity(
+        [2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 10000], "eV", dtype="int"
+    )
+    col_names = [
+        f"{this_e}-{next_e}" for this_e, next_e in zip(energy_bins, energy_bins[1:])
+    ]
+    spectra = u.Quantity(
+        np.stack([np.arange(100) + i * 2 for i, this_arr in enumerate(np.arange(10))]),
+        "m/s",
+        dtype="int16",
+    )
+    ts = TimeSeries(
+        time_start="2016-03-22T12:30:31",
+        time_delta=3 * u.s,
+        data={col_names[0]: spectra[:, 0]},
+    )
+    input_attrs = TimeData.global_attribute_template("merit", "l1", "1.0.0")
+    input_attrs.update({"DEPEND_1": energy_bins})
+    timedata = TimeData(data=ts, meta=input_attrs)
+    for i, this_col in enumerate(col_names[1:]):
+        timedata.add_measurement(measure_name=this_col, data=spectra[:, i + 1])
+
     return timedata
 
 
@@ -285,63 +316,11 @@ def test_timedata_plot_timeseries():
 
 
 def test_timedata_plot_spectra():
-    # fmt: off
-    input_attrs = {
-        "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_level": "l1>Level 1",
-        "Data_version": "v0.0.1",
-    }
-    # fmt: on
+    """Test that plot_spectrogram returns a plot"""
 
-    ts = get_test_timeseries()
-    test_data = TimeData(ts, meta=input_attrs)
-
-    # Add Main Spectra
-    spectra = [
-        [24467.140625, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [22753.509765625, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 43653.54296875],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 2662.03466796875],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-    ]
-    q = Quantity(value=spectra, unit="keV/(cm^2 s sr keV)")
-    q.meta = OrderedDict(
-        {"CATDESC": "energy spectrum", "LABLAXIS": "DEF", "DEPEND_1": "dis_energy"}
-    )
-    test_data.add_measurement(measure_name="energyspectr", data=q)
-
-    # Add Support
-    bins = [
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-        [2.16, 3.91, 7.0],
-    ]
-    q = Quantity(value=bins, unit="eV")
-    q.meta = OrderedDict(
-        {
-            "CATDESC": "spectrum energies",
-            "LABLAXIS": "energy",
-        }
-    )
-    test_data.add_measurement(measure_name="dis_energy", data=q)
-
-    # Plot Bad Column
-    with pytest.raises(KeyError):
-        test_data.plot_spectrogram("bad_column")
+    tdata = get_test_timedata_spectral_multicolumn()
     # Plot Good Column
-    ax = test_data.plot_spectrogram(column="energyspectr")
+    ax = tdata.plot_spectrogram()
     assert isinstance(ax, Axes)
 
 
