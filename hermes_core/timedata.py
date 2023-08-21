@@ -53,7 +53,7 @@ class TimeData:
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, data, support_data=None, nrv_data=None, meta=None):
+    def __init__(self, data, nrv_data=None, meta=None):
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
@@ -67,17 +67,6 @@ class TimeData:
                 raise TypeError(
                     f"Column '{colname}' must be an astropy.units.Quantity object"
                 )
-
-        # Check Support Data
-        if support_data:
-            for colname in support_data:
-                if not (
-                    isinstance(support_data[colname], Column)
-                    or isinstance(support_data[colname], u.Quantity)
-                ):
-                    raise TypeError(
-                        f"Column '{colname}' must be an astropy.table.Column or astropy.units.Quantity object"
-                    )
 
         # Check NRV Data
         if nrv_data:
@@ -108,16 +97,6 @@ class TimeData:
                 self._data[col].meta = self.measurement_attribute_template()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
-
-        # Copy the Support Data
-        if support_data:
-            self.support_data = support_data
-        else:
-            self.support_data = {}
-        # Update Meta Attrs
-        for col in self.support_data:
-            if not hasattr(support_data[col], "meta"):
-                self.support_data[col].meta = OrderedDict()
 
         # Copy the Non-Record Varying Data
         if nrv_data:
@@ -228,8 +207,6 @@ class TimeData:
         if name in self._data.colnames:
             # Get the Data and Attrs for the named measurement
             var_data = self._data[name]
-        elif name in self.support_data:
-            var_data = self.support_data[name]
         elif name in self.nrv_data:
             var_data = self.nrv_data[name]
         else:
@@ -248,11 +225,7 @@ class TimeData:
         """
         Function to see whether a measurement is in the class.
         """
-        return (
-            name in self._data.columns
-            or name in self.support_data
-            or name in self.nrv_data
-        )
+        return name in self._data.columns or name in self.nrv_data
 
     def __iter__(self):
         """
@@ -361,15 +334,6 @@ class TimeData:
                     var_name=col, attr_name=attr_name, attr_value=attr_value
                 )
 
-        # Support Data
-        for col in self.support_data:
-            for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                self.support_data, col
-            ).items():
-                self._update_variable_attribute(
-                    var_name=col, attr_name=attr_name, attr_value=attr_value
-                )
-
         # NRV Data
         for col in self.nrv_data:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
@@ -442,12 +406,6 @@ class TimeData:
                 self._data[measure_name].meta.update(data.meta)
             if meta:
                 self._data[measure_name].meta.update(meta)
-        # Check Support Data
-        elif (isinstance(data, Column)) and len(data) == len(self.time):
-            self.support_data[measure_name] = data
-            # Add any Metadata Passed not in the Column
-            if meta:
-                self.support_data[measure_name].meta.update(meta)
         # Consider it Metadata
         elif isinstance(data, Column):
             self.nrv_data[measure_name] = data
@@ -473,8 +431,6 @@ class TimeData:
         """
         if measure_name in self._data.columns:
             self._data.remove_column(measure_name)
-        elif measure_name in self.support_data:
-            self.support_data.pop(measure_name)
         elif measure_name in self.nrv_data:
             self.nrv_data.pop(measure_name)
         else:
@@ -675,5 +631,5 @@ class TimeData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a TimeData object
-        data, support_data, nrv_data = handler.load_data(file_path)
-        return cls(data=data, support_data=support_data, nrv_data=nrv_data)
+        data, nrv_data = handler.load_data(file_path)
+        return cls(data=data, nrv_data=nrv_data)

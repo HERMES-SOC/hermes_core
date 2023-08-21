@@ -106,13 +106,12 @@ You can now create the :py:class:`~hermes_core.timedata.TimeData` object,
     >>> timedata = TimeData(data=ts, meta=input_attrs)
 
 The :py:class:`~hermes_core.timedata.TimeData` object also accepts optional arguments for loading
-support data and non-record-varying (NRV) data. These arguments are required to each be a `dict`
+non-record-varying (NRV) data. These arguments are required to be a `dict`
 of either :py:class:`~astropy.units.Quantity` or :py:class:`~astropy.table.Column` objects.
 
     >>> from astropy.table import Column
-    >>> support_data = {"energy": u.Quantity(value=[2, 4, 7, 11, 15], unit="eV")}
     >>> nrv_data = {"const_param": Column(data=[1e-3])}
-    >>> timedata = TimeData(data=ts, meta=input_attrs, support_data=support_data, nrv_data=nrv_data)
+    >>> timedata = TimeData(data=ts, meta=input_attrs, nrv_data=nrv_data)
 
 The :py:class:`~hermes_core.timedata.TimeData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
@@ -158,7 +157,7 @@ The more explicit approach is to use :py:func:`~hermes_core.timedata.TimeData.ad
     >>> data = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
     >>> timedata.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
 
-Or you can add the data, support, or NRV column directly.
+Or you can add the data, or NRV column directly.
 
     >>> timedata["By"] = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
     >>> timedata["calibration_const"] = Column(data=[1e-3])

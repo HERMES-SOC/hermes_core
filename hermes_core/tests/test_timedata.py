@@ -117,7 +117,7 @@ def test_multidimensional_data():
     assert test_data["var"].shape == (10, 2)
 
 
-def test_suport_nrv_data():
+def test_nrv_data():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -127,26 +127,17 @@ def test_suport_nrv_data():
     # fmt: on
     ts = get_test_timeseries()
 
-    # Bad Support
-    support_data = {"support_var": [1, 2, 3]}
-    with pytest.raises(TypeError):
-        _ = TimeData(ts, support_data=support_data, meta=input_attrs)
-
     # Bad NRV
     nrv_data = {"nrv_var": [1, 2, 3]}
     with pytest.raises(TypeError):
         _ = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
-    # Good Support and NRV
-    support_data = {"support_var": Column(data=[1, 2, 3])}
+    # Good NRV
     nrv_data = {"nrv_var": Column(data=[1, 2, 3])}
 
     # Create TimeData
-    test_data = TimeData(
-        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
-    )
+    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
-    assert "support_var" in test_data
     assert "nrv_var" in test_data
 
 
@@ -298,10 +289,10 @@ def test_timedata_add_measurement():
     assert test_data["test"].shape == (10,)
 
     # Add Support Data
-    c = Column(data=random(size=(10)))
+    q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
     test_data.add_measurement(
         measure_name="Test Support Data",
-        data=c,
+        data=q,
         meta={"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"},
     )
     assert test_data["Test Support Data"].shape == (10,)
@@ -444,10 +435,6 @@ def test_timedata_generate_valid_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
-    support_data = {"support_var": Quantity(value=[1, 2, 3], unit="km")}
-    support_data["support_var"].meta = OrderedDict(
-        {"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"}
-    )
     nrv_data = {
         "nrv_var": Column(
             data=[1, 2, 3],
@@ -455,9 +442,7 @@ def test_timedata_generate_valid_cdf():
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(
-        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
-    )
+    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -558,10 +543,6 @@ def test_timedata_from_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
-    support_data = {"support_var": Quantity(value=[1, 2, 3], unit="km")}
-    support_data["support_var"].meta = OrderedDict(
-        {"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"}
-    )
     nrv_data = {
         "nrv_var": Column(
             data=[1, 2, 3],
@@ -569,9 +550,7 @@ def test_timedata_from_cdf():
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(
-        ts, support_data=support_data, nrv_data=nrv_data, meta=input_attrs
-    )
+    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -715,19 +694,6 @@ def test_timedata_idempotency():
             assert len(test_data[var]) == len(loaded_data[var])
             assert len(test_data[var].meta) == len(loaded_data[var].meta)
             assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
-
-        for var in test_data.support_data:
-            assert var in loaded_data.support_data
-            assert len(test_data.support_data[var]) == len(
-                loaded_data.support_data[var]
-            )
-            assert len(test_data.support_data[var].meta) == len(
-                loaded_data.support_data[var].meta
-            )
-            assert (
-                test_data.support_data[var].meta["VAR_TYPE"]
-                == loaded_data.support_data[var].meta["VAR_TYPE"]
-            )
 
         for var in test_data.nrv_data:
             assert var in loaded_data.nrv_data

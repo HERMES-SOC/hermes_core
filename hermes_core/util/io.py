@@ -93,8 +93,6 @@ class CDFHandler(TimeDataIOHandler):
 
         # Create a new TimeSeries
         ts = TimeSeries()
-        # Create a Data Structure for Support Data without Units
-        support_data = {}
         # Create a Data Structure for Non-record Varying Data
         nrv_data = {}
 
@@ -137,7 +135,7 @@ class CDFHandler(TimeDataIOHandler):
                     # Extract the Variable's Data
                     var_data = input_file[var_name][...]
                     if input_file[var_name].rv():
-                        # See if it is `data` or `support_data`
+                        # See if it is `data` or `metadata`
                         if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
                             # Load as Record-Varying `data`
                             try:
@@ -146,15 +144,20 @@ class CDFHandler(TimeDataIOHandler):
                                 )
                             except ValueError:
                                 warn_user(
-                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Loading as Support Data."
+                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
                                 )
-                                self._load_support_data_variable(
-                                    support_data, var_name, var_data, var_attrs
+                                # Swap Units
+                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+                                var_attrs[
+                                    "UNITS"
+                                ] = u.dimensionless_unscaled.to_string()
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
                                 )
                         else:
-                            # Load as `support_data`
-                            self._load_support_data_variable(
-                                support_data, var_name, var_data, var_attrs
+                            # Load as `metadata`
+                            self._load_metadata_variable(
+                                nrv_data, var_name, var_data, var_attrs
                             )
                     else:
                         # Load NRV Data as `metadata`
@@ -163,7 +166,7 @@ class CDFHandler(TimeDataIOHandler):
                         )
 
         # Return the given TimeSeries, NRV Data
-        return ts, support_data, nrv_data
+        return ts, nrv_data
 
     def _load_data_variable(self, ts, var_name, var_data, var_attrs):
         # Create the Quantity object
@@ -172,10 +175,6 @@ class CDFHandler(TimeDataIOHandler):
         # Create the Metadata
         ts[var_name].meta = OrderedDict()
         ts[var_name].meta.update(var_attrs)
-
-    def _load_support_data_variable(self, support_data, var_name, var_data, var_attrs):
-        # Create a Column entry for the variable
-        support_data[var_name] = Column(data=var_data, meta=var_attrs)
 
     def _load_metadata_variable(self, nrv_data, var_name, var_data, var_attrs):
         # Create a Column entry for the variable
@@ -242,20 +241,6 @@ class CDFHandler(TimeDataIOHandler):
                     else:
                         # Add the Attribute to the CDF File
                         cdf_file[var_name].attrs[var_attr_name] = var_attr_val
-
-        # Loop through Support Data
-        for var_name, var_data in data.support_data.items():
-            # Add the Variable to the CDF File
-            cdf_file[var_name] = var_data.value
-            # Add the Variable Attributes
-            for var_attr_name, var_attr_val in var_data.meta.items():
-                if var_attr_val is None:
-                    raise ValueError(
-                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                    )
-                else:
-                    # Add the Attribute to the CDF File
-                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
         # Loop through NRV Data
         for var_name, var_data in data.nrv_data.items():
