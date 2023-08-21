@@ -212,7 +212,7 @@ information is provided:
 Note that this table is derived from :file:`hermes_core/data/hermes_default_global_cdf_attrs_schema.yaml`
 
 .. csv-table:: Table 4-1: Required Global Attributes
-   :file: global_attributes.csv
+   :file: ../generated/global_attributes.csv
    :widths: 30, 70, 30, 30, 30, 30, 30
    :header-rows: 1
 
@@ -545,6 +545,6 @@ information is provided:
 Note that this table is derived from :file:`hermes_core/data/hermes_default_variable_cdf_attrs_schema.yaml`
 
 .. csv-table:: Table 5-4 HERMES Variable Attribute Schema
-   :file: variable_attributes.csv
+   :file: ../generated/variable_attributes.csv
    :widths: 10, 50, 10, 10, 10, 30, 30, 30
    :header-rows: 1

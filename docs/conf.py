@@ -25,16 +25,6 @@ from hermes_core.util.schema import HERMESDataSchema
 
 version = __version__
 
-# -- Generate CSV Files for Docs ---------------------------------------------
-
-# Global Attributes to CSV
-global_info = HERMESDataSchema.global_attribute_info()
-global_info.write("user-guide/global_attributes.csv", overwrite=True)
-
-# Variable Attributes to CSV
-variable_info = HERMESDataSchema.measurement_attribute_info()
-variable_info.write("user-guide/variable_attributes.csv", overwrite=True)
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -55,6 +45,21 @@ extensions = [
     "sphinx_automodapi.smart_resolver",
     "sphinx_copybutton",
 ]
+
+# Set automodapi to generate files inside the generated directory
+automodapi_toctreedirnm = "generated/api"
+
+# -- Generate CSV Files for Docs ---------------------------------------------
+if not os.path.exists('generated'):
+    os.mkdir('generated')  # generate the directory before putting things in it
+# Global Attributes to CSV
+
+global_info = HERMESDataSchema.global_attribute_info()
+global_info.write("./generated/global_attributes.csv", overwrite=True)
+
+# Variable Attributes to CSV
+variable_info = HERMESDataSchema.measurement_attribute_info()
+variable_info.write("./generated/variable_attributes.csv", overwrite=True)
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
