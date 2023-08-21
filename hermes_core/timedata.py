@@ -7,7 +7,8 @@ from collections import OrderedDict
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
-from astropy.table import vstack, Column
+from astropy.table import vstack
+from astropy.nddata import NDData
 from astropy import units as u
 import hermes_core
 from hermes_core.util.io import CDFHandler
@@ -26,6 +27,8 @@ class TimeData:
     ----------
     data :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
+    nrv_data : `dict[astropy.nddata.NDData]`, optional
+        Non-Record-Varying data associated with the timeseries data.
     meta : `dict`, optional
         The metadata describing the time series in an ISTP-compliant format.
 
@@ -71,12 +74,9 @@ class TimeData:
         # Check NRV Data
         if nrv_data:
             for colname in nrv_data:
-                if not (
-                    isinstance(nrv_data[colname], Column)
-                    or isinstance(nrv_data[colname], u.Quantity)
-                ):
+                if not (isinstance(nrv_data[colname], NDData)):
                     raise TypeError(
-                        f"Column '{colname}' must be an astropy.table.Column or astropy.units.Quantity object"
+                        f"Variable '{colname}' must be an astropy.nddata.NDData object"
                     )
 
         # Copy the TimeSeries
@@ -407,14 +407,14 @@ class TimeData:
             if meta:
                 self._data[measure_name].meta.update(meta)
         # Consider it Metadata
-        elif isinstance(data, Column):
+        elif isinstance(data, NDData):
             self.nrv_data[measure_name] = data
             # Add any Metadata Passed not in the Column
             if meta:
                 self.nrv_data[measure_name].meta.update(meta)
         else:
             raise TypeError(
-                f"Data for Measurement {measure_name} must be an astropy.table.Column or astropy.units.Quantity."
+                f"Data for Measurement {measure_name} must be an astropy.nddata.NDData or astropy.units.Quantity."
             )
 
         # Derive Metadata Attributes for the Measurement

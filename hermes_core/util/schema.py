@@ -665,9 +665,12 @@ class HERMESDataSchema:
                 (guess_dims, guess_types, guess_elements) = self._types(
                     var_data.to_datetime()
                 )
-            else:
+            elif hasattr(var_data, "value"):
                 # Guess the const CDF Data Type
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
+            else:
+                # Guess the const CDF Data Type
+                (guess_dims, guess_types, guess_elements) = self._types(var_data.data)
 
         # Check the Attributes that can be derived
         var_type = self._get_var_type(data, var_name)
@@ -964,6 +967,8 @@ class HERMESDataSchema:
             const.CDF_CHAR.value,
             const.CDF_UCHAR.value,
         ):
+            if hasattr(var_data, "data"):
+                var_data = var_data.data
             fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(

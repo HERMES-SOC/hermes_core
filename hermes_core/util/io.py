@@ -3,7 +3,7 @@ from pathlib import Path
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-from astropy.table import Column
+from astropy.nddata import NDData
 import astropy.units as u
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HERMESDataSchema
@@ -177,8 +177,8 @@ class CDFHandler(TimeDataIOHandler):
         ts[var_name].meta.update(var_attrs)
 
     def _load_metadata_variable(self, nrv_data, var_name, var_data, var_attrs):
-        # Create a Column entry for the variable
-        nrv_data[var_name] = Column(data=var_data, meta=var_attrs)
+        # Create a NDData entry for the variable
+        nrv_data[var_name] = NDData(data=var_data, meta=var_attrs)
 
     def save_data(self, data, file_path):
         """
@@ -246,11 +246,11 @@ class CDFHandler(TimeDataIOHandler):
         for var_name, var_data in data.nrv_data.items():
             # Guess the data type to store
             # Documented in https://github.com/spacepy/spacepy/issues/707
-            _, var_data_types, _ = self.schema._types(var_data)
+            _, var_data_types, _ = self.schema._types(var_data.data)
             # Add the Variable to the CDF File
             cdf_file.new(
                 name=var_name,
-                data=var_data.value,
+                data=var_data.data,
                 type=var_data_types[0],
                 recVary=False,
             )

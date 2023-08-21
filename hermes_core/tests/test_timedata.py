@@ -12,6 +12,7 @@ from astropy.table import Column
 from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
+from astropy.nddata import NDData
 from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 import hermes_core
@@ -128,17 +129,18 @@ def test_nrv_data():
     ts = get_test_timeseries()
 
     # Bad NRV
-    nrv_data = {"nrv_var": [1, 2, 3]}
+    nrv_data = {"nrv_var": [1]}
     with pytest.raises(TypeError):
         _ = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
     # Good NRV
-    nrv_data = {"nrv_var": Column(data=[1, 2, 3])}
+    nrv_data = {"nrv_var": NDData(data=[1])}
 
     # Create TimeData
     test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
 
     assert "nrv_var" in test_data
+    assert test_data["nrv_var"].data[0] == 1
 
 
 def test_timedata_valid_attrs():
@@ -298,13 +300,14 @@ def test_timedata_add_measurement():
     assert test_data["Test Support Data"].shape == (10,)
 
     # Add Test Metadata
-    c = Column(data=[1])
+    c = NDData(data=[1])
     test_data.add_measurement(
         measure_name="Test Metadata",
         data=c,
         meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
     )
-    assert test_data["Test Metadata"].shape == (1,)
+    assert "Test Metadata" in test_data
+    assert test_data["Test Metadata"].data[0] == 1
 
     # test remove_measurement
     test_data.remove_measurement("test")
@@ -436,7 +439,7 @@ def test_timedata_generate_valid_cdf():
 
     ts = get_test_timeseries()
     nrv_data = {
-        "nrv_var": Column(
+        "nrv_var": NDData(
             data=[1, 2, 3],
             meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
         )
@@ -544,7 +547,7 @@ def test_timedata_from_cdf():
 
     ts = get_test_timeseries()
     nrv_data = {
-        "nrv_var": Column(
+        "nrv_var": NDData(
             data=[1, 2, 3],
             meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
         )
@@ -667,11 +670,11 @@ def test_timedata_idempotency():
     test_data.meta["Test Null Attr"] = ""
 
     # Induce an NRV Variable
-    test_data["NRV_var"] = Column(["Test NRV Data"])
+    test_data["NRV_var"] = NDData(["Test NRV Data"])
     test_data["NRV_var"].meta["UNITS"] = "m"
 
     # Induce a Variable with Bad UNITS
-    test_data["Bad_units_var"] = Column([1, 2, 3, 4])
+    test_data["Bad_units_var"] = NDData([1, 2, 3, 4])
     test_data["Bad_units_var"].meta["UNITS"] = "Not A Unit"
 
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -697,7 +700,10 @@ def test_timedata_idempotency():
 
         for var in test_data.nrv_data:
             assert var in loaded_data.nrv_data
-            assert test_data.nrv_data[var].shape == loaded_data.nrv_data[var].shape
+            assert (
+                test_data.nrv_data[var].data.shape
+                == loaded_data.nrv_data[var].data.shape
+            )
             assert len(test_data.nrv_data[var].meta) == len(
                 loaded_data.nrv_data[var].meta
             )
