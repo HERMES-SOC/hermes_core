@@ -1012,8 +1012,11 @@ class HERMESDataSchema:
         else:
             # Get the Units as a String
             if isinstance(var_data, u.Quantity):
-                conversion_rate = var_data.unit.to(var_data.si.unit)
-                si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+                try:
+                    conversion_rate = var_data.unit.to(var_data.si.unit)
+                    si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+                except u.UnitConversionError:
+                    si_conversion = f"1.0>{var_data.unit}"
             else:
                 si_conversion = " > "
         return si_conversion
