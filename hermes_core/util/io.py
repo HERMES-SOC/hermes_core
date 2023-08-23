@@ -3,6 +3,8 @@ from pathlib import Path
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+from astropy.nddata import NDData
+import astropy.units as u
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HERMESDataSchema
 
@@ -81,6 +83,8 @@ class CDFHandler(TimeDataIOHandler):
         -------
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
+        nrv_data : `dict`
+            Non-record varying data contained in the file
         """
         from spacepy.pycdf import CDF
 
@@ -89,13 +93,18 @@ class CDFHandler(TimeDataIOHandler):
 
         # Create a new TimeSeries
         ts = TimeSeries()
+        # Create a Data Structure for Non-record Varying Data
+        nrv_data = {}
 
         # Open CDF file with context manager
         with CDF(file_path) as input_file:
             # Add Global Attributes from the CDF file to TimeSeries
             input_global_attrs = {}
             for attr_name in input_file.attrs:
-                if len(input_file.attrs[attr_name]) > 1:
+                if len(input_file.attrs[attr_name]) == 0:
+                    # gAttr is not set
+                    input_global_attrs[attr_name] = ""
+                elif len(input_file.attrs[attr_name]) > 1:
                     # gAttr is a List
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][:]
                 else:
@@ -118,19 +127,58 @@ class CDFHandler(TimeDataIOHandler):
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in input_file:
                 if var_name != "Epoch":  # Since we added this separately
-                    var_data = input_file[var_name][:].copy()
+                    # Extract the Variable's Metadata
                     var_attrs = {}
                     for attr_name in input_file[var_name].attrs:
                         var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
-                    # Create the Quantity object
-                    ts[var_name] = var_data
-                    ts[var_name].unit = var_attrs["UNITS"]
-                    # Create the Metadata
-                    ts[var_name].meta = OrderedDict()
-                    ts[var_name].meta.update(var_attrs)
 
-        # Return the given TimeSeries
-        return ts
+                    # Extract the Variable's Data
+                    var_data = input_file[var_name][...]
+                    if input_file[var_name].rv():
+                        # See if it is `data` or `metadata`
+                        if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
+                            # Load as Record-Varying `data`
+                            try:
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
+                                )
+                            except ValueError:
+                                warn_user(
+                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
+                                )
+                                # Swap Units
+                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+                                var_attrs[
+                                    "UNITS"
+                                ] = u.dimensionless_unscaled.to_string()
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
+                                )
+                        else:
+                            # Load as `metadata`
+                            self._load_metadata_variable(
+                                nrv_data, var_name, var_data, var_attrs
+                            )
+                    else:
+                        # Load NRV Data as `metadata`
+                        self._load_metadata_variable(
+                            nrv_data, var_name, var_data, var_attrs
+                        )
+
+        # Return the given TimeSeries, NRV Data
+        return ts, nrv_data
+
+    def _load_data_variable(self, ts, var_name, var_data, var_attrs):
+        # Create the Quantity object
+        var_data = u.Quantity(value=var_data, unit=var_attrs["UNITS"], copy=False)
+        ts[var_name] = var_data
+        # Create the Metadata
+        ts[var_name].meta = OrderedDict()
+        ts[var_name].meta.update(var_attrs)
+
+    def _load_metadata_variable(self, nrv_data, var_name, var_data, var_attrs):
+        # Create a NDData entry for the variable
+        nrv_data[var_name] = NDData(data=var_data, meta=var_attrs)
 
     def save_data(self, data, file_path):
         """
@@ -173,7 +221,7 @@ class CDFHandler(TimeDataIOHandler):
                 cdf_file.attrs[attr_name] = attr_value
 
     def _convert_variable_attributes_to_cdf(self, data, cdf_file):
-        # Loop through Variable Attributes in target_dict
+        # Loop through Variable Attributes
         for var_name, var_data in data.__iter__():
             if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
@@ -193,3 +241,26 @@ class CDFHandler(TimeDataIOHandler):
                     else:
                         # Add the Attribute to the CDF File
                         cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+
+        # Loop through NRV Data
+        for var_name, var_data in data.nrv_data.items():
+            # Guess the data type to store
+            # Documented in https://github.com/spacepy/spacepy/issues/707
+            _, var_data_types, _ = self.schema._types(var_data.data)
+            # Add the Variable to the CDF File
+            cdf_file.new(
+                name=var_name,
+                data=var_data.data,
+                type=var_data_types[0],
+                recVary=False,
+            )
+
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                    )
+                else:
+                    # Add the Attribute to the CDF File
+                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val

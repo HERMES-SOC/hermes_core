@@ -8,6 +8,7 @@ import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
+from astropy.nddata import NDData
 from astropy import units as u
 import hermes_core
 from hermes_core.util.io import CDFHandler
@@ -26,6 +27,8 @@ class TimeData:
     ----------
     data :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
+    nrv_data : `dict[astropy.nddata.NDData]`, optional
+        Non-Record-Varying data associated with the timeseries data.
     meta : `dict`, optional
         The metadata describing the time series in an ISTP-compliant format.
 
@@ -53,7 +56,7 @@ class TimeData:
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, data, meta=None):
+    def __init__(self, data, nrv_data=None, meta=None):
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
@@ -65,13 +68,16 @@ class TimeData:
             # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(data[colname], u.Quantity):
                 raise TypeError(
-                    f"Column '{colname}' must be an astropy.Quantity object"
+                    f"Column '{colname}' must be an astropy.units.Quantity object"
                 )
-            # Verify that the Column is only a single dimension
-            if len(data[colname].shape) > 1:  # If there is more than 1 Dimension
-                raise ValueError(
-                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
-                )
+
+        # Check NRV Data
+        if nrv_data:
+            for colname in nrv_data:
+                if not (isinstance(nrv_data[colname], NDData)):
+                    raise TypeError(
+                        f"Variable '{colname}' must be an astropy.nddata.NDData object"
+                    )
 
         # Copy the TimeSeries
         self._data = TimeSeries(data, copy=True)
@@ -91,6 +97,16 @@ class TimeData:
                 self._data[col].meta = self.measurement_attribute_template()
                 if hasattr(data[col], "meta"):
                     self._data[col].meta.update(data[col].meta)
+
+        # Copy the Non-Record Varying Data
+        if nrv_data:
+            self.nrv_data = nrv_data
+        else:
+            self.nrv_data = {}
+        # Update Meta Attrs
+        for col in self.nrv_data:
+            if not hasattr(nrv_data[col], "meta"):
+                self.nrv_data[col].meta = OrderedDict()
 
         # Derive Metadata
         self.schema = HERMESDataSchema()
@@ -118,14 +134,11 @@ class TimeData:
         units = {}
         for name in self._data.columns:
             var_data = self._data[name]
-
             # Get the Unit
             if hasattr(var_data, "unit"):
                 unit = var_data.unit
-            elif "UNITS" in var_data.meta and var_data.meta["UNITS"]:
-                unit = var_data.meta["UNITS"]
             else:
-                unit = None
+                unit = var_data.meta["UNITS"]
             units[name] = unit
         return OrderedDict(units)
 
@@ -191,10 +204,13 @@ class TimeData:
         """
         Function to get a measurement.
         """
-        if name not in self._data.colnames:
+        if name in self._data.colnames:
+            # Get the Data and Attrs for the named measurement
+            var_data = self._data[name]
+        elif name in self.nrv_data:
+            var_data = self.nrv_data[name]
+        else:
             raise KeyError(f"Can't find data measurement {name}")
-        # Get the Data and Attrs for the named measurement
-        var_data = self._data[name]
         return var_data
 
     def __setitem__(self, name, data):
@@ -209,7 +225,7 @@ class TimeData:
         """
         Function to see whether a measurement is in the class.
         """
-        return name in self._data.columns
+        return name in self._data.columns or name in self.nrv_data
 
     def __iter__(self):
         """
@@ -293,83 +309,76 @@ class TimeData:
 
         # Get Default Metadata
         for attr_name, attr_value in self.schema.default_global_attributes.items():
-            # If the attribute is set, check if we want to overwrite it
-            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
-                # We want to overwrite if:
-                #   1) The actual value is not the derived value
-                #   2) The schema marks this attribute to be overwriten
-                if (
-                    self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data.meta[attr_name] = attr_value
-            # If the attribute is not set, set it
-            else:
-                self._data.meta[attr_name] = attr_value
+            self._update_global_attribute(attr_name, attr_value)
 
         # Global Attributes
         for attr_name, attr_value in self.schema.derive_global_attributes(
             self._data
         ).items():
-            if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
-                if (
-                    self._data.meta[attr_name] != attr_value
-                    and self.schema.global_attribute_schema[attr_name]["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data.meta[attr_name] = attr_value
-            else:
-                self._data.meta[attr_name] = attr_value
+            self._update_global_attribute(attr_name, attr_value)
 
         # Time Measurement Attributes
         for attr_name, attr_value in self.schema.derive_time_attributes(
             self._data
         ).items():
-            if (
-                attr_name in self._data["time"].meta
-                and self._data["time"].meta[attr_name] is not None
-            ):
-                attr_schema = self.schema.variable_attribute_schema["attribute_key"][
-                    attr_name
-                ]
-                if (
-                    self._data["time"].meta[attr_name] != attr_value
-                    and attr_schema["overwrite"]
-                ):
-                    warn_user(
-                        f"Overiding Time Attribute {attr_name} : {self._data['time'].meta[attr_name]} -> {attr_value}"
-                    )
-                    self._data["time"].meta[attr_name] = attr_value
-            else:
-                self._data["time"].meta[attr_name] = attr_value
+            self._update_variable_attribute(
+                var_name="time", attr_name=attr_name, attr_value=attr_value
+            )
 
         # Other Measurement Attributes
         for col in [col for col in self._data.columns if col != "time"]:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
                 self._data, col
             ).items():
-                if (
-                    attr_name in self._data[col].meta
-                    and self._data[col].meta[attr_name] is not None
-                ):
-                    attr_schema = self.schema.variable_attribute_schema[
-                        "attribute_key"
-                    ][attr_name]
-                    if (
-                        self._data[col].meta[attr_name] != attr_value
-                        and attr_schema["overwrite"]
-                    ):
-                        warn_user(
-                            f"Overiding Measurement Attribute {attr_name} : {self._data[col].meta[attr_name]} -> {attr_value}"
-                        )
-                        self._data[col].meta[attr_name] = attr_value
-                else:
-                    self._data[col].meta[attr_name] = attr_value
+                self._update_variable_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
+        # NRV Data
+        for col in self.nrv_data:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self.nrv_data, col
+            ).items():
+                self._update_variable_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
+    def _update_global_attribute(self, attr_name, attr_value):
+        # If the attribute is set, check if we want to overwrite it
+        if attr_name in self._data.meta and self._data.meta[attr_name] is not None:
+            # We want to overwrite if:
+            #   1) The actual value is not the derived value
+            #   2) The schema marks this attribute to be overwriten
+            if (
+                self._data.meta[attr_name] != attr_value
+                and self.schema.global_attribute_schema[attr_name]["overwrite"]
+            ):
+                warn_user(
+                    f"Overiding Global Attribute {attr_name} : {self._data.meta[attr_name]} -> {attr_value}"
+                )
+                self._data.meta[attr_name] = attr_value
+        # If the attribute is not set, set it
+        else:
+            self._data.meta[attr_name] = attr_value
+
+    def _update_variable_attribute(self, var_name, attr_name, attr_value):
+        if (
+            attr_name in self[var_name].meta
+            and self[var_name].meta[attr_name] is not None
+        ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                attr_name
+            ]
+            if (
+                self[var_name].meta[attr_name] != attr_value
+                and attr_schema["overwrite"]
+            ):
+                warn_user(
+                    f"Overiding {var_name} Attribute {attr_name} : {self[var_name].meta[attr_name]} -> {attr_value}"
+                )
+                self[var_name].meta[attr_name] = attr_value
+        else:
+            self[var_name].meta[attr_name] = attr_value
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
@@ -379,7 +388,7 @@ class TimeData:
         ----------
         measure_name: `str`
             Name of the measurement to add.
-        data: `astropy.units.Quantity`
+        data: `astropy.units.Quantity`, `astropy.table.Column`
             The data to add. Must have the same time stamps as the existing data.
         meta: `dict`, optional
             The metadata associated with the measurement.
@@ -389,23 +398,24 @@ class TimeData:
         TypeError: If var_data is not of type Quantity.
         """
         # Verify that all Measurements are `Quantity`
-        if (not isinstance(data, u.Quantity)) or (not data.unit):
+        if isinstance(data, u.Quantity) and len(data) == len(self.time):
+            self._data[measure_name] = data
+            # Add any Metadata from the original Quantity
+            self._data[measure_name].meta = self.measurement_attribute_template()
+            if hasattr(data, "meta"):
+                self._data[measure_name].meta.update(data.meta)
+            if meta:
+                self._data[measure_name].meta.update(meta)
+        # Consider it Metadata
+        elif isinstance(data, NDData):
+            self.nrv_data[measure_name] = data
+            # Add any Metadata Passed not in the Column
+            if meta:
+                self.nrv_data[measure_name].meta.update(meta)
+        else:
             raise TypeError(
-                f"Measurement {measure_name} must be type `astropy.units.Quantity` and have `unit` assigned."
+                f"Data for Measurement {measure_name} must be an astropy.nddata.NDData or astropy.units.Quantity."
             )
-        # Verify that the Column is only a single dimension
-        if len(data.shape) > 1:  # If there is more than 1 Dimension
-            raise ValueError(
-                f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
-            )
-
-        self._data[measure_name] = data
-        # Add any Metadata from the original Quantity
-        self._data[measure_name].meta = self.measurement_attribute_template()
-        if hasattr(data, "meta"):
-            self._data[measure_name].meta.update(data.meta)
-        if meta:
-            self._data[measure_name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
@@ -419,7 +429,12 @@ class TimeData:
         measure_name: `str`
             Name of the measurement to remove.
         """
-        self._data.remove_column(measure_name)
+        if measure_name in self._data.columns:
+            self._data.remove_column(measure_name)
+        elif measure_name in self.nrv_data:
+            self.nrv_data.pop(measure_name)
+        else:
+            raise ValueError(f"Data for Measurement {measure_name} not found.")
 
     def plot(self, axes=None, columns=None, subplots=True, **plot_args):
         """
@@ -616,5 +631,5 @@ class TimeData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a TimeData object
-        data = handler.load_data(file_path)
-        return cls(data)
+        data, nrv_data = handler.load_data(file_path)
+        return cls(data=data, nrv_data=nrv_data)
