@@ -103,22 +103,14 @@ def test_timedata_default():
 
 
 def test_multidimensional_data():
-    # fmt: off
-    input_attrs = {
-        "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_level": "l1>Level 1",
-        "Data_version": "v0.0.1",
-    }
-    # fmt: on
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
 
-    test_data = TimeData(ts, meta=input_attrs)
+    with pytest.raises(ValueError):
+        _ = TimeData(ts)
 
-    assert test_data["var"].shape == (10, 2)
 
-
-def test_nrv_data():
+def test_support_data():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -128,19 +120,19 @@ def test_nrv_data():
     # fmt: on
     ts = get_test_timeseries()
 
-    # Bad NRV
-    nrv_data = {"nrv_var": [1]}
+    # Bad Support
+    support = {"support_var": [1]}
     with pytest.raises(TypeError):
-        _ = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
+        _ = TimeData(ts, support=support, meta=input_attrs)
 
-    # Good NRV
-    nrv_data = {"nrv_var": NDData(data=[1])}
+    # Good Support
+    support = {"support_var": NDData(data=[1])}
 
     # Create TimeData
-    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
+    test_data = TimeData(ts, support=support, meta=input_attrs)
 
-    assert "nrv_var" in test_data
-    assert test_data["nrv_var"].data[0] == 1
+    assert "support_var" in test_data.support
+    assert test_data.support["support_var"].data[0] == 1
 
 
 def test_timedata_valid_attrs():
@@ -280,9 +272,9 @@ def test_timedata_add_measurement():
         test_data.add_measurement(measure_name="test", data=[], meta={})
 
     # Add multi-domensional data
-    q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
-    test_data.add_measurement(measure_name="test_md", data=q, meta={})
-    assert test_data["test_md"].shape == (10, 10, 10)
+    with pytest.raises(ValueError):
+        q = Quantity(value=random(size=(10, 10, 10)), unit="s", dtype=np.uint16)
+        test_data.add_measurement(measure_name="test", data=q, meta={})
 
     # Good measurement
     q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
@@ -290,39 +282,64 @@ def test_timedata_add_measurement():
     test_data.add_measurement(measure_name="test", data=q)
     assert test_data["test"].shape == (10,)
 
-    # Add Support Data
+    # Add Dimensionless Record-Varying Data
     q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
     test_data.add_measurement(
-        measure_name="Test Support Data",
+        measure_name="Test Dimensionless",
         data=q,
-        meta={"CATDESC": "Test Support Data", "VAR_TYPE": "support_data"},
+        meta={"CATDESC": "Test Dimensionless Data", "VAR_TYPE": "support_data"},
     )
-    assert test_data["Test Support Data"].shape == (10,)
+    assert test_data["Test Dimensionless"].shape == (10,)
+
+    # Add Count-Based Record-Varying Data
+    q = Quantity(value=random(size=(10)), unit=u.count)
+    test_data.add_measurement(
+        measure_name="Test Count",
+        data=q,
+        meta={"CATDESC": "Test Count Data", "VAR_TYPE": "support_data"},
+    )
+    assert test_data["Test Count"].shape == (10,)
+
+    # test remove_measurement
+    test_data.remove("test")
+    assert "test" not in test_data
+
+    # Test non-existent variable
+    with pytest.raises(ValueError):
+        test_data.remove("bad_variable")
+
+
+def test_timedata_add_support():
+    """Function to Test Adding Support/ Non-Record-Varying Data"""
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+
+    # Add non-Quantity
+    with pytest.raises(TypeError):
+        test_data.add_support(name="test", data=[], meta={})
 
     # Add Test Metadata
     c = NDData(data=[1])
-    test_data.add_measurement(
-        measure_name="Test Metadata",
+    test_data.add_support(
+        name="Test Metadata",
         data=c,
         meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
     )
-    assert "Test Metadata" in test_data
-    assert test_data["Test Metadata"].data[0] == 1
-
-    # test remove_measurement
-    test_data.remove_measurement("test")
-    assert "test" not in test_data
+    assert "Test Metadata" in test_data.support
+    assert test_data.support["Test Metadata"].data[0] == 1
 
     # Test remove Support Data
-    test_data.remove_measurement("Test Support Data")
-    assert "Test Support Data" not in test_data
-
-    # Test Remove Metadata
-    test_data.remove_measurement("Test Metadata")
+    test_data.remove("Test Metadata")
     assert "Test Metadata" not in test_data
-
-    with pytest.raises(ValueError):
-        test_data.remove_measurement("bad_variable")
 
 
 def test_timedata_plot():
@@ -438,14 +455,14 @@ def test_timedata_generate_valid_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
-    nrv_data = {
+    support = {
         "nrv_var": NDData(
             data=[1, 2, 3],
             meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
+    test_data = TimeData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -546,14 +563,14 @@ def test_timedata_from_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
-    nrv_data = {
+    support = {
         "nrv_var": NDData(
             data=[1, 2, 3],
             meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, nrv_data=nrv_data, meta=input_attrs)
+    test_data = TimeData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -669,13 +686,13 @@ def test_timedata_idempotency():
     # Induce a Bad (Null) Global Attribute
     test_data.meta["Test Null Attr"] = ""
 
-    # Induce an NRV Variable
-    test_data["NRV_var"] = NDData(["Test NRV Data"])
-    test_data["NRV_var"].meta["UNITS"] = "m"
+    # Induce an Non-Record-Varying Variable
+    test_data.add_support(name="NRV_var", data=NDData(["Test NRV Data"]))
 
     # Induce a Variable with Bad UNITS
-    test_data["Bad_units_var"] = NDData([1, 2, 3, 4])
-    test_data["Bad_units_var"].meta["UNITS"] = "Not A Unit"
+    test_data.add_support(
+        name="Bad_units_var", data=NDData([1, 2, 3, 4], meta={"UNITS": "Not A Unit"})
+    )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_data_cols = test_data.columns
@@ -698,18 +715,17 @@ def test_timedata_idempotency():
             assert len(test_data[var].meta) == len(loaded_data[var].meta)
             assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
 
-        for var in test_data.nrv_data:
-            assert var in loaded_data.nrv_data
+        for var in test_data.support:
+            assert var in loaded_data.support
             assert (
-                test_data.nrv_data[var].data.shape
-                == loaded_data.nrv_data[var].data.shape
+                test_data.support[var].data.shape == loaded_data.support[var].data.shape
             )
-            assert len(test_data.nrv_data[var].meta) == len(
-                loaded_data.nrv_data[var].meta
+            assert len(test_data.support[var].meta) == len(
+                loaded_data.support[var].meta
             )
             assert (
-                test_data.nrv_data[var].meta["VAR_TYPE"]
-                == loaded_data.nrv_data[var].meta["VAR_TYPE"]
+                test_data.support[var].meta["VAR_TYPE"]
+                == loaded_data.support[var].meta["VAR_TYPE"]
             )
 
 

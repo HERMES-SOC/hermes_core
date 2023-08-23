@@ -98,5 +98,5 @@ def test_cdf_nrv_support_data():
         # Make sure we can load the modified JSON
         td_loaded = TimeData.load(test_file_output_path)
 
-        assert "Test_NRV_Var" in td_loaded.nrv_data
+        assert "Test_NRV_Var" in td_loaded.support
         assert "Test_Support_Var" in td_loaded.columns

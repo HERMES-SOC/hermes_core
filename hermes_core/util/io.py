@@ -83,8 +83,8 @@ class CDFHandler(TimeDataIOHandler):
         -------
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
-        nrv_data : `dict`
-            Non-record varying data contained in the file
+        support : `dict`
+            Non-record-varying data contained in the file
         """
         from spacepy.pycdf import CDF
 
@@ -94,7 +94,7 @@ class CDFHandler(TimeDataIOHandler):
         # Create a new TimeSeries
         ts = TimeSeries()
         # Create a Data Structure for Non-record Varying Data
-        nrv_data = {}
+        support = {}
 
         # Open CDF file with context manager
         with CDF(file_path) as input_file:
@@ -124,49 +124,44 @@ class CDFHandler(TimeDataIOHandler):
                 ts["time"].meta = OrderedDict()
                 ts["time"].meta.update(time_attrs)
 
+            # Get all the Keys for Measurement Variable Data
+            # These are Keys where the underlying object is a `dict` that contains
+            # additional data, and is not the `EPOCH` variable
+            variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
             # Add Variable Attributtes from the CDF file to TimeSeries
-            for var_name in input_file:
-                if var_name != "Epoch":  # Since we added this separately
-                    # Extract the Variable's Metadata
-                    var_attrs = {}
-                    for attr_name in input_file[var_name].attrs:
-                        var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+            for var_name in variable_keys:
+                # Extract the Variable's Metadata
+                var_attrs = {}
+                for attr_name in input_file[var_name].attrs:
+                    var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
 
-                    # Extract the Variable's Data
-                    var_data = input_file[var_name][...]
-                    if input_file[var_name].rv():
-                        # See if it is `data` or `metadata`
-                        if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
-                            # Load as Record-Varying `data`
-                            try:
-                                self._load_data_variable(
-                                    ts, var_name, var_data, var_attrs
-                                )
-                            except ValueError:
-                                warn_user(
-                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
-                                )
-                                # Swap Units
-                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                                var_attrs[
-                                    "UNITS"
-                                ] = u.dimensionless_unscaled.to_string()
-                                self._load_data_variable(
-                                    ts, var_name, var_data, var_attrs
-                                )
-                        else:
-                            # Load as `metadata`
-                            self._load_metadata_variable(
-                                nrv_data, var_name, var_data, var_attrs
+                # Extract the Variable's Data
+                var_data = input_file[var_name][...]
+                if input_file[var_name].rv():
+                    # See if it is record-varying data with Units
+                    if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
+                        # Load as Record-Varying `data`
+                        try:
+                            self._load_data_variable(ts, var_name, var_data, var_attrs)
+                        except ValueError:
+                            warn_user(
+                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
                             )
+                            # Swap Units
+                            var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+                            var_attrs["UNITS"] = u.dimensionless_unscaled.to_string()
+                            self._load_data_variable(ts, var_name, var_data, var_attrs)
                     else:
-                        # Load NRV Data as `metadata`
-                        self._load_metadata_variable(
-                            nrv_data, var_name, var_data, var_attrs
+                        # Load as `support`
+                        self._load_support_variable(
+                            support, var_name, var_data, var_attrs
                         )
+                else:
+                    # Load Non-Record-Varying Data as `support`
+                    self._load_support_variable(support, var_name, var_data, var_attrs)
 
         # Return the given TimeSeries, NRV Data
-        return ts, nrv_data
+        return ts, support
 
     def _load_data_variable(self, ts, var_name, var_data, var_attrs):
         # Create the Quantity object
@@ -176,9 +171,9 @@ class CDFHandler(TimeDataIOHandler):
         ts[var_name].meta = OrderedDict()
         ts[var_name].meta.update(var_attrs)
 
-    def _load_metadata_variable(self, nrv_data, var_name, var_data, var_attrs):
+    def _load_support_variable(self, support, var_name, var_data, var_attrs):
         # Create a NDData entry for the variable
-        nrv_data[var_name] = NDData(data=var_data, meta=var_attrs)
+        support[var_name] = NDData(data=var_data, meta=var_attrs)
 
     def save_data(self, data, file_path):
         """
@@ -242,8 +237,8 @@ class CDFHandler(TimeDataIOHandler):
                         # Add the Attribute to the CDF File
                         cdf_file[var_name].attrs[var_attr_name] = var_attr_val
 
-        # Loop through NRV Data
-        for var_name, var_data in data.nrv_data.items():
+        # Loop through Non-Record-Varying Data
+        for var_name, var_data in data.support.items():
             # Guess the data type to store
             # Documented in https://github.com/spacepy/spacepy/issues/707
             _, var_data_types, _ = self.schema._types(var_data.data)
