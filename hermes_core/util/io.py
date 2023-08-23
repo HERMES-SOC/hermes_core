@@ -130,6 +130,14 @@ class CDFHandler(TimeDataIOHandler):
             variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in variable_keys:
+                # Make sure the Variable is not multi-dimensional
+                if len(input_file[var_name].shape) > 1:
+                    warn_user(
+                        f"Measurement Variable {var_name} is multi-dimensional. Cannot add {var_name} to the TimeSeries"
+                    )
+                    # Skip to the next Variable
+                    continue
+
                 # Extract the Variable's Metadata
                 var_attrs = {}
                 for attr_name in input_file[var_name].attrs:
