@@ -6,7 +6,7 @@ from astropy.time import Time
 from astropy.nddata import NDData
 import astropy.units as u
 from hermes_core.util.exceptions import warn_user
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["CDFHandler"]
 
@@ -68,7 +68,7 @@ class CDFHandler(HermesDataIOHandler):
         super().__init__()
 
         # CDF Schema
-        self.schema = HERMESDataSchema()
+        self.schema = HermesDataSchema()
 
     def load_data(self, file_path):
         """

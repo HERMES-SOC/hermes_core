@@ -2,7 +2,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["validate", "CDFValidator"]
 
@@ -66,7 +66,7 @@ class CDFValidator(HermesDataValidator):
         super().__init__()
 
         # CDF Schema
-        self.schema = HERMESDataSchema()
+        self.schema = HermesDataSchema()
 
     def validate(self, file_path):
         """

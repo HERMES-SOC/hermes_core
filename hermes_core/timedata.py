@@ -12,7 +12,7 @@ from astropy.nddata import NDData
 from astropy import units as u
 import hermes_core
 from hermes_core.util.io import CDFHandler
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
 
@@ -110,7 +110,7 @@ class HermesData:
             self.support = {}
 
         # Derive Metadata
-        self.schema = HERMESDataSchema()
+        self.schema = HermesDataSchema()
         self._derive_metadata()
 
     @property
@@ -253,7 +253,7 @@ class HermesData:
         template : `collections.OrderedDict`
             A template for required global attributes.
         """
-        meta = HERMESDataSchema.global_attribute_template()
+        meta = HermesDataSchema.global_attribute_template()
 
         # Check the Optional Instrument Name
         if instr_name:
@@ -298,11 +298,11 @@ class HermesData:
         template : `collections.OrderedDict`
             A template for required variable attributes that must be provided.
         """
-        return HERMESDataSchema.measurement_attribute_template()
+        return HermesDataSchema.measurement_attribute_template()
 
     def _derive_metadata(self):
         """
-        Funtion to derive global and measurement metadata based on a HERMESDataSchema
+        Funtion to derive global and measurement metadata based on a HermesDataSchema
         """
 
         # Get Default Metadata
