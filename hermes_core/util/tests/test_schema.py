@@ -387,7 +387,6 @@ def test_si_conversion():
     """Test the SI Units Conversion"""
     # Get Test TimeData
     test_data = get_test_timedata()
-    print()
     # Default in Test Data "m"
     assert (
         HERMESDataSchema()._get_si_conversion(test_data, "measurement")
