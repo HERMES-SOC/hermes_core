@@ -10,12 +10,12 @@ from astropy.timeseries import TimeSeries
 from astropy.table import Table
 import astropy.units as u
 from spacepy.pycdf import CDF
-from hermes_core.timedata import TimeData
+from hermes_core.timedata import HermesData
 from hermes_core.util.schema import HERMESDataSchema
 from hermes_core.util import const
 
 
-def get_test_timedata():
+def get_test_hermes_data():
     ts = TimeSeries()
     ts.meta.update(
         {
@@ -46,8 +46,8 @@ def get_test_timedata():
             "CATDESC": "Test Data",
         }
     )
-    timedata = TimeData(data=ts)
-    return timedata
+    hermes_data = HermesData(data=ts)
+    return hermes_data
 
 
 def test_hermes_data_schema():
@@ -125,10 +125,10 @@ def test_global_attributes():
             "CATDESC": "Test Data",
         }
     )
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
 
-    # Create TimeData
-    td = TimeData(data=ts, meta=template)
+    # Create HermesData
+    td = HermesData(data=ts, meta=template)
     with pytest.raises(ValueError):
         _ = HERMESDataSchema()._derive_global_attribute(td, "bad_attribute")
 
@@ -385,8 +385,8 @@ def test_format():
 
 def test_si_conversion():
     """Test the SI Units Conversion"""
-    # Get Test TimeData
-    test_data = get_test_timedata()
+    # Get Test HermesData
+    test_data = get_test_hermes_data()
     # Default in Test Data "m"
     assert (
         HERMESDataSchema()._get_si_conversion(test_data, "measurement")
@@ -433,11 +433,11 @@ def test_resolution():
             "CATDESC": "Test Data",
         }
     )
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
 
     # Get Resolution
     with pytest.raises(ValueError):
-        td = TimeData(data=ts, meta=template)
+        td = HermesData(data=ts, meta=template)
 
 
 def test_reference_position():

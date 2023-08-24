@@ -16,7 +16,7 @@ from astropy.nddata import NDData
 from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 import hermes_core
-from hermes_core.timedata import TimeData
+from hermes_core.timedata import HermesData
 from hermes_core.util.validation import validate
 
 
@@ -57,46 +57,46 @@ def get_test_timeseries():
     return ts
 
 
-def get_test_timedata():
+def get_test_hermes_data():
     ts = TimeSeries(
         time_start="2016-03-22T12:30:31",
         time_delta=3 * u.s,
         data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)},
     )
-    input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
-    timedata = TimeData(data=ts, meta=input_attrs)
-    timedata["Bx"].meta.update({"CATDESC": "Test"})
-    return timedata
+    input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+    hermes_data = HermesData(data=ts, meta=input_attrs)
+    hermes_data["Bx"].meta.update({"CATDESC": "Test"})
+    return hermes_data
 
 
 def get_test_global_meta():
-    global_attrs_template = TimeData.global_attribute_template()
+    global_attrs_template = HermesData.global_attribute_template()
 
 
 def test_non_timeseries():
     with pytest.raises(TypeError):
-        _ = TimeData(data=[], meta={})
+        _ = HermesData(data=[], meta={})
 
 
-def test_timedata_empty_ts():
+def test_hermes_data_empty_ts():
     with pytest.raises(ValueError):
-        _ = TimeData(data=TimeSeries())
+        _ = HermesData(data=TimeSeries())
 
 
-def test_timedata_bad_ts():
+def test_hermes_data_bad_ts():
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
-        _ = TimeData(data=ts)
+        _ = HermesData(data=ts)
 
 
-def test_timedata_default():
+def test_hermes_data_default():
     ts = get_test_timeseries()
 
     with pytest.raises(ValueError) as e:
         # We expect this to throw an error that the Instrument is not recognized.
         # The Instrument is one of the attributes required for generating the filename
         # Initialize a CDF File Wrapper
-        test_data = TimeData(ts)
+        test_data = HermesData(ts)
 
     # Test Deleting the Writer
     del ts
@@ -107,7 +107,7 @@ def test_multidimensional_data():
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
 
     with pytest.raises(ValueError):
-        _ = TimeData(ts)
+        _ = HermesData(ts)
 
 
 def test_support_data():
@@ -123,19 +123,19 @@ def test_support_data():
     # Bad Support
     support = {"support_var": [1]}
     with pytest.raises(TypeError):
-        _ = TimeData(ts, support=support, meta=input_attrs)
+        _ = HermesData(ts, support=support, meta=input_attrs)
 
     # Good Support
     support = {"support_var": NDData(data=[1])}
 
-    # Create TimeData
-    test_data = TimeData(ts, support=support, meta=input_attrs)
+    # Create HermesData
+    test_data = HermesData(ts, support=support, meta=input_attrs)
 
     assert "support_var" in test_data.support
     assert test_data.support["support_var"].data[0] == 1
 
 
-def test_timedata_valid_attrs():
+def test_hermes_data_valid_attrs():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -146,7 +146,7 @@ def test_timedata_valid_attrs():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -158,22 +158,22 @@ def test_timedata_valid_attrs():
 
 def test_global_attribute_template():
     # default
-    assert isinstance(TimeData.global_attribute_template(), OrderedDict)
+    assert isinstance(HermesData.global_attribute_template(), OrderedDict)
 
     # bad instrument
     with pytest.raises(ValueError):
-        _ = TimeData.global_attribute_template(instr_name="test instrument")
+        _ = HermesData.global_attribute_template(instr_name="test instrument")
 
     # bad Data Level
     with pytest.raises(ValueError):
-        _ = TimeData.global_attribute_template(data_level="data level")
+        _ = HermesData.global_attribute_template(data_level="data level")
 
     # bad version
     with pytest.raises(ValueError):
-        _ = TimeData.global_attribute_template(version="000")
+        _ = HermesData.global_attribute_template(version="000")
 
     # good inputs
-    template = TimeData.global_attribute_template(
+    template = HermesData.global_attribute_template(
         instr_name="eea", data_level="ql", version="1.3.6"
     )
     assert template["Descriptor"] == "EEA>Electron Electrostatic Analyzer"
@@ -193,7 +193,7 @@ def test_default_properties():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     # data
     assert isinstance(test_data.data, TimeSeries)
@@ -225,7 +225,7 @@ def test_default_properties():
         _ = test_data["test"]
 
 
-def test_timedata_single_measurement():
+def test_hermes_data_single_measurement():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -236,7 +236,7 @@ def test_timedata_single_measurement():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     # Add Measurement
     test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
@@ -253,7 +253,7 @@ def test_timedata_single_measurement():
         assert test_file_cache_path.exists()
 
 
-def test_timedata_add_measurement():
+def test_hermes_data_add_measurement():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -264,7 +264,7 @@ def test_timedata_add_measurement():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
     data_len = len(test_data)
 
     # Add non-Quantity
@@ -309,7 +309,7 @@ def test_timedata_add_measurement():
         test_data.remove("bad_variable")
 
 
-def test_timedata_add_support():
+def test_hermes_data_add_support():
     """Function to Test Adding Support/ Non-Record-Varying Data"""
     # fmt: off
     input_attrs = {
@@ -321,7 +321,7 @@ def test_timedata_add_support():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     # Add non-Quantity
     with pytest.raises(TypeError):
@@ -342,7 +342,7 @@ def test_timedata_add_support():
     assert "Test Metadata" not in test_data
 
 
-def test_timedata_plot():
+def test_hermes_data_plot():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -353,7 +353,7 @@ def test_timedata_plot():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
     q = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
     q.meta = OrderedDict({"CATDESC": "Test Variable"})
     test_data.add_measurement(measure_name="test", data=q)
@@ -370,7 +370,7 @@ def test_timedata_plot():
     assert isinstance(ax, Axes)
 
 
-def test_timedata_append():
+def test_hermes_data_append():
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -381,7 +381,7 @@ def test_timedata_append():
 
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     # Append Non-TimeSeries
     with pytest.raises(TypeError):
@@ -416,7 +416,7 @@ def test_timedata_append():
     assert test_data.shape[0] == 20
 
 
-def test_timedata_generate_valid_cdf():
+def test_hermes_data_generate_valid_cdf():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -462,7 +462,7 @@ def test_timedata_generate_valid_cdf():
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, support=support, meta=input_attrs)
+    test_data = HermesData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -524,7 +524,7 @@ def test_timedata_generate_valid_cdf():
         test_file_cache_path.unlink()
 
 
-def test_timedata_from_cdf():
+def test_hermes_data_from_cdf():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -570,7 +570,7 @@ def test_timedata_from_cdf():
         )
     }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, support=support, meta=input_attrs)
+    test_data = HermesData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -627,7 +627,7 @@ def test_timedata_from_cdf():
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
-        new_writer = TimeData.load(test_file_output_path)
+        new_writer = HermesData.load(test_file_output_path)
 
         # Remove the Original File
         test_file_cache_path = Path(test_file_output_path)
@@ -642,7 +642,7 @@ def test_timedata_from_cdf():
         assert len(result) == len(result2)
 
 
-def test_timedata_idempotency():
+def test_hermes_data_idempotency():
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -679,8 +679,8 @@ def test_timedata_idempotency():
         "TEXT": "Valid Test Case",
     }
     # fmt: on
-    # Generate a base TimeData object
-    test_data = get_test_timedata()
+    # Generate a base HermesData object
+    test_data = get_test_hermes_data()
     test_data.meta.update(input_attrs)
 
     # Induce a Bad (Null) Global Attribute
@@ -700,7 +700,7 @@ def test_timedata_idempotency():
         test_file_output_path = test_data.save(output_path=tmpdirname)
 
         # Try loading the *Invalid* CDF File
-        loaded_data = TimeData.load(test_file_output_path)
+        loaded_data = HermesData.load(test_file_output_path)
 
         assert len(test_data) == len(loaded_data)
         assert test_data.shape == loaded_data.shape
@@ -788,10 +788,10 @@ def test_bitlength_save_cdf(bitlength):
     }
     # fmt: on
 
-    timedata = TimeData(data=ts, meta=input_attrs)
-    timedata["Bx"].meta.update({"CATDESC": "Test"})
+    hermes_data = HermesData(data=ts, meta=input_attrs)
+    hermes_data["Bx"].meta.update({"CATDESC": "Test"})
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = timedata.save(output_path=tmpdirname)
+        test_file_output_path = hermes_data.save(output_path=tmpdirname)
 
         test_file_cache_path = Path(test_file_output_path)
         # Test the File Exists
@@ -836,7 +836,7 @@ def test_overwrite_save():
         "TEXT": "Valid Test Case",
     }
     # fmt: on
-    td = get_test_timedata()
+    td = get_test_hermes_data()
     td.meta.update(input_attrs)
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = Path(td.save(output_path=tmpdirname))
@@ -851,7 +851,7 @@ def test_overwrite_save():
 
 
 def test_without_cdf_lib():
-    """Function to test TimeData Functions without the use of spacepy.pycdf libraries"""
+    """Function to test HermesData Functions without the use of spacepy.pycdf libraries"""
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -897,7 +897,7 @@ def test_without_cdf_lib():
     pycdf.lib = None
 
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = HermesData(ts, meta=input_attrs)
 
     assert test_data.meta["CDF_Lib_version"] == "unknown version"
 

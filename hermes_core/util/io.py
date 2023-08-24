@@ -15,7 +15,7 @@ __all__ = ["CDFHandler"]
 # ================================================================================================
 
 
-class TimeDataIOHandler(ABC):
+class HermesDataIOHandler(ABC):
     """
     Abstract base class for handling input/output operations of heliophysics data.
     """
@@ -44,8 +44,8 @@ class TimeDataIOHandler(ABC):
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` containing the data to be saved.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` containing the data to be saved.
         file_path : `str`
             The fully specified file path to save into.
         """
@@ -57,9 +57,9 @@ class TimeDataIOHandler(ABC):
 # ================================================================================================
 
 
-class CDFHandler(TimeDataIOHandler):
+class CDFHandler(HermesDataIOHandler):
     """
-    A concrete implementation of TimeDataIOHandler for handling heliophysics data in CDF format.
+    A concrete implementation of HermesDataIOHandler for handling heliophysics data in CDF format.
 
     This class provides methods to load and save heliophysics data from/to a CDF file.
     """
@@ -189,8 +189,8 @@ class CDFHandler(TimeDataIOHandler):
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` containing the data to be saved.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` containing the data to be saved.
         file_path : `str`
             The path to save the CDF file.
 

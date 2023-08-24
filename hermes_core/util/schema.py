@@ -643,8 +643,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from
         var_name : `str`
             The name of the measurement to derive metadata for
         guess_types : `list[int]`, optional
@@ -726,8 +726,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------
@@ -758,8 +758,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------

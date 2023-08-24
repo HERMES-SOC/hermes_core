@@ -34,7 +34,7 @@ def validate(filepath):
     return validator.validate(filepath)
 
 
-class TimeDataValidator(ABC):
+class HermesDataValidator(ABC):
     """
     Abstract base class for heliophysics data validators.
     """
@@ -57,7 +57,7 @@ class TimeDataValidator(ABC):
         pass
 
 
-class CDFValidator(TimeDataValidator):
+class CDFValidator(HermesDataValidator):
     """
     Validator for CDF files.
     """

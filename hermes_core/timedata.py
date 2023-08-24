@@ -16,10 +16,10 @@ from hermes_core.util.schema import HERMESDataSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
 
-__all__ = ["TimeData"]
+__all__ = ["HermesData"]
 
 
-class TimeData:
+class HermesData:
     """
     A generic object for loading, storing, and manipulating HERMES time series data.
 
@@ -36,11 +36,11 @@ class TimeData:
     --------
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
-    >>> from hermes_core.timedata import TimeData
+    >>> from hermes_core.timedata import HermesData
     >>> data = u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)
     >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": data})
-    >>> input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
-    >>> timedata = TimeData(data=ts, meta=input_attrs)
+    >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+    >>> hermes_data = HermesData(data=ts, meta=input_attrs)
 
     Raises
     ------
@@ -178,15 +178,15 @@ class TimeData:
 
     def __repr__(self):
         """
-        Returns a representation of the `TimeData` class.
+        Returns a representation of the `HermesData` class.
         """
         return self.__str__()
 
     def __str__(self):
         """
-        Returns a string representation of the `TimeData` class.
+        Returns a string representation of the `HermesData` class.
         """
-        str_repr = f"TimeData() Object:\n"
+        str_repr = f"HermesData() Object:\n"
         # Global Attributes/Metedata
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self._data.meta.items():
@@ -658,8 +658,8 @@ class TimeData:
 
         Returns
         -------
-        data : `TimeData`
-            A `TimeData` object containing the loaded data.
+        data : `HermesData`
+            A `HermesData` object containing the loaded data.
 
         Raises
         ------
@@ -675,6 +675,6 @@ class TimeData:
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
-        # Load data using the handler and return a TimeData object
+        # Load data using the handler and return a HermesData object
         data, support = handler.load_data(file_path)
         return cls(data=data, support=support)
