@@ -103,7 +103,7 @@ Here is an example with filled in values.
 You can now create the :py:class:`~hermes_core.timedata.HermesData` object,
 
     >>> from hermes_core.timedata import HermesData
-    >>> hermes_data = HermesData(data=ts, meta=input_attrs)
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
 
 The :py:class:`~hermes_core.timedata.HermesData` object also accepts optional arguments for loading
 non-record-varying (NRV) support data. These arguments are required to be a `dict`
@@ -111,7 +111,7 @@ of :py:class:`~astropy.nddata.NDData` objects.
 
     >>> from astropy.nddata import NDData
     >>> support = {"const_param": NDData(data=[1e-3])}
-    >>> hermes_data = HermesData(data=ts, meta=input_attrs, support=support)
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs, support=support)
 
 The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
@@ -132,11 +132,11 @@ Putting it all together here is complete example
     ...    data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)}
     ... )
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
-    >>> hermes_data = HermesData(data=ts, meta=input_attrs)
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
     >>> hermes_data['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
 
 Creating a ``HermesData`` from an existing CDF File
-=================================================
+===================================================
 
 Given a current CDF File you can load it into a :py:class:`~hermes_core.timedata.HermesData` by providing a path to the CDF file::
 
@@ -146,7 +146,7 @@ Given a current CDF File you can load it into a :py:class:`~hermes_core.timedata
 The :py:class:`~hermes_core.timedata.HermesData` can the be updated, measurements added, metadata added, and written to a new CDF file.
 
 Adding data to a ``HermesData`` Container
-=======================================
+=========================================
 
 A new column of data, support data, or NRV data can be added to an existing instance. Remember 
 that new data measurements must have the same time stamps as the existing ones and therefore 
@@ -342,7 +342,7 @@ By default, a plot will be generated with each measurement in its own plot panel
     >>> bz = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
     >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": u.Quantity(bx, "nanoTesla", dtype=np.int16)})
     >>> input_attrs = HermesData.global_attribute_template("nemisis", "l1", "1.0.0")
-    >>> hermes_data = HermesData(data=ts, meta=input_attrs)
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
     >>> hermes_data.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
     >>> hermes_data.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
     >>> fig = plt.figure()
