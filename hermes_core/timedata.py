@@ -105,9 +105,9 @@ class TimeData:
 
         # Copy the Non-Record Varying Data
         if support:
-            self.support = support
+            self._support = support
         else:
-            self.support = {}
+            self._support = {}
 
         # Derive Metadata
         self.schema = HERMESDataSchema()
@@ -119,6 +119,13 @@ class TimeData:
         (`astropy.timeseries.TimeSeries`) A `TimeSeries` representing one or more measurements as a function of time.
         """
         return self._data
+
+    @property
+    def support(self):
+        """
+        (`dict[astropy.nddata.NDData]`) A `dict` containing one or more non-time-varying support variables.
+        """
+        return self._support
 
     @property
     def meta(self):
@@ -333,9 +340,9 @@ class TimeData:
                 )
 
         # Support/ Non-Record-Varying Data
-        for col in self.support:
+        for col in self._support:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                self.support, col
+                self._support, col
             ).items():
                 self._update_support_attribute(
                     var_name=col, attr_name=attr_name, attr_value=attr_value
@@ -380,22 +387,22 @@ class TimeData:
 
     def _update_support_attribute(self, var_name, attr_name, attr_value):
         if (
-            attr_name in self.support[var_name].meta
-            and self.support[var_name].meta[attr_name] is not None
+            attr_name in self._support[var_name].meta
+            and self._support[var_name].meta[attr_name] is not None
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
             ]
             if (
-                self.support[var_name].meta[attr_name] != attr_value
+                self._support[var_name].meta[attr_name] != attr_value
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overiding {var_name} Attribute {attr_name} : {self.support[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overiding {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
                 )
-                self.support[var_name].meta[attr_name] = attr_value
+                self._support[var_name].meta[attr_name] = attr_value
         else:
-            self.support[var_name].meta[attr_name] = attr_value
+            self._support[var_name].meta[attr_name] = attr_value
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
@@ -457,10 +464,10 @@ class TimeData:
         if not isinstance(data, NDData):
             raise TypeError(f"Measurement {name} must be type `astropy.nddata.NDData`.")
 
-        self.support[name] = data
+        self._support[name] = data
         # Add any Metadata Passed not in the NDData
         if meta:
-            self.support[name].meta.update(meta)
+            self._support[name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
@@ -476,8 +483,8 @@ class TimeData:
         """
         if measure_name in self._data.columns:
             self._data.remove_column(measure_name)
-        elif measure_name in self.support:
-            self.support.pop(measure_name)
+        elif measure_name in self._support:
+            self._support.pop(measure_name)
         else:
             raise ValueError(f"Data for Measurement {measure_name} not found.")
 
