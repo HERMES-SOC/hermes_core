@@ -59,7 +59,7 @@ def test_missing_global_attrs():
     # Create a Test HermesData
     ts = get_test_timeseries()
     template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
-    td = HermesData(data=ts, meta=template)
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -83,7 +83,7 @@ def test_missing_var_type():
     # Create a Test HermesData
     ts = get_test_timeseries()
     template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
-    td = HermesData(data=ts, meta=template)
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -106,7 +106,7 @@ def test_missing_variable_attrs():
     # Create a Test HermesData
     ts = get_test_timeseries()
     template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
-    td = HermesData(data=ts, meta=template)
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:

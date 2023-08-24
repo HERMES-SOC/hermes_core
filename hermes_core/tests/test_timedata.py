@@ -64,7 +64,7 @@ def get_test_hermes_data():
         data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)},
     )
     input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
-    hermes_data = HermesData(data=ts, meta=input_attrs)
+    hermes_data = HermesData(timeseries=ts, meta=input_attrs)
     hermes_data["Bx"].meta.update({"CATDESC": "Test"})
     return hermes_data
 
@@ -75,18 +75,18 @@ def get_test_global_meta():
 
 def test_non_timeseries():
     with pytest.raises(TypeError):
-        _ = HermesData(data=[], meta={})
+        _ = HermesData(timeseries=[], meta={})
 
 
 def test_hermes_data_empty_ts():
     with pytest.raises(ValueError):
-        _ = HermesData(data=TimeSeries())
+        _ = HermesData(timeseries=TimeSeries())
 
 
 def test_hermes_data_bad_ts():
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
-        _ = HermesData(data=ts)
+        _ = HermesData(timeseries=ts)
 
 
 def test_hermes_data_default():
@@ -196,7 +196,7 @@ def test_default_properties():
     test_data = HermesData(ts, meta=input_attrs)
 
     # data
-    assert isinstance(test_data.data, TimeSeries)
+    assert isinstance(test_data.timeseries, TimeSeries)
 
     # units
     assert isinstance(test_data.units, OrderedDict)
@@ -788,7 +788,7 @@ def test_bitlength_save_cdf(bitlength):
     }
     # fmt: on
 
-    hermes_data = HermesData(data=ts, meta=input_attrs)
+    hermes_data = HermesData(timeseries=ts, meta=input_attrs)
     hermes_data["Bx"].meta.update({"CATDESC": "Test"})
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = hermes_data.save(output_path=tmpdirname)

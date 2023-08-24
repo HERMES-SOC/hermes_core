@@ -46,7 +46,7 @@ def get_test_hermes_data():
             "CATDESC": "Test Data",
         }
     )
-    hermes_data = HermesData(data=ts)
+    hermes_data = HermesData(timeseries=ts)
     return hermes_data
 
 
@@ -128,7 +128,7 @@ def test_global_attributes():
     template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
 
     # Create HermesData
-    td = HermesData(data=ts, meta=template)
+    td = HermesData(timeseries=ts, meta=template)
     with pytest.raises(ValueError):
         _ = HermesDataSchema()._derive_global_attribute(td, "bad_attribute")
 
@@ -430,7 +430,7 @@ def test_resolution():
 
     # Get Resolution
     with pytest.raises(ValueError):
-        td = HermesData(data=ts, meta=template)
+        td = HermesData(timeseries=ts, meta=template)
 
 
 def test_reference_position():

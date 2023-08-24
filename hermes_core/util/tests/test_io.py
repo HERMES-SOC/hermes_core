@@ -45,7 +45,7 @@ def get_test_hermes_data():
             "CATDESC": "Test Data",
         }
     )
-    hermes_data = HermesData(data=ts)
+    hermes_data = HermesData(timeseries=ts)
     return hermes_data
 
 
