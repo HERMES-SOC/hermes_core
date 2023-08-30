@@ -8,7 +8,7 @@ HERMES CDF Format Guide
 1. Introduction
 ===============
 
-The :py:class:`~hermes_core.util.schema.HERMESDataSchema` class provides an interface to
+The :py:class:`~hermes_core.util.schema.HermesDataSchema` class provides an interface to
 examine the HERMES CDF Format Guide.
 
 ---------------------
@@ -200,12 +200,12 @@ information is provided:
 * description: (`str`) A brief description of the attribute
 * default: (`str`) The default value used if none is provided
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+  :py:class:`~hermes_core.util.schema.HermesDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
 * validate: (`bool`) Whether the attribute is included in the 
   :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that 
   are required are validated)
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 
@@ -483,6 +483,7 @@ convenience.
 * FIELDNAM
 * FILLVAL (if time varying)
 * FORMAT/FORM_PTR
+* LABLAXIS or LABL_PTR_i
 * SI_CONVERSION
 * UNITS/UNIT_PTR
 * VALIDMIN (if time varying)
@@ -528,9 +529,9 @@ information is provided:
 
 * description: (`str`) A brief description of the attribute
 * derived: (`bool`) Whether the attibute can be derived by the HERMES 
-  :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+  :py:class:`~hermes_core.util.schema.HermesDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
-* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+* overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
   attribute derivations will overwrite an existing attribute value with an updated 
   attribute value from the derivation process.
 * valid_values: (`list`) List of allowed values the attribute can take for HERMES products,

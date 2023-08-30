@@ -7,7 +7,7 @@ Opening and Writing HERMES Data
 Overview
 ========
 
-The :py:class:`~hermes_core.timedata.TimeData` class provides a convenient and efficient way to work with HERMES science CDF data files.
+The :py:class:`~hermes_core.timedata.HermesData` class provides a convenient and efficient way to work with HERMES science CDF data files.
 The point of this class is to simplify data management, enhances data discovery, and facilitates adherence to CDF standards.
 
 `CDF (Common Data Format) <https://cdf.gsfc.nasa.gov>`_ files are a binary file format commonly used by NASA scientific research to store and exchange data. They provide a flexible structure for organizing and representing multidimensional datasets along with associated metadata. CDF files are widely used in space physics. Because of their versatility, CDF files can be complex.
@@ -23,18 +23,18 @@ CDF libraries in your local environment. Alternatively, the CDF library is insta
 through the HERMES development Docker continer environment. For more information on the HERMES Docker
 container please see our :doc:`Development Environment Page </dev-guide/dev_env>`.
 
-To make it easier to work with HERMES data, the :py:class:`~hermes_core.timedata.TimeData` class facilitates the abstraction of HERMES CDF files.
+To make it easier to work with HERMES data, the :py:class:`~hermes_core.timedata.HermesData` class facilitates the abstraction of HERMES CDF files.
 It allows users to read and write HERMES data and is compliant with `PyHC expectations <https://heliopython.org>`_.
 The data is stored in a `~astropy.timeseries.TimeSeries` table while the metadata is stored in dictionaries.
 `~astropy.timeseries.TimeSeries` is a Python class for handling scientific time series data that provides a convenient and familiar interface for working with tabular data.
 By loading the contents of a CDF file into a `~astropy.timeseries.TimeSeries` table, it becomes easier to manipulate, analyze, and visualize the data.
 Additionally, metadata attributes can be associated with the table, allowing for enhanced documentation and data discovery.
-The :py:class:`~hermes_core.timedata.TimeData` class aims to provide a simplified interface to reading and writing HERMES data and metadata to CDF files while automatically handling the complexities of the underlying CDF file format.
+The :py:class:`~hermes_core.timedata.HermesData` class aims to provide a simplified interface to reading and writing HERMES data and metadata to CDF files while automatically handling the complexities of the underlying CDF file format.
 
-Creating a ``TimeData`` object
+Creating a ``HermesData`` object
 ==============================
 
-A :py:class:`~hermes_core.timedata.TimeData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
+A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
 There are many ways to initialize one but here is one example:
 
     >>> import numpy as np
@@ -59,10 +59,10 @@ You can also create your time array directly
     ...        data={'diff_e_flux': u.Quantity(np.arange(100) * 1e-3, '1/(cm**2 * s * eV * steradian)', dtype=np.float32)}
     ...    )
 
-Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.TimeData`.
+Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
 
 Next create a `dict` or `~collections.OrderedDict` containing the required CDF global metadata.
-The class function :py:func:`~hermes_core.timedata.TimeData.global_attribute_template`:: will provide you an empty version that you can fill in if needed.
+The class function :py:func:`~hermes_core.timedata.HermesData.global_attribute_template`:: will provide you an empty version that you can fill in if needed.
 Here is an example with filled in values.
 
     >>> input_attrs = {
@@ -100,15 +100,23 @@ Here is an example with filled in values.
     ...     "TEXT": "Valid Test Case",
     ... }
 
-You can now create the :py:class:`~hermes_core.timedata.TimeData` object,
+You can now create the :py:class:`~hermes_core.timedata.HermesData` object,
 
-    >>> from hermes_core.timedata import TimeData
-    >>> timedata = TimeData(data=ts, meta=input_attrs)
+    >>> from hermes_core.timedata import HermesData
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
 
-The :py:class:`~hermes_core.timedata.TimeData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
+The :py:class:`~hermes_core.timedata.HermesData` object also accepts optional arguments for loading
+non-record-varying (NRV) support data. These arguments are required to be a `dict`
+of :py:class:`~astropy.nddata.NDData` objects.
+
+    >>> from astropy.nddata import NDData
+    >>> support = {"const_param": NDData(data=[1e-3])}
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs, support=support)
+
+The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
 
-    >>> timedata['Bx'].meta # doctest: +SKIP
+    >>> hermes_data.timeseries['Bx'].meta # doctest: +SKIP
 
 The class does its best to fill in metadata fields if it can and leaves others blank that it cannot.
 Those should be filled in manually.
@@ -116,77 +124,77 @@ Be careful when editing metadata that was automatically generated as you might m
 
 Putting it all together here is complete example
 
-    >>> from hermes_core.timedata import TimeData
+    >>> from hermes_core.timedata import HermesData
     >>> import astropy.units as u
     >>> ts = TimeSeries(
     ...    time_start="2016-03-22T12:30:31",
     ...    time_delta=3 * u.s,
     ...    data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)}
     ... )
-    >>> input_attrs = TimeData.global_attribute_template("eea", "l1", "1.0.0")
-    >>> timedata = TimeData(data=ts, meta=input_attrs)
-    >>> timedata['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
+    >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+    >>> hermes_data.timeseries['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
 
-Creating a ``TimeData`` from an existing CDF File
-=================================================
+Creating a ``HermesData`` from an existing CDF File
+===================================================
 
-Given a current CDF File you can load it into a :py:class:`~hermes_core.timedata.TimeData` by providing a path to the CDF file::
+Given a current CDF File you can load it into a :py:class:`~hermes_core.timedata.HermesData` by providing a path to the CDF file::
 
-    >>> from hermes_core.timedata import TimeData
-    >>> timedata = TimeData.load("hermes_eea_default_ql_19700101_v0.0.1.cdf") # doctest: +SKIP
+    >>> from hermes_core.timedata import HermesData
+    >>> hermes_data = HermesData.load("hermes_eea_default_ql_19700101_v0.0.1.cdf") # doctest: +SKIP
 
-The :py:class:`~hermes_core.timedata.TimeData` can the be updated, measurements added, metadata added, and written to a new CDF file.
+The :py:class:`~hermes_core.timedata.HermesData` can the be updated, measurements added, metadata added, and written to a new CDF file.
 
-Adding data to a ``TimeData`` Container
-=======================================
+Adding data to a ``HermesData`` Container
+=========================================
 
-A new column of data can be added to an existing instance.
-Remember that these new measurements must have the same time stamps as the existing ones and therefore the same number of measurements.
-You can add the new column in one of two ways.
-The more explicit approach is to use :py:func:`~hermes_core.timedata.TimeData.add_measurement` function::
+A new column of data, support data, or NRV data can be added to an existing instance. Remember 
+that new data measurements must have the same time stamps as the existing ones and therefore 
+the same number of entries. Support data and non-record-varying data can be added as needed.
+You can add the new column by using the :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
 
-    >>> data = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
-    >>> timedata.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
+    >>> data = u.Quantity(np.arange(len(hermes_data.timeseries['Bx'])), 'Gauss', dtype=np.uint16)
+    >>> hermes_data.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
+    
+To add non-time-varying support data use the :py:func:`~hermes_core.timedata.HermesData.add_support` function::
 
-Or you can just add the column directly.
-
-    >>> timedata["By"] = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
-
-Remember that you'll then have to fill in the meta data afterwards.
-
-    >>> timedata['By'].meta.update(measure_meta) # doctest: +SKIP
+    >>> hermes_data.add_support(
+    ...     name="Calibration_const",
+    ...     data=NDData(data=[1e-1]),
+    ...     meta={"CATDESC": "Calibration Factor", "VAR_TYPE": "metadata"},
+    ... )
 
 Adding metadata attributes
 ==========================
 
 Additional CDF file global metadata and variable metadata can be easily added to a 
-:py:class:`~hermes_core.timedata.TimeData` data container. For more information about the required 
+:py:class:`~hermes_core.timedata.HermesData` data container. For more information about the required 
 metadata attributes please see the :doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
 
 Global Metadata Attributes
 --------------------------
 
-Global metadata attributes can be updated for a :py:class:`~hermes_core.timedata.TimeData` object 
-using the object's :py:attr:`~hermes_core.timedata.TimeData.meta` parameter which is an 
+Global metadata attributes can be updated for a :py:class:`~hermes_core.timedata.HermesData` object 
+using the object's :py:attr:`~hermes_core.timedata.HermesData.meta` parameter which is an 
 `~collections.OrderedDict` containing all attributes. 
 
 Required Global Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.timedata.TimeData` class requires several global metadata attributes 
+The :py:class:`~hermes_core.timedata.HermesData` class requires several global metadata attributes 
 to be provided upon instantiation:
 
 - `Descriptor`
 - `Data_level`
 - `Data_version`
 
-A :py:class:`~hermes_core.timedata.TimeData` container cannot be created without supplying at 
+A :py:class:`~hermes_core.timedata.HermesData` container cannot be created without supplying at 
 lest this subset of global metadata attributes. 
 
 Derived Global Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.util.schema.HERMESDataSchema` class derives several global metadata 
+The :py:class:`~hermes_core.util.schema.HermesDataSchema` class derives several global metadata 
 attributes required for ISTP compliance. The following global attribtues are derived:
 
 - `Data_type`
@@ -203,11 +211,11 @@ Using a Template for Global Metadata Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A template of the required metadata can be obtained using the 
-:py:func:`~hermes_core.timedata.TimeData.global_attribute_template` function::
+:py:func:`~hermes_core.timedata.HermesData.global_attribute_template` function::
 
     >>> from collections import OrderedDict
-    >>> from hermes_core.timedata import TimeData
-    >>> TimeData.global_attribute_template()
+    >>> from hermes_core.timedata import HermesData
+    >>> HermesData.global_attribute_template()
     OrderedDict([('DOI', None),
              ('Data_level', None),
              ('Data_version', None),
@@ -226,8 +234,8 @@ A template of the required metadata can be obtained using the
 You can also pass arguments into the function to get a partially populated template:: 
 
     >>> from collections import OrderedDict
-    >>> from hermes_core.timedata import TimeData
-    >>> TimeData.global_attribute_template(
+    >>> from hermes_core.timedata import HermesData
+    >>> HermesData.global_attribute_template(
     ...     instr_name='eea', 
     ...     data_level='l1',
     ...     version='0.1.0'
@@ -249,19 +257,19 @@ You can also pass arguments into the function to get a partially populated templ
 This can make the definition of global metadata easier since instrument teams or users only need 
 to supply pieces of metadata that are in this template. Additional metadata items can be added 
 if desired. Once the template is instantiated and all attributes have been filled out, you can
-use this  duruing instantiation of your :py:class:`~hermes_core.timedata.TimeData` container.
+use this  duruing instantiation of your :py:class:`~hermes_core.timedata.HermesData` container.
 
 Variable Metadata Attributes
 ----------------------------
 
-Variable metadata requirements can be updated for a :py:class:`~hermes_core.timedata.TimeData` 
-variable using the variable's :py:attr:`~hermes_core.timedata.TimeData.meta` property which is an 
+Variable metadata requirements can be updated for a :py:class:`~hermes_core.timedata.HermesData` 
+variable using the variable's :py:attr:`~hermes_core.timedata.HermesData.meta` property which is an 
 `~collections.OrderedDict` of all attributes. 
 
 Required Variable Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.timedata.TimeData` class requires one variable metadata attribute
+The :py:class:`~hermes_core.timedata.HermesData` class requires one variable metadata attribute
 to be provided upon instantiation:
 
 - `CATDESC` : (Catalogue Description) This is a human readable description of the data variable.
@@ -269,7 +277,7 @@ to be provided upon instantiation:
 Derived Variable Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :py:class:`~hermes_core.util.schema.HERMESDataSchema` class derives several variable metadata
+The :py:class:`~hermes_core.util.schema.HermesDataSchema` class derives several variable metadata
 attributes required for ISTP compliance.
 
 -  `TIME_BASE`
@@ -295,20 +303,20 @@ Using a Template for Variable Metadata Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A template of the required metadata can be obtained using the 
-:py:func:`~hermes_core.timedata.TimeData.measurement_attribute_template` function::
+:py:func:`~hermes_core.timedata.HermesData.measurement_attribute_template` function::
 
     >>> from collections import OrderedDict
-    >>> from hermes_core.timedata import TimeData
-    >>> TimeData.measurement_attribute_template()
+    >>> from hermes_core.timedata import HermesData
+    >>> HermesData.measurement_attribute_template()
     OrderedDict([('CATDESC', None)])
 
-If you use the :py:func:`~hermes_core.timedata.TimeData.add_measurement` function, it will 
+If you use the :py:func:`~hermes_core.timedata.HermesData.add_measurement` function, it will 
 automatically fill most of them in for you. Additional pieces of metadata can be added if desired.
 
-Visualizing data in a ``TimeData`` Container
+Visualizing data in a ``HermesData`` Container
 ============================================
 
-The :py:class:`~hermes_core.timedata.TimeData` provides a quick way to visualize its data through `~hermes_core.timedata.TimeData.plot`.
+The :py:class:`~hermes_core.timedata.HermesData` provides a quick way to visualize its data through `~hermes_core.timedata.HermesData.plot`.
 By default, a plot will be generated with each measurement in its own plot panel.
 
 .. plot::
@@ -318,24 +326,24 @@ By default, a plot will be generated with each measurement in its own plot panel
     >>> import matplotlib.pyplot as plt
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
-    >>> from hermes_core.timedata import TimeData
+    >>> from hermes_core.timedata import HermesData
     >>> bx = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
     >>> by = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
     >>> bz = np.concatenate([[0], np.random.choice(a=[-1, 0, 1], size=1000)]).cumsum(0)
     >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": u.Quantity(bx, "nanoTesla", dtype=np.int16)})
-    >>> input_attrs = TimeData.global_attribute_template("nemisis", "l1", "1.0.0")
-    >>> timedata = TimeData(data=ts, meta=input_attrs)
-    >>> timedata.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
-    >>> timedata.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
+    >>> input_attrs = HermesData.global_attribute_template("nemisis", "l1", "1.0.0")
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+    >>> hermes_data.add_measurement(measure_name=f"By", data=u.Quantity(by, 'nanoTesla', dtype=np.int16))
+    >>> hermes_data.add_measurement(measure_name=f"Bz", data=u.Quantity(bz, 'nanoTesla', dtype=np.int16))
     >>> fig = plt.figure()
-    >>> timedata.plot() # doctest: +SKIP
+    >>> hermes_data.plot() # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
 
 Writing a CDF File
 ==================
 
-The :py:class:`~hermes_core.timedata.TimeData` class writes CDF files using the `~spacepy.pycdf` module.
-This can be done using the :py:func:`~hermes_core.timedata.TimeData.save` method which only requires a path to the folder where the CDF file should be saved.
+The :py:class:`~hermes_core.timedata.HermesData` class writes CDF files using the `~spacepy.pycdf` module.
+This can be done using the :py:func:`~hermes_core.timedata.HermesData.save` method which only requires a path to the folder where the CDF file should be saved.
 The filename is automatically derived consistent with HERMES filenaming requirements.
 If no path is provided it writes the file to the current directory.
 This function returns the full path to the CDF file that was generated.
@@ -344,7 +352,7 @@ From this you can validate and distribute your CDF file.
 Validating a CDF File
 =====================
 
-The :py:class:`~hermes_core.timedata.TimeData` uses the `~spacepy.pycdf.istp` module for CDF validation, in addition to custom
+The :py:class:`~hermes_core.timedata.HermesData` uses the `~spacepy.pycdf.istp` module for CDF validation, in addition to custom
 tests for additional metadata. A CDF file can be validated using the :py:func:`~hermes_core.util.validation.validate` method
 and by passing, as a parameter, the full path to the CDF file to be validated::
 

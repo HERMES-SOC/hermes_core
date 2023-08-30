@@ -10,14 +10,49 @@ from astropy.timeseries import TimeSeries
 from astropy.table import Table
 import astropy.units as u
 from spacepy.pycdf import CDF
-from hermes_core.timedata import TimeData
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.timedata import HermesData
+from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util import const
+
+
+def get_test_hermes_data():
+    ts = TimeSeries()
+    ts.meta.update(
+        {
+            "Descriptor": "EEA>Electron Electrostatic Analyzer",
+            "Data_level": "l1>Level 1",
+            "Data_version": "v0.0.1",
+            "MODS": [
+                "v0.0.0 - Original version.",
+                "v1.0.0 - Include trajectory vectors and optics state.",
+                "v1.1.0 - Update metadata: counts -> flux.",
+                "v1.2.0 - Added flux error.",
+                "v1.3.0 - Trajectory vector errors are now deltas.",
+            ],
+        }
+    )
+
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    ts["time"] = time_col
+
+    # Add Measurement
+    quant = u.Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    ts["measurement"] = quant
+    ts["measurement"].meta = OrderedDict(
+        {
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
+        }
+    )
+    hermes_data = HermesData(timeseries=ts)
+    return hermes_data
 
 
 def test_hermes_data_schema():
     """Test Schema Template and Info Functions"""
-    schema = HERMESDataSchema()
+    schema = HermesDataSchema()
 
     # Global Attribute Schema
     assert schema.global_attribute_schema is not None
@@ -69,7 +104,7 @@ def test_load_yaml_data():
             file.write(invalid_yaml)
 
         # Load from an non-existant file
-        yaml_data = HERMESDataSchema._load_yaml_data(tmpdirname + "test.yaml")
+        yaml_data = HermesDataSchema._load_yaml_data(tmpdirname + "test.yaml")
         assert yaml_data == {}
 
 
@@ -90,12 +125,12 @@ def test_global_attributes():
             "CATDESC": "Test Data",
         }
     )
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
 
-    # Create TimeData
-    td = TimeData(data=ts, meta=template)
+    # Create HermesData
+    td = HermesData(timeseries=ts, meta=template)
     with pytest.raises(ValueError):
-        _ = HERMESDataSchema()._derive_global_attribute(td, "bad_attribute")
+        _ = HermesDataSchema()._derive_global_attribute(td, "bad_attribute")
 
 
 def test_check_well_formed():
@@ -104,32 +139,25 @@ def test_check_well_formed():
     # Badly Shaped Data
     data = [np.array([1, 2, 3]), np.array([[4, 5], [6, 7]])]
     with pytest.raises(ValueError):
-        _ = HERMESDataSchema._check_well_formed(data)
+        _ = HermesDataSchema._check_well_formed(data)
 
     # Empty Data
     data = np.array([], dtype=object)
-    d = HERMESDataSchema._check_well_formed(data)
+    d = HermesDataSchema._check_well_formed(data)
     assert len(d) == 0
 
     # Badly Shaped Object
     data = np.array([np.array([1, 2, 3]), np.array([[4, 5], [6, 7]])], dtype=object)
     with pytest.raises(ValueError):
-        _ = HERMESDataSchema._check_well_formed(data)
+        _ = HermesDataSchema._check_well_formed(data)
 
 
 def test_types():
     """Function to test getting the CDF data types for different data types"""
 
     # String Type
-    _, types, _ = HERMESDataSchema()._types("")
+    _, types, _ = HermesDataSchema()._types("")
     assert types == [51, 52]
-
-    # Time Types
-    # data = np.array(
-    #     ["2023-08-03T10:20:30.123456789", "2023-08-03T15:30:45.678901234"], dtype="datetime64[ns]"
-    # )
-    # _, types, _ = HERMESDataSchema()._types(data)
-    # assert types == [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH]
 
 
 def test_type_guessing():
@@ -256,27 +284,27 @@ def test_type_guessing():
         ((1,), [const.CDF_CHAR, const.CDF_UCHAR], 8),
     ]
     with pytest.raises(ValueError):
-        HERMESDataSchema()._types([object()])
+        HermesDataSchema()._types([object()])
     for s, t in zip(samples, types):
         t = (t[0], [i.value for i in t[1]], t[2])
-        assert t == HERMESDataSchema()._types(s)
+        assert t == HermesDataSchema()._types(s)
 
 
 def test_min_max_none():
     """Get min/max values for None types"""
     with pytest.raises(ValueError):
-        HERMESDataSchema()._get_minmax(None)
+        HermesDataSchema()._get_minmax(None)
 
 
 def test_min_max_unknown():
     """Get min/max values for unknown types"""
     with pytest.raises(ValueError):
-        HERMESDataSchema()._get_minmax("unknown_type")
+        HermesDataSchema()._get_minmax("unknown_type")
 
 
 def test_min_max_TT2000():
     """Get min/max values for TT2000 types"""
-    minval, maxval = HERMESDataSchema()._get_minmax(const.CDF_TIME_TT2000)
+    minval, maxval = HermesDataSchema()._get_minmax(const.CDF_TIME_TT2000)
     # Make sure the minimum isn't just plain invalid
     assert minval == datetime.datetime(1, 1, 1)
     assert maxval == datetime.datetime(2292, 4, 11, 11, 46, 7, 670776)
@@ -284,7 +312,7 @@ def test_min_max_TT2000():
 
 def test_min_max_Epoch16():
     """Get min/max values for Epoch16 types"""
-    minval, maxval = HERMESDataSchema()._get_minmax(const.CDF_EPOCH16)
+    minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH16)
     # Make sure the minimum isn't just plain invalid
     assert minval == datetime.datetime(1, 1, 1)
     assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
@@ -292,7 +320,7 @@ def test_min_max_Epoch16():
 
 def test_min_max_Epoch():
     """Get min/max values for EPOCH types"""
-    minval, maxval = HERMESDataSchema()._get_minmax(const.CDF_EPOCH)
+    minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH)
     # Make sure the minimum isn't just plain invalid
     assert minval == datetime.datetime(1, 1, 1)
     assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
@@ -300,14 +328,14 @@ def test_min_max_Epoch():
 
 def test_min_max_Float():
     """Get min/max values for a float"""
-    minval, maxval = HERMESDataSchema()._get_minmax(const.CDF_FLOAT)
+    minval, maxval = HermesDataSchema()._get_minmax(const.CDF_FLOAT)
     np.allclose(-3.4028234663853e38, minval)
     np.allclose(3.4028234663853e38, maxval)
 
 
 def test_min_max_Int():
     """Get min/max values for an integer"""
-    minval, maxval = HERMESDataSchema()._get_minmax(const.CDF_INT1)
+    minval, maxval = HermesDataSchema()._get_minmax(const.CDF_INT1)
     assert -128 == minval
     assert 127 == maxval
 
@@ -338,14 +366,49 @@ def test_format():
                 v.attrs["VALIDMIN"] = vmin
             if vmin is not None:
                 v.attrs["VALIDMAX"] = vmax
-            format = HERMESDataSchema()._get_format(cdf["var"], t)
+            format = HermesDataSchema()._get_format(cdf["var"], t)
             assert e == format
             del cdf["var"]
 
         # Test Format Char
         v = cdf.new("var", data=["hi", "there"])
-        format = HERMESDataSchema()._get_format(cdf["var"], const.CDF_CHAR.value)
+        format = HermesDataSchema()._get_format(cdf["var"], const.CDF_CHAR.value)
         assert "A2" == format
+
+
+def test_si_conversion():
+    """Test the SI Units Conversion"""
+    # Get Test HermesData
+    test_data = get_test_hermes_data()
+    # Default in Test Data "m"
+    assert (
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement")
+        == "1.000000e+00>m"
+    )
+
+    # Dimensionless Units
+    test_data.add_measurement(
+        measure_name="measurement1",
+        data=u.Quantity(
+            value=random(size=(10)), unit=u.dimensionless_unscaled, dtype=np.uint16
+        ),
+    )
+    assert HermesDataSchema()._get_units(test_data.timeseries, "measurement1") == ""
+    assert (
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement1")
+        == "1.000000e+00>"
+    )
+
+    # Count as Units
+    test_data.add_measurement(
+        measure_name="measurement2",
+        data=u.Quantity(value=random(size=(10)), unit=u.ct, dtype=np.uint16),
+    )
+    assert HermesDataSchema()._get_units(test_data.timeseries, "measurement2") == "ct"
+    assert (
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement2")
+        == "1.0>ct"
+    )
 
 
 def test_resolution():
@@ -366,46 +429,46 @@ def test_resolution():
             "CATDESC": "Test Data",
         }
     )
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
 
     # Get Resolution
     with pytest.raises(ValueError):
-        td = TimeData(data=ts, meta=template)
+        td = HermesData(timeseries=ts, meta=template)
 
 
 def test_reference_position():
     """Function to test time reference position"""
     assert (
-        HERMESDataSchema()._get_reference_position(const.CDF_TIME_TT2000.value)
+        HermesDataSchema()._get_reference_position(const.CDF_TIME_TT2000.value)
         == "rotating Earth geoid"
     )
 
     with pytest.raises(TypeError):
-        HERMESDataSchema()._get_reference_position(const.CDF_EPOCH.value)
+        HermesDataSchema()._get_reference_position(const.CDF_EPOCH.value)
 
 
 def test_time_base():
     """Function to test time base"""
-    assert HERMESDataSchema()._get_time_base(const.CDF_TIME_TT2000.value) == "J2000"
+    assert HermesDataSchema()._get_time_base(const.CDF_TIME_TT2000.value) == "J2000"
 
     with pytest.raises(TypeError):
-        HERMESDataSchema()._get_time_base(const.CDF_EPOCH.value)
+        HermesDataSchema()._get_time_base(const.CDF_EPOCH.value)
 
 
 def test_time_scale():
     """Function to test time scale"""
     assert (
-        HERMESDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value)
+        HermesDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value)
         == "Terrestrial Time (TT)"
     )
 
     with pytest.raises(TypeError):
-        HERMESDataSchema()._get_time_scale(const.CDF_EPOCH.value)
+        HermesDataSchema()._get_time_scale(const.CDF_EPOCH.value)
 
 
 def test_time_units():
     """Function to test time units"""
-    assert HERMESDataSchema()._get_time_units(const.CDF_TIME_TT2000.value) == "ns"
+    assert HermesDataSchema()._get_time_units(const.CDF_TIME_TT2000.value) == "ns"
 
     with pytest.raises(TypeError):
-        HERMESDataSchema()._get_time_units(const.CDF_EPOCH.value)
+        HermesDataSchema()._get_time_units(const.CDF_EPOCH.value)

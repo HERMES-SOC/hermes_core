@@ -17,30 +17,31 @@ from astropy import units as u
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
+from hermes_core.util.exceptions import warn_user
 
-__all__ = ["HERMESDataSchema"]
+__all__ = ["HermesDataSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
 
 
-class HERMESDataSchema:
+class HermesDataSchema:
     """Class representing the schema of a file type."""
 
     def __init__(self):
         super().__init__()
 
         # Data Validation, Complaiance, Derived Attributes
-        self._global_attr_schema = HERMESDataSchema._load_default_global_attr_schema()
+        self._global_attr_schema = HermesDataSchema._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
         self._variable_attr_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
 
         # Load Default Global Attributes
-        self._default_global_attributes = HERMESDataSchema._load_default_attributes()
+        self._default_global_attributes = HermesDataSchema._load_default_attributes()
 
         self.cdftypenames = {
             const.CDF_BYTE.value: "CDF_BYTE",
@@ -110,7 +111,7 @@ class HERMESDataSchema:
             / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HermesDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_variable_attr_schema() -> dict:
@@ -121,7 +122,7 @@ class HERMESDataSchema:
             / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HermesDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_attributes():
@@ -131,7 +132,7 @@ class HERMESDataSchema:
             / "data"
             / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
-        global_schema = HERMESDataSchema._load_yaml_data(
+        global_schema = HermesDataSchema._load_yaml_data(
             yaml_file_path=default_attributes_path
         )
         return {
@@ -174,8 +175,8 @@ class HERMESDataSchema:
             A template for required global attributes that must be provided.
         """
         template = OrderedDict()
-        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
-        default_global_attributes = HERMESDataSchema._load_default_attributes()
+        global_attribute_schema = HermesDataSchema._load_default_global_attr_schema()
+        default_global_attributes = HermesDataSchema._load_default_attributes()
         for attr_name, attr_schema in global_attribute_schema.items():
             if (
                 attr_schema["required"]
@@ -198,7 +199,7 @@ class HERMESDataSchema:
         """
         template = OrderedDict()
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
         for attr_name, attr_schema in measurement_attribute_schema[
             "attribute_key"
@@ -217,12 +218,12 @@ class HERMESDataSchema:
         - description: (`str`) A brief description of the attribute
         - default: (`str`) The default value used if none is provided
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+            :py:class:`~hermes_core.util.schema.HermesDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
         - validate: (`bool`) Whether the attribute is included in the
             :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
             are required are validated)
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
 
@@ -240,7 +241,7 @@ class HERMESDataSchema:
         ------
         KeyError: If attribute_name is not a recognized global attribute.
         """
-        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
+        global_attribute_schema = HermesDataSchema._load_default_global_attr_schema()
 
         # Strip the Description of New Lines
         for attr_name in global_attribute_schema.keys():
@@ -275,9 +276,9 @@ class HERMESDataSchema:
 
         - description: (`str`) A brief description of the attribute
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+            :py:class:`~hermes_core.util.schema.HermesDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
         - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
@@ -303,7 +304,7 @@ class HERMESDataSchema:
         KeyError: If attribute_name is not a recognized global attribute.
         """
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
         measurement_attribute_key = measurement_attribute_schema["attribute_key"]
 
@@ -414,7 +415,7 @@ class HERMESDataSchema:
         @raise ValueError: if L{data} has irregular dimensions
 
         """
-        d = HERMESDataSchema._check_well_formed(data)
+        d = HermesDataSchema._check_well_formed(data)
         dims = d.shape
         elements = 1
         types = []
@@ -642,8 +643,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from
         var_name : `str`
             The name of the measurement to derive metadata for
         guess_types : `list[int]`, optional
@@ -664,25 +665,59 @@ class HERMESDataSchema:
                 (guess_dims, guess_types, guess_elements) = self._types(
                     var_data.to_datetime()
                 )
-            else:
+            elif hasattr(var_data, "value"):
                 # Guess the const CDF Data Type
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
+            else:
+                # Guess the const CDF Data Type
+                (guess_dims, guess_types, guess_elements) = self._types(var_data.data)
 
         # Check the Attributes that can be derived
-        if not var_name == "time":
-            measurement_attributes["DEPEND_0"] = self._get_depend()
-        measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
-        measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
-        measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
-        measurement_attributes["FORMAT"] = self._get_format(var_data, guess_types[0])
-        measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
-        measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-            data, var_name
-        )
-        measurement_attributes["UNITS"] = self._get_units(data, var_name)
-        measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
-        measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
-        measurement_attributes["VAR_TYPE"] = self._get_var_type()
+        var_type = self._get_var_type(data, var_name)
+
+        if var_type == "data":
+            if not var_name == "time":
+                measurement_attributes["DEPEND_0"] = self._get_depend()
+            measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
+            measurement_attributes["FORMAT"] = self._get_format(
+                var_data, guess_types[0]
+            )
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
+                data, var_name
+            )
+            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
+            measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        elif var_type == "support_data":
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
+            measurement_attributes["FORMAT"] = self._get_format(
+                var_data, guess_types[0]
+            )
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
+                data, var_name
+            )
+            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
+            measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        elif var_type == "metadata":
+            measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
+            measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
+            measurement_attributes["FORMAT"] = self._get_format(
+                var_data, guess_types[0]
+            )
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+        else:
+            warn_user(
+                f"Variable {var_name} has unrecognizable VAR_TYPE ({var_type}). Cannot Derive Metadata for Variable."
+            )
+
         return measurement_attributes
 
     def derive_time_attributes(self, data):
@@ -691,8 +726,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------
@@ -723,8 +758,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------
@@ -932,6 +967,8 @@ class HERMESDataSchema:
             const.CDF_CHAR.value,
             const.CDF_UCHAR.value,
         ):
+            if hasattr(var_data, "data"):
+                var_data = var_data.data
             fmt = "A{}".format(len(var_data))
         else:
             raise ValueError(
@@ -973,8 +1010,15 @@ class HERMESDataSchema:
             conversion_rate = u.ns.to(u.s)
             si_conversion = f"{conversion_rate:e}>{u.s}"
         else:
-            conversion_rate = var_data.unit.to(var_data.si.unit)
-            si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+            # Get the Units as a String
+            if isinstance(var_data, u.Quantity):
+                try:
+                    conversion_rate = var_data.unit.to(var_data.si.unit)
+                    si_conversion = f"{conversion_rate:e}>{var_data.si.unit}"
+                except u.UnitConversionError:
+                    si_conversion = f"1.0>{var_data.unit}"
+            else:
+                si_conversion = " > "
         return si_conversion
 
     def _get_time_base(self, guess_type):
@@ -1000,8 +1044,11 @@ class HERMESDataSchema:
         var_data = data[var_name]
         unit = ""
         # Get the Unit from the TimeSeries Quantity if it exists
-        if hasattr(var_data, "unit"):
+        if hasattr(var_data, "unit") and var_data.unit is not None:
             unit = var_data.unit.to_string()
+        # Try to ge the UNITS from the metadata
+        elif "UNITS" in var_data.meta and var_data.meta["UNITS"] is not None:
+            unit = var_data.meta["UNITS"]
         return unit
 
     def _get_validmin(self, guess_type):
@@ -1026,8 +1073,15 @@ class HERMESDataSchema:
             minval, maxval = self._get_minmax(guess_type)
             return maxval
 
-    def _get_var_type(self):
-        return "data"
+    def _get_var_type(self, data, var_name):
+        # Get the Variable Data
+        var_data = data[var_name]
+        attr_name = "VAR_TYPE"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            var_type = "data"
+        else:
+            var_type = var_data.meta[attr_name]
+        return var_type
 
     # =============================================================================================
     #                             GLOBAL METADATA DERIVATIONS
