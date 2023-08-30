@@ -382,7 +382,7 @@ def test_si_conversion():
     test_data = get_test_hermes_data()
     # Default in Test Data "m"
     assert (
-        HermesDataSchema()._get_si_conversion(test_data, "measurement")
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement")
         == "1.000000e+00>m"
     )
 
@@ -393,9 +393,9 @@ def test_si_conversion():
             value=random(size=(10)), unit=u.dimensionless_unscaled, dtype=np.uint16
         ),
     )
-    assert HermesDataSchema()._get_units(test_data, "measurement1") == ""
+    assert HermesDataSchema()._get_units(test_data.timeseries, "measurement1") == ""
     assert (
-        HermesDataSchema()._get_si_conversion(test_data, "measurement1")
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement1")
         == "1.000000e+00>"
     )
 
@@ -404,8 +404,11 @@ def test_si_conversion():
         measure_name="measurement2",
         data=u.Quantity(value=random(size=(10)), unit=u.ct, dtype=np.uint16),
     )
-    assert HermesDataSchema()._get_units(test_data, "measurement2") == "ct"
-    assert HermesDataSchema()._get_si_conversion(test_data, "measurement2") == "1.0>ct"
+    assert HermesDataSchema()._get_units(test_data.timeseries, "measurement2") == "ct"
+    assert (
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement2")
+        == "1.0>ct"
+    )
 
 
 def test_resolution():

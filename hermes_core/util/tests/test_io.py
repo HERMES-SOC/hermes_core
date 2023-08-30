@@ -61,7 +61,8 @@ def test_cdf_io():
         # Load the CDF to a HermesData Object
         td_loaded = HermesData.load(test_file_output_path)
 
-        assert td.shape == td_loaded.shape
+        assert len(td.timeseries) == len(td_loaded.timeseries)
+        assert len(td.timeseries.columns) == len(td_loaded.timeseries.columns)
 
         with pytest.raises(CDFError):
             td_loaded.save(output_path=tmpdirname)
@@ -99,4 +100,4 @@ def test_cdf_nrv_support_data():
         td_loaded = HermesData.load(test_file_output_path)
 
         assert "Test_NRV_Var" in td_loaded.support
-        assert "Test_Support_Var" in td_loaded.columns
+        assert "Test_Support_Var" in td_loaded.timeseries.columns

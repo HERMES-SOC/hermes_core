@@ -143,29 +143,6 @@ class HermesData:
         return self._timeseries.meta
 
     @property
-    def units(self):
-        """
-        (`collections.OrderedDict`) The units of the measurement for each column in the `TimeSeries` table.
-        """
-        units = {}
-        for name in self._timeseries.columns:
-            var_data = self._timeseries[name]
-            # Get the Unit
-            if hasattr(var_data, "unit"):
-                unit = var_data.unit
-            else:
-                unit = var_data.meta["UNITS"]
-            units[name] = unit
-        return OrderedDict(units)
-
-    @property
-    def columns(self):
-        """
-        (`list`) A list of all the names of the columns in data.
-        """
-        return self._timeseries.colnames
-
-    @property
     def time(self):
         """
         (`astropy.time.Time`) The times of the measurements.
@@ -181,15 +158,6 @@ class HermesData:
         (`tuple`) The start and end times of the times.
         """
         return (self._timeseries.time.min(), self._timeseries.time.max())
-
-    @property
-    def shape(self):
-        """
-        (`tuple`) The shape of the data, a tuple (nrows, ncols) including time
-        """
-        nrows = self._timeseries.time.shape[0]
-        ncols = len(self._timeseries.columns)
-        return (nrows, ncols)
 
     def __repr__(self):
         """
@@ -209,45 +177,6 @@ class HermesData:
         # Measurement Data
         str_repr += f"Measurement Data:\n{self._timeseries}\n"
         return str_repr
-
-    def __len__(self):
-        """
-        Function to get the number of measurements.
-        """
-        return len(self._timeseries.keys())
-
-    def __getitem__(self, name):
-        """
-        Function to get a measurement.
-        """
-        if name not in self._timeseries.colnames:
-            raise KeyError(f"Can't find data measurement {name}")
-        # Get the Data and Attrs for the named measurement
-        var_data = self._timeseries[name]
-        return var_data
-
-    def __setitem__(self, name, data):
-        """
-        Function to add a new measurement.
-
-        """
-        # Set the Data for the named measurement
-        self.add_measurement(measure_name=name, data=data, meta={})
-
-    def __contains__(self, name):
-        """
-        Function to see whether a measurement is in the class.
-        """
-        return name in self._timeseries.columns
-
-    def __iter__(self):
-        """
-        Function to iterate over data measurements and attributes.
-        """
-        for name in self._timeseries.columns:
-            var_data = self._timeseries[name]
-
-            yield (name, var_data)
 
     @staticmethod
     def global_attribute_template(instr_name="", data_level="", version=""):
@@ -571,7 +500,7 @@ class HermesData:
 
         # If no individual columns were input, try to plot all columns
         if columns is None:
-            columns = self.columns.copy()
+            columns = list(self.timeseries.columns.copy())
             columns.remove("time")
         # Create Axes or Subplots for displaying the data
         if axes is None:
@@ -614,7 +543,7 @@ class HermesData:
         if len(self.timeseries.columns) != len(timeseries.columns):
             raise ValueError(
                 (
-                    f"Shape of curent TimeSeries ({self.shape}) does not match",
+                    f"Shape of curent TimeSeries ({len(self.timeseries.columns)}) does not match",
                     f"shape of data to add ({len(timeseries.columns)}).",
                 )
             )
@@ -629,13 +558,15 @@ class HermesData:
                 )
 
         # Save Metadata since it is not carried over with vstack
-        metadata_holder = {col: self.timeseries[col].meta for col in self.columns}
+        metadata_holder = {
+            col: self.timeseries[col].meta for col in self.timeseries.columns
+        }
 
         # Vertically Stack the TimeSeries
         self._timeseries = vstack([self._timeseries, timeseries])
 
         # Add Metadata back to the Stacked TimeSeries
-        for col in self.columns:
+        for col in self.timeseries.columns:
             self.timeseries[col].meta = metadata_holder[col]
 
         # Re-Derive Metadata

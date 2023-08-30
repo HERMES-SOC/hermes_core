@@ -153,7 +153,7 @@ class CDFHandler(HermesDataIOHandler):
                             self._load_data_variable(ts, var_name, var_data, var_attrs)
                         except ValueError:
                             warn_user(
-                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
+                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
                             )
                             # Swap Units
                             var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
@@ -225,7 +225,8 @@ class CDFHandler(HermesDataIOHandler):
 
     def _convert_variable_attributes_to_cdf(self, data, cdf_file):
         # Loop through Variable Attributes
-        for var_name, var_data in data.__iter__():
+        for var_name in data.timeseries.colnames:
+            var_data = data.timeseries[var_name]
             if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 cdf_file["Epoch"] = var_data.to_datetime()

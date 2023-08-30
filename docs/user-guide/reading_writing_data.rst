@@ -116,7 +116,7 @@ of :py:class:`~astropy.nddata.NDData` objects.
 The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
 
-    >>> hermes_data['Bx'].meta # doctest: +SKIP
+    >>> hermes_data.timeseries['Bx'].meta # doctest: +SKIP
 
 The class does its best to fill in metadata fields if it can and leaves others blank that it cannot.
 Those should be filled in manually.
@@ -133,7 +133,7 @@ Putting it all together here is complete example
     ... )
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
     >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
-    >>> hermes_data['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
+    >>> hermes_data.timeseries['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
 
 Creating a ``HermesData`` from an existing CDF File
 ===================================================
@@ -151,20 +151,10 @@ Adding data to a ``HermesData`` Container
 A new column of data, support data, or NRV data can be added to an existing instance. Remember 
 that new data measurements must have the same time stamps as the existing ones and therefore 
 the same number of entries. Support data and non-record-varying data can be added as needed.
-You can add the new column in one of two ways.
+You can add the new column by using the :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
 
-The more explicit approach is to use :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
-
-    >>> data = u.Quantity(np.arange(len(hermes_data['Bx'])), 'Gauss', dtype=np.uint16)
+    >>> data = u.Quantity(np.arange(len(hermes_data.timeseries['Bx'])), 'Gauss', dtype=np.uint16)
     >>> hermes_data.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
-
-Or you can add the measurement data directly.
-
-    >>> hermes_data["By"] = u.Quantity(np.arange(len(hermes_data['Bx'])), 'Gauss', dtype=np.uint16)
-
-Remember that you'll then have to fill in the variable's metadata attributes afterwards.
-
-    >>> hermes_data['By'].meta.update(measure_meta) # doctest: +SKIP
     
 To add non-time-varying support data use the :py:func:`~hermes_core.timedata.HermesData.add_support` function::
 

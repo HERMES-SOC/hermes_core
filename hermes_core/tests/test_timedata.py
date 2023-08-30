@@ -65,7 +65,7 @@ def get_test_hermes_data():
     )
     input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
     hermes_data = HermesData(timeseries=ts, meta=input_attrs)
-    hermes_data["Bx"].meta.update({"CATDESC": "Test"})
+    hermes_data.timeseries["Bx"].meta.update({"CATDESC": "Test"})
     return hermes_data
 
 
@@ -198,31 +198,11 @@ def test_default_properties():
     # data
     assert isinstance(test_data.timeseries, TimeSeries)
 
-    # units
-    assert isinstance(test_data.units, OrderedDict)
-
-    # columns
-    assert isinstance(test_data.columns, list)
-
     # time
     assert isinstance(test_data.time, Time)
 
     # time_range
     assert isinstance(test_data.time_range, tuple)
-
-    # shape
-    assert isinstance(test_data.shape, tuple)
-
-    # __repr__
-    assert isinstance(test_data.__repr__(), str)
-
-    # __len__
-    assert len(test_data) == test_data.shape[-1]
-
-    # __contains__
-    assert "time" in test_data
-    with pytest.raises(KeyError):
-        _ = test_data["test"]
 
 
 def test_hermes_data_single_measurement():
@@ -239,8 +219,8 @@ def test_hermes_data_single_measurement():
     test_data = HermesData(ts, meta=input_attrs)
 
     # Add Measurement
-    test_data["test_var1"] = Quantity(value=random(size=(10)), unit="km")
-    test_data["test_var1"].meta.update(
+    test_data.add_measurement("test_var1", Quantity(value=random(size=(10)), unit="km"))
+    test_data.timeseries["test_var1"].meta.update(
         {"test_attr1": "test_value1", "CATDESC": "Test data"}
     )
 
@@ -265,7 +245,7 @@ def test_hermes_data_add_measurement():
     ts = get_test_timeseries()
     # Initialize a CDF File Wrapper
     test_data = HermesData(ts, meta=input_attrs)
-    data_len = len(test_data)
+    ts_len = len(test_data.timeseries.columns)
 
     # Add non-Quantity
     with pytest.raises(TypeError):
@@ -280,7 +260,7 @@ def test_hermes_data_add_measurement():
     q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
     q.meta = OrderedDict({"CATDESC": "Test Variable"})
     test_data.add_measurement(measure_name="test", data=q)
-    assert test_data["test"].shape == (10,)
+    assert test_data.timeseries["test"].shape == (10,)
 
     # Add Dimensionless Record-Varying Data
     q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
@@ -289,7 +269,7 @@ def test_hermes_data_add_measurement():
         data=q,
         meta={"CATDESC": "Test Dimensionless Data", "VAR_TYPE": "support_data"},
     )
-    assert test_data["Test Dimensionless"].shape == (10,)
+    assert test_data.timeseries["Test Dimensionless"].shape == (10,)
 
     # Add Count-Based Record-Varying Data
     q = Quantity(value=random(size=(10)), unit=u.count)
@@ -298,11 +278,11 @@ def test_hermes_data_add_measurement():
         data=q,
         meta={"CATDESC": "Test Count Data", "VAR_TYPE": "support_data"},
     )
-    assert test_data["Test Count"].shape == (10,)
+    assert test_data.timeseries["Test Count"].shape == (10,)
 
     # test remove_measurement
     test_data.remove("test")
-    assert "test" not in test_data
+    assert "test" not in test_data.timeseries.columns
 
     # Test non-existent variable
     with pytest.raises(ValueError):
@@ -339,7 +319,7 @@ def test_hermes_data_add_support():
 
     # Test remove Support Data
     test_data.remove("Test Metadata")
-    assert "Test Metadata" not in test_data
+    assert "Test Metadata" not in test_data.support
 
 
 def test_hermes_data_plot():
@@ -413,7 +393,7 @@ def test_hermes_data_append():
     ts["time"] = Time(time, format="unix")
     ts["measurement"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
     test_data.append(ts)
-    assert test_data.shape[0] == 20
+    assert len(test_data.timeseries) == 20
 
 
 def test_hermes_data_generate_valid_cdf():
@@ -465,7 +445,7 @@ def test_hermes_data_generate_valid_cdf():
     test_data = HermesData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
-    test_data["time"].meta.update(
+    test_data.timeseries["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
             "VAR_TYPE": "support_data",
@@ -573,7 +553,7 @@ def test_hermes_data_from_cdf():
     test_data = HermesData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
-    test_data["time"].meta.update(
+    test_data.timeseries["time"].meta.update(
         {
             "CATDESC": "TT2000 time tags",
             "VAR_TYPE": "support_data",
@@ -695,25 +675,28 @@ def test_hermes_data_idempotency():
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_data_cols = test_data.columns
-        test_data_meta_keys = list(test_data.meta.keys())
         test_file_output_path = test_data.save(output_path=tmpdirname)
 
         # Try loading the *Invalid* CDF File
         loaded_data = HermesData.load(test_file_output_path)
 
-        assert len(test_data) == len(loaded_data)
-        assert test_data.shape == loaded_data.shape
+        assert len(test_data.timeseries.columns) == len(loaded_data.timeseries.columns)
+        assert len(test_data.support) == len(loaded_data.support)
         assert len(test_data.meta) == len(loaded_data.meta)
 
         for attr in test_data.meta:
             assert attr in loaded_data.meta
 
-        for var in test_data.columns:
-            assert var in loaded_data.columns
-            assert len(test_data[var]) == len(loaded_data[var])
-            assert len(test_data[var].meta) == len(loaded_data[var].meta)
-            assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
+        for var in test_data.timeseries.columns:
+            assert var in loaded_data.timeseries.columns
+            assert len(test_data.timeseries[var]) == len(loaded_data.timeseries[var])
+            assert len(test_data.timeseries[var].meta) == len(
+                loaded_data.timeseries[var].meta
+            )
+            assert (
+                test_data.timeseries[var].meta["VAR_TYPE"]
+                == loaded_data.timeseries[var].meta["VAR_TYPE"]
+            )
 
         for var in test_data.support:
             assert var in loaded_data.support
@@ -789,7 +772,7 @@ def test_bitlength_save_cdf(bitlength):
     # fmt: on
 
     hermes_data = HermesData(timeseries=ts, meta=input_attrs)
-    hermes_data["Bx"].meta.update({"CATDESC": "Test"})
+    hermes_data.timeseries["Bx"].meta.update({"CATDESC": "Test"})
     with tempfile.TemporaryDirectory() as tmpdirname:
         test_file_output_path = hermes_data.save(output_path=tmpdirname)
 
