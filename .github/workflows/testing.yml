@@ -33,7 +33,8 @@ jobs:
         pip install -e .[test]
         wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
         unzip latest.zip
-        export CDF_LIB=cdf/lib
+        ls -l
+        export CDF_LIB='cdf/lib'
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
     - name: Run tests
       run: pytest --pyargs hermes_core --cov hermes_core
