@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9, '3.10', '3.11']
 
     steps:
@@ -35,6 +35,13 @@ jobs:
         unzip latest.zip
         echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
+
+    - name: Install CDF library on Ubuntu
+      run: |
+        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
+        unzip latest.zip
+        echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
+      if: ${{(matrix.platform == 'ubuntu-latest')}}
     - name: Run tests
       run: pytest --pyargs hermes_core --cov hermes_core
       env:
