@@ -33,6 +33,7 @@ dependencies = [
   'numpy>=1.16.0',
   'sunpy>=3.1.4',
   'spacepy>=0.4.1',
+  'pyyaml>=5.3.1',
 ]
 
 [project.optional-dependencies]
