@@ -31,9 +31,6 @@ jobs:
         pip install numpy
         pip install spacepy --no-build-isolation
         pip install -e .[test]
-        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
-        unzip latest.zip
-        echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
 
     - name: Install CDF library on Ubuntu
