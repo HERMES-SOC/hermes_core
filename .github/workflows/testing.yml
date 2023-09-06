@@ -10,18 +10,37 @@ on:
       - main
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: 
-      image: public.ecr.aws/w5r9l1c8/swsoc-docker-lambda-base:latest
 
+    runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.7, 3.8, 3.9, '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install pip setuptools wheel --upgrade
+        # Install spacepy without build isolation to avoid issues with numpy
+        pip install numpy
+        pip install spacepy --no-build-isolation
+        pip install -e .[test]
+        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
+        unzip latest.zip
+      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
     - name: Run tests
       run: pytest --pyargs hermes_core --cov hermes_core
       env:
-        PLATFORM: 'docker'
+        PLATFORM: ${{ matrix.platform }}
+      # Skip Windows Python 3.11 tests until SpacePy is updated
+      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v3
+      # Skip Windows Python 3.11 tests until SpacePy is updated
+      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
