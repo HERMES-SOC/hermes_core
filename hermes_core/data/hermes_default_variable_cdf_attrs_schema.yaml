@@ -232,9 +232,9 @@ attribute_key:
       separated by the ">" delimiter. The first component is the conversion factor and the
       second is the standard SI unit. Units are defined according to their standard SI symbols
       (ie. Tesla = T, Newtons = N, Meters = m, etc.) For data variables that are inherently
-      unitless, and thus lack a conversion factor, this data attribute will be “☐>☐” where ☐ is
+      unitless, and thus lack a conversion factor, this data attribute will be " > " where ' ' is
       a blank space and the quotation marks are not included. Units which are not conveniently
-      transformed into SI should follow the blank syntax “☐>☐” described above.
+      transformed into SI should follow the blank syntax " > " described above.
     derived: true
     required: true  # NOT Required in ISTP Guide
     overwrite: false
@@ -337,7 +337,7 @@ attribute_key:
   OPERATOR_TYPE:
     description: > 
       This has been introduced to describe HERMES quaternions (see Section 5.2 below). It
-      has allowed values “UNIT_QUATERNION” or “ROTATION_MATRIX” although other
+      has allowed values "UNIT_QUATERNION" or "ROTATION_MATRIX" although other
       values could be added. Unit quaternions correspond to pure spatial rotations.
     derived: false
     required: false   # NOT Required in HERMES Format Guide
