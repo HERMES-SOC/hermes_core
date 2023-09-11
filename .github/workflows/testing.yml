@@ -51,16 +51,14 @@ jobs:
     # Set up CDF on Windows
     - name: Install CDF on Windows
       run: |
-        curl -L "https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip" --output cdf.zip
+        curl -L "https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/windows/cdf3.9.0_64bit_WinZip_Installer.zip" --output cdf.zip
         mkdir cdf_lib
         tar -xf cdf.zip -C cdf_lib
         dir
         cd cdf_lib
-        cd cdf
         dir
         cd ..
-        cd ..
-        cdf_lib/cdf/setenv.bat
+        cdf_lib/setenv.bat
       if: ${{(matrix.platform == 'windows-latest')}}
 
     - name: Run tests
