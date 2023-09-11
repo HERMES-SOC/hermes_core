@@ -52,9 +52,9 @@ jobs:
     - name: Install CDF on Windows
       run: |
         curl -L "https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip" --output cdf.zip
+        mkdir cdf
         tar -xf cdf.zip
-        dir
-        echo "CDF_LIB=lib" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        cdf/setenv.bat
       if: ${{(matrix.platform == 'windows-latest')}}
 
     - name: Run tests
