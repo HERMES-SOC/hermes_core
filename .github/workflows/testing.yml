@@ -53,7 +53,11 @@ jobs:
       run: |
         curl -L "https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip" --output cdf.zip
         mkdir cdf
-        tar -xf cdf.zip
+        tar -xf cdf.zip -C cdf
+        dir
+        cd cdf
+        dir
+        cd ..
         cdf/setenv.bat
       if: ${{(matrix.platform == 'windows-latest')}}
 
