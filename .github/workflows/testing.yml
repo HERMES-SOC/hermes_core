@@ -54,13 +54,21 @@ jobs:
         curl -L "https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/windows/cdf3.9.0_64bit_WinZip_Installer.zip" --output cdf.zip
         mkdir cdf_lib
         tar -xf cdf.zip -C cdf_lib
-        dir
         cd cdf_lib
-        dir
-        cd ..
-        cdf_lib/setenv.bat
+
+        set mydir=%cd%
+        set CDF_BASE=%mydir%
+        set CDF_INC=%mydir%\include
+        set CDF_LIB=%mydir%\lib
+        set CDF_HELP=%mydir%\help
+        set CDF_LEAPSECONDSTABLE=%mydir%\CDFLeapSeconds.txt
+        set CLASSPATH=%mydir%\CDFToolsDriver.jar;%mydir%\lib\cdfjava.jar;%mydir%\lib\cdfml.jar;%mydir%\lib\cdfjson.jar;%mydir%\lib\cdfj.jar;%mydir%\lib\gson-2.8.6.jar;%mydir%\lib\javax.json-1.0.4.jar;.
+        set PATH=%mydir%;%mydir%\bin;%PATH%
+        set TERMINFO=%mydir%\lib\terminfo
+        set JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
+
         pytest --pyargs hermes_core --cov hermes_core
-      if: ${{(matrix.platform == 'windows-latest')}}
+      if: ${{(matrix.platform == 'windows-latest' && matrix.python-version != '3.11')}}
 
     - name: Run tests
       run: pytest --pyargs hermes_core --cov hermes_core
