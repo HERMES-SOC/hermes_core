@@ -59,6 +59,7 @@ jobs:
         dir
         cd ..
         cdf_lib/setenv.bat
+        pytest --pyargs hermes_core --cov hermes_core
       if: ${{(matrix.platform == 'windows-latest')}}
 
     - name: Run tests
@@ -66,7 +67,7 @@ jobs:
       env:
         PLATFORM: ${{ matrix.platform }}
       # Skip Windows Python 3.11 tests until SpacePy is updated
-      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
+      if: ${{ !(matrix.platform == 'windows-latest') }}
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v3
       # Skip Windows Python 3.11 tests until SpacePy is updated
