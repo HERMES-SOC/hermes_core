@@ -50,6 +50,7 @@ jobs:
 
     # Set up CDF on Windows
     - name: Install CDF on Windows
+      shell: cmd
       run: |
         curl -L "https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/windows/cdf3.9.0_64bit_WinZip_Installer.zip" --output cdf.zip
         mkdir cdf_lib
