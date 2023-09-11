@@ -31,7 +31,7 @@ jobs:
         pip install numpy
         pip install spacepy --no-build-isolation
         pip install -e .[test]
-      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
+
 
     - name: Install CDF library on Ubuntu
       run: |
@@ -71,8 +71,7 @@ jobs:
 
         # Run tests
         pytest --pyargs hermes_core --cov hermes_core
-      # Skip Windows Python 3.11 tests until SpacePy is updated
-      if: ${{(matrix.platform == 'windows-latest' && matrix.python-version != '3.11')}}
+      if: ${{(matrix.platform == 'windows-latest')}}
 
     - name: Run tests on Ubuntu and MacOS
       run: pytest --pyargs hermes_core --cov hermes_core
@@ -82,5 +81,3 @@ jobs:
 
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v3
-      # Skip Windows Python 3.11 tests until SpacePy is updated
-      if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
