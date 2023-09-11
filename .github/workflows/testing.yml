@@ -67,6 +67,7 @@ jobs:
         set TERMINFO=%mydir%\lib\terminfo
         set JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
 
+        cd ..
         pytest --pyargs hermes_core --cov hermes_core
       if: ${{(matrix.platform == 'windows-latest' && matrix.python-version != '3.11')}}
 
