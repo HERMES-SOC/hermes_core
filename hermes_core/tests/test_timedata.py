@@ -204,6 +204,9 @@ def test_default_properties():
     # time_range
     assert isinstance(test_data.time_range, tuple)
 
+    # __repr__
+    assert isinstance(test_data.__repr__(), str)
+
 
 def test_hermes_data_single_measurement():
     # fmt: off
