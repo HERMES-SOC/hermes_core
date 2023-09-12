@@ -12,7 +12,8 @@ from astropy.table import Column
 from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
-from spacepy.pycdf import CDFError
+from astropy.nddata import NDData
+from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 import hermes_core
 from hermes_core.timedata import TimeData
@@ -49,8 +50,8 @@ def get_test_timeseries():
     ts["measurement"] = quant
     ts["measurement"].meta = OrderedDict(
         {
-            "VAR_TYPE": "metadata",
-            "CATDESC": "Test Metadata",
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
         }
     )
     return ts
@@ -109,6 +110,31 @@ def test_multidimensional_data():
         _ = TimeData(ts)
 
 
+def test_support_data():
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+    ts = get_test_timeseries()
+
+    # Bad Support
+    support = {"support_var": [1]}
+    with pytest.raises(TypeError):
+        _ = TimeData(ts, support=support, meta=input_attrs)
+
+    # Good Support
+    support = {"support_var": NDData(data=[1])}
+
+    # Create TimeData
+    test_data = TimeData(ts, support=support, meta=input_attrs)
+
+    assert "support_var" in test_data.support
+    assert test_data.support["support_var"].data[0] == 1
+
+
 def test_timedata_valid_attrs():
     # fmt: off
     input_attrs = {
@@ -148,10 +174,10 @@ def test_global_attribute_template():
 
     # good inputs
     template = TimeData.global_attribute_template(
-        instr_name="eea", data_level="l2", version="1.3.6"
+        instr_name="eea", data_level="ql", version="1.3.6"
     )
     assert template["Descriptor"] == "EEA>Electron Electrostatic Analyzer"
-    assert template["Data_level"] == "L2>Level 2"
+    assert template["Data_level"] == "QL>Quicklook"
     assert template["Data_version"] == "1.3.6"
 
 
@@ -254,11 +280,66 @@ def test_timedata_add_measurement():
     q = Quantity(value=random(size=(10)), unit="s", dtype=np.uint16)
     q.meta = OrderedDict({"CATDESC": "Test Variable"})
     test_data.add_measurement(measure_name="test", data=q)
-    assert len(test_data) == 1 + data_len
+    assert test_data["test"].shape == (10,)
+
+    # Add Dimensionless measurements (or Record-Varying) Data
+    q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
+    test_data.add_measurement(
+        measure_name="Test Dimensionless",
+        data=q,
+        meta={"CATDESC": "Test Dimensionless Data", "VAR_TYPE": "support_data"},
+    )
+    assert test_data["Test Dimensionless"].shape == (10,)
+
+    # Add Count-Based Record-Varying Data
+    q = Quantity(value=random(size=(10)), unit=u.count)
+    test_data.add_measurement(
+        measure_name="Test Count",
+        data=q,
+        meta={"CATDESC": "Test Count Data", "VAR_TYPE": "support_data"},
+    )
+    assert test_data["Test Count"].shape == (10,)
 
     # test remove_measurement
-    test_data.remove_measurement("test")
-    assert len(test_data) == data_len
+    test_data.remove("test")
+    assert "test" not in test_data
+
+    # Test non-existent variable
+    with pytest.raises(ValueError):
+        test_data.remove("bad_variable")
+
+
+def test_timedata_add_support():
+    """Function to Test Adding Support/ Non-Record-Varying Data"""
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = TimeData(ts, meta=input_attrs)
+
+    # Add non-NDData
+    with pytest.raises(TypeError):
+        test_data.add_support(name="test", data=[], meta={})
+
+    # Add Test Metadata
+    c = NDData(data=[1])
+    test_data.add_support(
+        name="Test Metadata",
+        data=c,
+        meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+    )
+    assert "Test Metadata" in test_data.support
+    assert test_data.support["Test Metadata"].data[0] == 1
+
+    # Test remove Support Data
+    test_data.remove("Test Metadata")
+    assert "Test Metadata" not in test_data
 
 
 def test_timedata_plot():
@@ -374,8 +455,14 @@ def test_timedata_generate_valid_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
+    support = {
+        "nrv_var": NDData(
+            data=[1, 2, 3],
+            meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+        )
+    }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = TimeData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -476,8 +563,14 @@ def test_timedata_from_cdf():
     # fmt: on
 
     ts = get_test_timeseries()
+    support = {
+        "nrv_var": NDData(
+            data=[1, 2, 3],
+            meta={"CATDESC": "Test Metadata Variable", "VAR_TYPE": "metadata"},
+        )
+    }
     # Initialize a CDF File Wrapper
-    test_data = TimeData(ts, meta=input_attrs)
+    test_data = TimeData(ts, support=support, meta=input_attrs)
 
     # Add the Time column
     test_data["time"].meta.update(
@@ -547,6 +640,93 @@ def test_timedata_from_cdf():
         result2 = validate(test_file_output_path2)
         assert len(result2) <= 1  # Logical Source and File ID Do not Agree
         assert len(result) == len(result2)
+
+
+def test_timedata_idempotency():
+    # fmt: off
+    input_attrs = {
+        "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
+        "Data_level": "L1>Level 1",  # NOT AN ISTP ATTR
+        "Data_version": "0.0.1",
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_product_descriptor": "odpd",
+        "HTTP_LINK": [
+            "https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/gattributes.html",
+            "https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html"
+        ],
+        "Instrument_mode": "default",  # NOT AN ISTP ATTR
+        "Instrument_type": "Electric Fields (space)",
+        "LINK_TEXT": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "LINK_TITLE": [
+            "ISTP Guide",
+            "Global Attrs",
+            "Variable Attrs"
+        ],
+        "MODS": [
+            "v0.0.0 - Original version.",
+            "v1.0.0 - Include trajectory vectors and optics state.",
+            "v1.1.0 - Update metadata: counts -> flux.",
+            "v1.2.0 - Added flux error.",
+            "v1.3.0 - Trajectory vector errors are now deltas."
+        ],
+        "PI_affiliation": "HERMES",
+        "PI_name": "HERMES SOC",
+        "TEXT": "Valid Test Case",
+    }
+    # fmt: on
+    # Generate a base TimeData object
+    test_data = get_test_timedata()
+    test_data.meta.update(input_attrs)
+
+    # Induce a Bad (Null) Global Attribute
+    test_data.meta["Test Null Attr"] = ""
+
+    # Induce an Non-Record-Varying Variable
+    test_data.add_support(name="NRV_var", data=NDData(["Test NRV Data"]))
+
+    # Induce a Variable with Bad UNITS
+    test_data.add_support(
+        name="Bad_units_var", data=NDData([1, 2, 3, 4], meta={"UNITS": "Not A Unit"})
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_data_cols = test_data.columns
+        test_data_meta_keys = list(test_data.meta.keys())
+        test_file_output_path = test_data.save(output_path=tmpdirname)
+
+        # Try loading the *Invalid* CDF File
+        loaded_data = TimeData.load(test_file_output_path)
+
+        assert len(test_data) == len(loaded_data)
+        assert test_data.shape == loaded_data.shape
+        assert len(test_data.meta) == len(loaded_data.meta)
+
+        for attr in test_data.meta:
+            assert attr in loaded_data.meta
+
+        for var in test_data.columns:
+            assert var in loaded_data.columns
+            assert len(test_data[var]) == len(loaded_data[var])
+            assert len(test_data[var].meta) == len(loaded_data[var].meta)
+            assert test_data[var].meta["VAR_TYPE"] == loaded_data[var].meta["VAR_TYPE"]
+
+        for var in test_data.support:
+            assert var in loaded_data.support
+            assert (
+                test_data.support[var].data.shape == loaded_data.support[var].data.shape
+            )
+            assert len(test_data.support[var].meta) == len(
+                loaded_data.support[var].meta
+            )
+            assert (
+                test_data.support[var].meta["VAR_TYPE"]
+                == loaded_data.support[var].meta["VAR_TYPE"]
+            )
 
 
 @pytest.mark.parametrize(

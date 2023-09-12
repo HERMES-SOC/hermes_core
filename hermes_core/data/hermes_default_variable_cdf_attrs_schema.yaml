@@ -362,6 +362,7 @@ support_data:
   - FIELDNAM
   - FILLVAL
   - FORMAT
+  - LABLAXIS
   - SI_CONVERSION
   - UNITS
   - VALIDMIN
@@ -370,5 +371,6 @@ support_data:
 metadata:
   - CATDESC
   - FIELDNAM
+  - FILLVAL
   - FORMAT
   - VAR_TYPE

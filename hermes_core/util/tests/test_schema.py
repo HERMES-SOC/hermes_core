@@ -15,6 +15,41 @@ from hermes_core.util.schema import HERMESDataSchema
 from hermes_core.util import const
 
 
+def get_test_timedata():
+    ts = TimeSeries()
+    ts.meta.update(
+        {
+            "Descriptor": "EEA>Electron Electrostatic Analyzer",
+            "Data_level": "l1>Level 1",
+            "Data_version": "v0.0.1",
+            "MODS": [
+                "v0.0.0 - Original version.",
+                "v1.0.0 - Include trajectory vectors and optics state.",
+                "v1.1.0 - Update metadata: counts -> flux.",
+                "v1.2.0 - Added flux error.",
+                "v1.3.0 - Trajectory vector errors are now deltas.",
+            ],
+        }
+    )
+
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    ts["time"] = time_col
+
+    # Add Measurement
+    quant = u.Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
+    ts["measurement"] = quant
+    ts["measurement"].meta = OrderedDict(
+        {
+            "VAR_TYPE": "data",
+            "CATDESC": "Test Data",
+        }
+    )
+    timedata = TimeData(data=ts)
+    return timedata
+
+
 def test_hermes_data_schema():
     """Test Schema Template and Info Functions"""
     schema = HERMESDataSchema()
@@ -346,6 +381,38 @@ def test_format():
         v = cdf.new("var", data=["hi", "there"])
         format = HERMESDataSchema()._get_format(cdf["var"], const.CDF_CHAR.value)
         assert "A2" == format
+
+
+def test_si_conversion():
+    """Test the SI Units Conversion"""
+    # Get Test TimeData
+    test_data = get_test_timedata()
+    # Default in Test Data "m"
+    assert (
+        HERMESDataSchema()._get_si_conversion(test_data, "measurement")
+        == "1.000000e+00>m"
+    )
+
+    # Dimensionless Units
+    test_data.add_measurement(
+        measure_name="measurement1",
+        data=u.Quantity(
+            value=random(size=(10)), unit=u.dimensionless_unscaled, dtype=np.uint16
+        ),
+    )
+    assert HERMESDataSchema()._get_units(test_data, "measurement1") == ""
+    assert (
+        HERMESDataSchema()._get_si_conversion(test_data, "measurement1")
+        == "1.000000e+00>"
+    )
+
+    # Count as Units
+    test_data.add_measurement(
+        measure_name="measurement2",
+        data=u.Quantity(value=random(size=(10)), unit=u.ct, dtype=np.uint16),
+    )
+    assert HERMESDataSchema()._get_units(test_data, "measurement2") == "ct"
+    assert HERMESDataSchema()._get_si_conversion(test_data, "measurement2") == "1.0>ct"
 
 
 def test_resolution():
