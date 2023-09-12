@@ -62,7 +62,7 @@ You can also create your time array directly
 Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.TimeData`.
 
 Next create a `dict` or `~collections.OrderedDict` containing the required CDF global metadata.
-The class function :py:func:`~hermes_core.timedata.TimeData.global_attribute_template`:: will provide you an empty version that you can fill in if needed.
+The class function :py:func:`~hermes_core.timedata.TimeData.global_attribute_template` will provide you an empty version that you can fill in.
 Here is an example with filled in values.
 
     >>> input_attrs = {
@@ -105,13 +105,14 @@ You can now create the :py:class:`~hermes_core.timedata.TimeData` object,
     >>> from hermes_core.timedata import TimeData
     >>> timedata = TimeData(data=ts, meta=input_attrs)
 
-The :py:class:`~hermes_core.timedata.TimeData` object also accepts optional arguments for loading
-non-record-varying (NRV) support data. These arguments are required to be a `dict`
-of :py:class:`~astropy.nddata.NDData` objects.
+The :py:class:`~hermes_core.timedata.TimeData` object also accepts additional arbitrary data arrays, 
+so-called non-record-varying (NRV) data, which is frequently support data. These data are required to be a `dict`
+of :py:class:`~astropy.nddata.NDData` objects which are data containers for physical data.
+A guide to the `~astropy.nddata` package is available in the `astropy documentation <https://docs.astropy.org/en/stable/nddata/>`_.
 
     >>> from astropy.nddata import NDData
-    >>> support = {"const_param": NDData(data=[1e-3])}
-    >>> timedata = TimeData(data=ts, meta=input_attrs, support=support)
+    >>> support_data = {"const_param": NDData(data=[1e-3])}
+    >>> timedata = TimeData(data=ts, meta=input_attrs, support=support_data)
 
 The :py:class:`~hermes_core.timedata.TimeData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
@@ -148,10 +149,10 @@ The :py:class:`~hermes_core.timedata.TimeData` can the be updated, measurements 
 Adding data to a ``TimeData`` Container
 =======================================
 
-A new column of data, support data, or NRV data can be added to an existing instance. Remember 
-that new data measurements must have the same time stamps as the existing ones and therefore 
-the same number of entries. Support data and non-record-varying data can be added as needed.
-You can add the new column in one of two ways.
+A new set of measurements or support data can be added to an existing instance. Remember 
+that new measurements must have the same time stamps as the existing ones and therefore 
+the same number of entries. Support data can be added as needed.
+You can add the new measurments in one of two ways.
 
 The more explicit approach is to use :py:func:`~hermes_core.timedata.TimeData.add_measurement` function::
 
@@ -162,16 +163,16 @@ Or you can add the measurement data directly.
 
     >>> timedata["By"] = u.Quantity(np.arange(len(timedata['Bx'])), 'Gauss', dtype=np.uint16)
 
-Remember that you'll then have to fill in the variable's metadata attributes afterwards.
+Remember that you'll then have to provide the measurement metadata attributes.
 
     >>> timedata['By'].meta.update(measure_meta) # doctest: +SKIP
     
-To add non-time-varying support data use the :py:func:`~hermes_core.timedata.TimeData.add_support` function::
+To add support data use the :py:func:`~hermes_core.timedata.TimeData.add_support` function::
 
     >>> timedata.add_support(
     ...     name="Calibration_const",
     ...     data=NDData(data=[1e-1]),
-    ...     meta={"CATDESC": "Calibration Factor", "VAR_TYPE": "metadata"},
+    ...     meta={"CATDESC": "Calibration Factor", "VAR_TYPE": "support_data"},
     ... )
 
 Adding metadata attributes

@@ -282,7 +282,7 @@ def test_timedata_add_measurement():
     test_data.add_measurement(measure_name="test", data=q)
     assert test_data["test"].shape == (10,)
 
-    # Add Dimensionless Record-Varying Data
+    # Add Dimensionless measurements (or Record-Varying) Data
     q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
     test_data.add_measurement(
         measure_name="Test Dimensionless",
@@ -323,7 +323,7 @@ def test_timedata_add_support():
     # Initialize a CDF File Wrapper
     test_data = TimeData(ts, meta=input_attrs)
 
-    # Add non-Quantity
+    # Add non-NDData
     with pytest.raises(TypeError):
         test_data.add_support(name="test", data=[], meta={})
 
