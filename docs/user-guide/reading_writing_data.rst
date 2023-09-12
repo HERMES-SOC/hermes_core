@@ -32,7 +32,7 @@ Additionally, metadata attributes can be associated with the table, allowing for
 The :py:class:`~hermes_core.timedata.HermesData` class aims to provide a simplified interface to reading and writing HERMES data and metadata to CDF files while automatically handling the complexities of the underlying CDF file format.
 
 Creating a ``HermesData`` object
-==============================
+================================
 
 A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
 There are many ways to initialize one but here is one example:
@@ -317,7 +317,7 @@ If you use the :py:func:`~hermes_core.timedata.HermesData.add_measurement` funct
 automatically fill most of them in for you. Additional pieces of metadata can be added if desired.
 
 Visualizing data in a ``HermesData`` Container
-============================================
+==============================================
 
 The :py:class:`~hermes_core.timedata.HermesData` provides a quick way to visualize its data through `~hermes_core.timedata.HermesData.plot`.
 By default, a plot will be generated with each measurement in its own plot panel.
