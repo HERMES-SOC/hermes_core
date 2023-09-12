@@ -22,12 +22,12 @@ Data_level:
   description: >
     This attribute is used in file name creation and records the level of processsing done
     on the dataset. For HERMES the following are valid values:
-    • l0>Level 0
-    • l1>Level 1
-    • l2>Level 2
-    • l3>Level 3
-    • l4>Level 4
-    • ql>Quicklook
+    - l0>Level 0
+    - l1>Level 1
+    - l2>Level 2
+    - l3>Level 3
+    - l4>Level 4
+    - ql>Quicklook
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
@@ -66,10 +66,10 @@ Descriptor:
     This attribute identifies the name of the instrument or sensor that collected the data. Both
     a long name and a short name are given. For any data file, only a single value is allowed.
     For HERMES, the following are valid values:
-    • EEA>Electron Electrostatic Analyzer
-    • MERIT>Miniaturized Electron pRoton Telescope
-    • NEMISIS> Noise Eliminating Magnetometer In a Small Integrated System
-    • SPAN-I>Solar Probe Analyzer for Ions
+    - EEA>Electron Electrostatic Analyzer
+    - MERIT>Miniaturized Electron pRoton Telescope
+    - NEMISIS> Noise Eliminating Magnetometer In a Small Integrated System
+    - SPAN-I>Solar Probe Analyzer for Ions
   default: null
   derived: false
   required: true
@@ -78,7 +78,7 @@ Descriptor:
 Discipline:
   description: >
     This attribute describes both the science discipline and sub discipline. For HERMES,
-    this value should always be “Space Physics>Magnetospheric Science.”
+    this value should always be "Space Physics>Magnetospheric Science."
   default: Space Physics>Magnetospheric Science
   derived: false
   required: true
@@ -105,7 +105,7 @@ HTTP_LINK:
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
-    If text is not needed for these attributes, use an empty string “”.
+    If text is not needed for these attributes, use an empty string "".
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
@@ -123,10 +123,10 @@ Instrument_type:
   description: > 
     This attribute is used to facilitate making choices of instrument type. More than one entry
     is allowed. Acceptable values for HERMES include:
-    • Magnetic Fields (space)
-    • Particles (space)
-    • Plasma and Solar Wind
-    • Ephemeris -> Ephemeris/Attitude/Ancillary
+    - Magnetic Fields (space)
+    - Particles (space)
+    - Plasma and Solar Wind
+    - Ephemeris -> Ephemeris/Attitude/Ancillary
   default: null
   derived: false
   required: true
@@ -137,7 +137,7 @@ LINK_TEXT:
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
-    If text is not needed for these attributes, use an empty string “”.
+    If text is not needed for these attributes, use an empty string "".
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
@@ -148,7 +148,7 @@ LINK_TITLE:
     The 'HTTP_LINK', 'LINK_TEXT', and 'LINK_TITLE' attributes store the URL with a
     description of this dataset at the HERMES SDC. The use of HTTP_LINK attribute requires
     the existence and equal number of corresponding LINK_TEXT and LINK_TITLE attributes. 
-    If text is not needed for these attributes, use an empty string “”.
+    If text is not needed for these attributes, use an empty string "".
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Recommended)
@@ -168,10 +168,10 @@ Logical_source:
   description: > 
     This attribute determines the file naming convention in the SKT Editor and is used by
     CDA Web. It is composed of the following values:
-    • source_name - (e.g. spacecraft identifier)
-    • descriptor - (e.g. instrument identifier - see Section Error! Reference source not
+    - source_name - (e.g. spacecraft identifier)
+    - descriptor - (e.g. instrument identifier - see Section Error! Reference source not
     found.)
-    • data_type - (e.g. mode, data level, and optional data product descriptor - value
+    - data_type - (e.g. mode, data level, and optional data product descriptor - value
     come from 'Data_type' attribute)
   default: null
   derived: true
@@ -203,7 +203,7 @@ MODS:
 Mission_group:
   description: >
     This attribute has a single value and is used to facilitate making choices of source through
-    CDAWeb. This value should be “HERMES.”
+    CDAWeb. This value should be "HERMES."
   default: HERMES
   derived: false
   required: true
@@ -216,10 +216,10 @@ PI_affiliation:
     dataset. The following are valid HERMES values, of which the abbreviations should be
     used exclusively within this attribute value, and the full text of the affiliation included in
     the general 'text' attribute as it is used solely in plot labels.
-    • GSFC - Goddard Space Flight Center
-    • UCB - University of California, Berkeley
-    • SSL - Space Sciences Laboratory, UCB
-    • UM - University of Michigan
+    - GSFC - Goddard Space Flight Center
+    - UCB - University of California, Berkeley
+    - SSL - Space Sciences Laboratory, UCB
+    - UM - University of Michigan
   default: null
   derived: false
   required: true
@@ -238,7 +238,7 @@ PI_name:
 Project:
   description: >
     This attribute identifies the name of the project and indicates ownership. For HERMES,
-    this value should be “STP>Solar-Terrestrial Physics”.
+    this value should be "STP>Solar-Terrestrial Physics".
   default: STP>Solar-Terrestrial Physics
   derived: false
   required: true
@@ -248,7 +248,7 @@ Source_name:
   description: >
     This attribute identifies the observatory where the data originated. The following are
     valid values for HERMES:
-    • HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
+    - HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
   default: HERMES>Heliophysics Environmental and Radiation Measurement Experiment Suite
   derived: false
   required: true

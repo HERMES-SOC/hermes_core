@@ -161,9 +161,7 @@ class CDFHandler(HermesDataIOHandler):
                             self._load_data_variable(ts, var_name, var_data, var_attrs)
                     else:
                         # Load as `support`
-                        self._load_support_variable(
-                            support, var_name, var_data, var_attrs
-                        )
+                        self._load_support_variable(support, var_name, var_data, var_attrs)
                 else:
                     # Load Non-Record-Varying Data as `support`
                     self._load_support_variable(support, var_name, var_data, var_attrs)

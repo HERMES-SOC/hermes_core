@@ -30,9 +30,7 @@ def get_bad_timeseries():
     ts.add_column(col)
 
     # Add Measurement
-    col = Column(
-        data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"}
-    )
+    col = Column(data=random(size=(10)), name="measurement", meta={"CATDESC": "Test Measurement"})
     ts.add_column(col)
     return ts
 
@@ -262,7 +260,7 @@ def test_hermes_data_add_measurement():
     test_data.add_measurement(measure_name="test", data=q)
     assert test_data.timeseries["test"].shape == (10,)
 
-    # Add Dimensionless Record-Varying Data
+    # Add Dimensionless measurements (or Record-Varying) Data
     q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
     test_data.add_measurement(
         measure_name="Test Dimensionless",
@@ -690,9 +688,7 @@ def test_hermes_data_idempotency():
         for var in test_data.timeseries.columns:
             assert var in loaded_data.timeseries.columns
             assert len(test_data.timeseries[var]) == len(loaded_data.timeseries[var])
-            assert len(test_data.timeseries[var].meta) == len(
-                loaded_data.timeseries[var].meta
-            )
+            assert len(test_data.timeseries[var].meta) == len(loaded_data.timeseries[var].meta)
             assert (
                 test_data.timeseries[var].meta["VAR_TYPE"]
                 == loaded_data.timeseries[var].meta["VAR_TYPE"]
@@ -700,15 +696,10 @@ def test_hermes_data_idempotency():
 
         for var in test_data.support:
             assert var in loaded_data.support
+            assert test_data.support[var].data.shape == loaded_data.support[var].data.shape
+            assert len(test_data.support[var].meta) == len(loaded_data.support[var].meta)
             assert (
-                test_data.support[var].data.shape == loaded_data.support[var].data.shape
-            )
-            assert len(test_data.support[var].meta) == len(
-                loaded_data.support[var].meta
-            )
-            assert (
-                test_data.support[var].meta["VAR_TYPE"]
-                == loaded_data.support[var].meta["VAR_TYPE"]
+                test_data.support[var].meta["VAR_TYPE"] == loaded_data.support[var].meta["VAR_TYPE"]
             )
 
 

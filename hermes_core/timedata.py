@@ -28,7 +28,7 @@ class HermesData:
     timeseries :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
     support : `dict[astropy.nddata.NDData]`, optional
-        Non-Record-Varying data associated with the timeseries data.
+        Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
     meta : `dict`, optional
         The metadata describing the time series in an ISTP-compliant format.
 
@@ -59,9 +59,7 @@ class HermesData:
     def __init__(self, timeseries, support=None, meta=None):
         # Verify TimeSeries compliance
         if not isinstance(timeseries, TimeSeries):
-            raise TypeError(
-                "timeseries must be a `astropy.timeseries.TimeSeries` object."
-            )
+            raise TypeError("timeseries must be a `astropy.timeseries.TimeSeries` object.")
         if len(timeseries.columns) < 2:
             raise ValueError("timeseries must have at least 2 columns")
 
@@ -69,9 +67,7 @@ class HermesData:
         for colname in timeseries.columns:
             # Verify that all Measurements are `Quantity`
             if colname != "time" and not isinstance(timeseries[colname], u.Quantity):
-                raise TypeError(
-                    f"Column '{colname}' must be an astropy.units.Quantity object"
-                )
+                raise TypeError(f"Column '{colname}' must be an astropy.units.Quantity object")
             # Verify that the Column is only a single dimension
             if len(timeseries[colname].shape) > 1:  # If there is more than 1 Dimension
                 raise ValueError(
@@ -80,11 +76,9 @@ class HermesData:
 
         # Check NRV Data
         if support:
-            for colname in support:
-                if not (isinstance(support[colname], NDData)):
-                    raise TypeError(
-                        f"Variable '{colname}' must be an astropy.nddata.NDData object"
-                    )
+            for key in support:
+                if not (isinstance(support[key], NDData)):
+                    raise TypeError(f"Variable '{key}' must be an astropy.nddata.NDData object")
 
         # Copy the TimeSeries
         self._timeseries = TimeSeries(timeseries, copy=True)
@@ -104,6 +98,12 @@ class HermesData:
                 self._timeseries[col].meta = self.measurement_attribute_template()
                 if hasattr(timeseries[col], "meta"):
                     self._timeseries[col].meta.update(timeseries[col].meta)
+
+        # Copy the Non-Record Varying Data
+        if support:
+            self._support = support
+        else:
+            self._support = {}
 
         # Copy the Non-Record Varying Data
         if support:
@@ -206,9 +206,7 @@ class HermesData:
                     f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
                 )
             # Set the Property
-            meta[
-                "Descriptor"
-            ] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+            meta["Descriptor"] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
 
         # Check the Optional Data Level
         if data_level:
@@ -226,9 +224,7 @@ class HermesData:
         if version:
             # check that version is in the right format with three parts
             if len(version.split(".")) != 3:
-                raise ValueError(
-                    f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
-                )
+                raise ValueError(f"Version, {version}, is not formatted correctly. Should be X.Y.Z")
             meta["Data_version"] = version
         return meta
 
@@ -254,15 +250,11 @@ class HermesData:
             self._update_global_attribute(attr_name, attr_value)
 
         # Global Attributes
-        for attr_name, attr_value in self.schema.derive_global_attributes(
-            self._timeseries
-        ).items():
+        for attr_name, attr_value in self.schema.derive_global_attributes(self._timeseries).items():
             self._update_global_attribute(attr_name, attr_value)
 
         # Time Measurement Attributes
-        for attr_name, attr_value in self.schema.derive_time_attributes(
-            self._timeseries
-        ).items():
+        for attr_name, attr_value in self.schema.derive_time_attributes(self._timeseries).items():
             self._update_timeseries_attribute(
                 var_name="time", attr_name=attr_name, attr_value=attr_value
             )
@@ -287,10 +279,7 @@ class HermesData:
 
     def _update_global_attribute(self, attr_name, attr_value):
         # If the attribute is set, check if we want to overwrite it
-        if (
-            attr_name in self._timeseries.meta
-            and self._timeseries.meta[attr_name] is not None
-        ):
+        if attr_name in self._timeseries.meta and self._timeseries.meta[attr_name] is not None:
             # We want to overwrite if:
             #   1) The actual value is not the derived value
             #   2) The schema marks this attribute to be overwriten
@@ -311,13 +300,8 @@ class HermesData:
             attr_name in self.timeseries[var_name].meta
             and self.timeseries[var_name].meta[attr_name] is not None
         ):
-            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
-                attr_name
-            ]
-            if (
-                self.timeseries[var_name].meta[attr_name] != attr_value
-                and attr_schema["overwrite"]
-            ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
+            if self.timeseries[var_name].meta[attr_name] != attr_value and attr_schema["overwrite"]:
                 warn_user(
                     f"Overiding {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
                 )
@@ -330,13 +314,8 @@ class HermesData:
             attr_name in self._support[var_name].meta
             and self._support[var_name].meta[attr_name] is not None
         ):
-            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
-                attr_name
-            ]
-            if (
-                self._support[var_name].meta[attr_name] != attr_value
-                and attr_schema["overwrite"]
-            ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][attr_name]
+            if self._support[var_name].meta[attr_name] != attr_value and attr_schema["overwrite"]:
                 warn_user(
                     f"Overiding {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
                 )
@@ -346,7 +325,7 @@ class HermesData:
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
-        Add a new time-varying measurement (column).
+        Add a new column of time-varying measurements.
 
         Parameters
         ----------
@@ -360,6 +339,7 @@ class HermesData:
         Raises
         ------
         TypeError: If var_data is not of type Quantity.
+        ValueError: If data has more than one dimension
         """
         # Verify that all Measurements are `Quantity`
         if (not isinstance(data, u.Quantity)) or (not data.unit):
@@ -385,16 +365,16 @@ class HermesData:
 
     def add_support(self, name: str, data: NDData, meta: dict = None):
         """
-        Add a new non-time-varying measurement (column).
+        Add a new non-time-varying data array.
 
         Parameters
         ----------
         name: `str`
-            Name of the measurement to add.
+            Name of the data array to add.
         data: `astropy.nddata.NDData`,
             The data to add.
         meta: `dict`, optional
-            The metadata associated with the measurement.
+            The metadata associated for the data array.
 
         Raises
         ------
@@ -414,12 +394,12 @@ class HermesData:
 
     def remove(self, measure_name: str):
         """
-        Remove an existing measurement (column).
+        Remove an existing measurement or support data array.
 
         Parameters
         ----------
         measure_name: `str`
-            Name of the measurement to remove.
+            Name of the variable to remove.
         """
         if measure_name in self._timeseries.columns:
             self._timeseries.remove_column(measure_name)
@@ -430,7 +410,7 @@ class HermesData:
 
     def plot(self, axes=None, columns=None, subplots=True, **plot_args):
         """
-        Plot the data.
+        Plot the measurement data.
 
         Parameters
         ----------
@@ -550,17 +530,11 @@ class HermesData:
 
         # Check individual Columns
         for colname in self.timeseries.columns:
-            if colname != "time" and not isinstance(
-                self.timeseries[colname], u.Quantity
-            ):
-                raise TypeError(
-                    f"Column '{colname}' must be an astropy.Quantity object"
-                )
+            if colname != "time" and not isinstance(self.timeseries[colname], u.Quantity):
+                raise TypeError(f"Column '{colname}' must be an astropy.Quantity object")
 
         # Save Metadata since it is not carried over with vstack
-        metadata_holder = {
-            col: self.timeseries[col].meta for col in self.timeseries.columns
-        }
+        metadata_holder = {col: self.timeseries[col].meta for col in self.timeseries.columns}
 
         # Vertically Stack the TimeSeries
         self._timeseries = vstack([self._timeseries, timeseries])
