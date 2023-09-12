@@ -84,7 +84,9 @@ def test_hermes_data_schema():
     # Measurement Attribute Info
     assert schema.measurement_attribute_info() is not None
     assert isinstance(schema.measurement_attribute_info(), Table)
-    assert isinstance(schema.measurement_attribute_info(attribute_name="CATDESC"), Table)
+    assert isinstance(
+        schema.measurement_attribute_info(attribute_name="CATDESC"), Table
+    )
     with pytest.raises(KeyError):
         _ = schema.measurement_attribute_info(attribute_name="NotAnAttribute")
 
@@ -387,7 +389,9 @@ def test_si_conversion():
     # Dimensionless Units
     test_data.add_measurement(
         measure_name="measurement1",
-        data=u.Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled, dtype=np.uint16),
+        data=u.Quantity(
+            value=random(size=(10)), unit=u.dimensionless_unscaled, dtype=np.uint16
+        ),
     )
     assert HermesDataSchema()._get_units(test_data.timeseries, "measurement1") == ""
     assert (
@@ -401,7 +405,10 @@ def test_si_conversion():
         data=u.Quantity(value=random(size=(10)), unit=u.ct, dtype=np.uint16),
     )
     assert HermesDataSchema()._get_units(test_data.timeseries, "measurement2") == "ct"
-    assert HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement2") == "1.0>ct"
+    assert (
+        HermesDataSchema()._get_si_conversion(test_data.timeseries, "measurement2")
+        == "1.0>ct"
+    )
 
 
 def test_resolution():
@@ -451,7 +458,8 @@ def test_time_base():
 def test_time_scale():
     """Function to test time scale"""
     assert (
-        HermesDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value) == "Terrestrial Time (TT)"
+        HermesDataSchema()._get_time_scale(const.CDF_TIME_TT2000.value)
+        == "Terrestrial Time (TT)"
     )
 
     with pytest.raises(TypeError):
