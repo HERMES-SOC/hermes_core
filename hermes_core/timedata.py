@@ -4,12 +4,14 @@ Container class for Measurement Data.
 
 from pathlib import Path
 from collections import OrderedDict
+from copy import deepcopy
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy.nddata import NDData
 from astropy import units as u
+from ndcube import NDCollection
 import hermes_core
 from hermes_core.util.io import CDFHandler
 from hermes_core.util.schema import HermesDataSchema
@@ -56,7 +58,7 @@ class HermesData:
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, timeseries, support=None, meta=None):
+    def __init__(self, timeseries, support=None, spectra=None, meta=None):
         # Verify TimeSeries compliance
         if not isinstance(timeseries, TimeSeries):
             raise TypeError(
@@ -79,12 +81,17 @@ class HermesData:
                 )
 
         # Check NRV Data
-        if support:
+        if support is not None:
             for colname in support:
                 if not (isinstance(support[colname], NDData)):
                     raise TypeError(
-                        f"Variable '{colname}' must be an astropy.nddata.NDData object"
+                        f"Support Variable '{colname}' must be an astropy.nddata.NDData object"
                     )
+
+        # Check Higher-Dimensional Spectra
+        if spectra is not None:
+            if not isinstance(spectra, NDCollection):
+                raise TypeError(f"Spectra '{colname}' must be an ndcube.ND object")
 
         # Copy the TimeSeries
         self._timeseries = TimeSeries(timeseries, copy=True)
@@ -107,15 +114,15 @@ class HermesData:
 
         # Copy the Non-Record Varying Data
         if support:
-            self._support = support
+            self._support = deepcopy(support)
         else:
             self._support = {}
 
-        # Copy the Non-Record Varying Data
-        if support:
-            self._support = support
+        # Copy the High-Dimensional Spectra
+        if spectra:
+            self._spectra = spectra
         else:
-            self._support = {}
+            self._spectra = NDCollection([])
 
         # Derive Metadata
         self.schema = HermesDataSchema()
@@ -134,6 +141,13 @@ class HermesData:
         (`dict[astropy.nddata.NDData]`) A `dict` containing one or more non-time-varying support variables.
         """
         return self._support
+
+    @property
+    def spectra(self):
+        """
+        (`ndcube.NDCollection]`) A `NDCollection` object containing high-dimensional spectra data.
+        """
+        return self._spectra
 
     @property
     def meta(self):
@@ -174,8 +188,18 @@ class HermesData:
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self._timeseries.meta.items():
             str_repr += f"\t{attr_name}: {attr_value}\n"
-        # Measurement Data
-        str_repr += f"Measurement Data:\n{self._timeseries}\n"
+        # TimeSeries Data
+        str_repr += f"TimeSeries Data:\n"
+        for var_name in self._timeseries.colnames:
+            str_repr += f"\t{var_name}\n"
+        # Support Data
+        str_repr += f"Support Data:\n"
+        for var_name in self._support.keys():
+            str_repr += f"\t{var_name}\n"
+        # Spectra Data
+        str_repr += f"Spectra Data:\n"
+        for var_name in self._spectra.keys():
+            str_repr += f"\t{var_name}\n"
         return str_repr
 
     @staticmethod
@@ -285,6 +309,15 @@ class HermesData:
                     var_name=col, attr_name=attr_name, attr_value=attr_value
                 )
 
+        # Spectra/ High-Dimensional Data
+        for col in self._spectra:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self._spectra, col
+            ).items():
+                self._update_spectra_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
     def _update_global_attribute(self, attr_name, attr_value):
         # If the attribute is set, check if we want to overwrite it
         if (
@@ -299,7 +332,7 @@ class HermesData:
                 and self.schema.global_attribute_schema[attr_name]["overwrite"]
             ):
                 warn_user(
-                    f"Overiding Global Attribute {attr_name} : {self._timeseries.meta[attr_name]} -> {attr_value}"
+                    f"Overriding Global Attribute {attr_name} : {self._timeseries.meta[attr_name]} -> {attr_value}"
                 )
                 self._timeseries.meta[attr_name] = attr_value
         # If the attribute is not set, set it
@@ -310,6 +343,7 @@ class HermesData:
         if (
             attr_name in self.timeseries[var_name].meta
             and self.timeseries[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
@@ -319,7 +353,7 @@ class HermesData:
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overiding {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overriding TimeSeries {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
                 )
                 self.timeseries[var_name].meta[attr_name] = attr_value
         else:
@@ -329,6 +363,7 @@ class HermesData:
         if (
             attr_name in self._support[var_name].meta
             and self._support[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
@@ -338,11 +373,31 @@ class HermesData:
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overiding {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overriding Support {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
                 )
                 self._support[var_name].meta[attr_name] = attr_value
         else:
             self._support[var_name].meta[attr_name] = attr_value
+
+    def _update_spectra_attribute(self, var_name, attr_name, attr_value):
+        if (
+            attr_name in self._spectra[var_name].meta
+            and self._spectra[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
+        ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                attr_name
+            ]
+            if (
+                self._spectra[var_name].meta[attr_name] != attr_value
+                and attr_schema["overwrite"]
+            ):
+                warn_user(
+                    f"Overriding Spectra {var_name} Attribute {attr_name} : {self._spectra[var_name].meta[attr_name]} -> {attr_value}"
+                )
+                self._spectra[var_name].meta[attr_name] = attr_value
+        else:
+            self._spectra[var_name].meta[attr_name] = attr_value
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
@@ -627,5 +682,5 @@ class HermesData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a HermesData object
-        timeseries, support = handler.load_data(file_path)
-        return cls(timeseries=timeseries, support=support)
+        timeseries, support, spectra = handler.load_data(file_path)
+        return cls(timeseries=timeseries, support=support, spectra=spectra)

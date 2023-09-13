@@ -4,7 +4,10 @@ from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.nddata import NDData
+import astropy.wcs
 import astropy.units as u
+from ndcube import NDCollection
+from ndcube import NDCube
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HermesDataSchema
 
@@ -95,6 +98,8 @@ class CDFHandler(HermesDataIOHandler):
         ts = TimeSeries()
         # Create a Data Structure for Non-record Varying Data
         support = {}
+        # Intermediate Type
+        spectra = []
 
         # Open CDF file with context manager
         with CDF(file_path) as input_file:
@@ -130,14 +135,6 @@ class CDFHandler(HermesDataIOHandler):
             variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in variable_keys:
-                # Make sure the Variable is not multi-dimensional
-                if len(input_file[var_name].shape) > 1:
-                    warn_user(
-                        f"Measurement Variable {var_name} is multi-dimensional. Cannot add {var_name} to the TimeSeries"
-                    )
-                    # Skip to the next Variable
-                    continue
-
                 # Extract the Variable's Metadata
                 var_attrs = {}
                 for attr_name in input_file[var_name].attrs:
@@ -148,17 +145,43 @@ class CDFHandler(HermesDataIOHandler):
                 if input_file[var_name].rv():
                     # See if it is record-varying data with Units
                     if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
-                        # Load as Record-Varying `data`
-                        try:
-                            self._load_data_variable(ts, var_name, var_data, var_attrs)
-                        except ValueError:
-                            warn_user(
-                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
-                            )
-                            # Swap Units
-                            var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                            var_attrs["UNITS"] = u.dimensionless_unscaled.to_string()
-                            self._load_data_variable(ts, var_name, var_data, var_attrs)
+                        # Check if the variable is multi-dimensional
+                        if len(var_data.shape) > 1:
+                            try:
+                                # Create an NDCube Object for the data
+                                self._load_spectra_variable(
+                                    spectra, var_name, var_data, var_attrs, ts.time
+                                )
+                            except ValueError:
+                                warn_user(
+                                    f"Cannot create NDCube for Spectra {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
+                                )
+                                # Swap Units
+                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+                                var_attrs[
+                                    "UNITS"
+                                ] = u.dimensionless_unscaled.to_string()
+                                self._load_spectra_variable(
+                                    spectra, var_name, var_data, var_attrs, ts.time
+                                )
+                        else:
+                            # Load as Record-Varying `data`
+                            try:
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
+                                )
+                            except ValueError:
+                                warn_user(
+                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
+                                )
+                                # Swap Units
+                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+                                var_attrs[
+                                    "UNITS"
+                                ] = u.dimensionless_unscaled.to_string()
+                                self._load_data_variable(
+                                    ts, var_name, var_data, var_attrs
+                                )
                     else:
                         # Load as `support`
                         self._load_support_variable(
@@ -168,8 +191,11 @@ class CDFHandler(HermesDataIOHandler):
                     # Load Non-Record-Varying Data as `support`
                     self._load_support_variable(support, var_name, var_data, var_attrs)
 
+        # Create a NDCollection
+        spectra = NDCollection(spectra)
+
         # Return the given TimeSeries, NRV Data
-        return ts, support
+        return ts, support, spectra
 
     def _load_data_variable(self, ts, var_name, var_data, var_attrs):
         # Create the Quantity object
@@ -182,6 +208,88 @@ class CDFHandler(HermesDataIOHandler):
     def _load_support_variable(self, support, var_name, var_data, var_attrs):
         # Create a NDData entry for the variable
         support[var_name] = NDData(data=var_data, meta=var_attrs)
+
+    def _get_tensor_attribute(
+        self, var_attrs, naxis, attribute_name, default_attribute
+    ):
+        """
+        Function to get the `attribute_name` for each dimension of a multi-dimensional variable.
+
+        For example if we have variable 'des_dist_brst' and we want to get the `.cunit` member
+        for the WCS corresponding to the 'CUNIT' Keyword Attribute:
+        - 'CUNIT1': 'eV'    (DEPEND_3: 'mms1_des_energy_brst')
+        - 'CUNIT2': 'deg'   (DEPEND_2: 'mms1_des_theta_brst')
+        - 'CUNIT3': 'deg'   (DEPEND_1: 'mms1_des_phi_brst' )
+        - 'CUNIT4': 'ns'    (DEPEND_0: 'Epoch')
+
+        We want to return a list of these units:
+        ['eV', 'deg', 'deg', 'ns']
+        """
+        # Get `attribute_name` for each of the dimensions
+        attr_values = []
+        for dimension_i in range(naxis):
+            dimension_attr_name = (
+                f"{attribute_name}{dimension_i+1}"  # KeynameName Indexed 1-4 vs 0-3
+            )
+            if dimension_attr_name in var_attrs:
+                attr_values.append(var_attrs[dimension_attr_name])
+            else:
+                attr_values.append(default_attribute)
+
+        return attr_values
+
+    def _get_world_coords(self, var_data, var_attrs, time):
+        # Define WCS transformations in an astropy WCS object.
+
+        # Get the N in var_attrs:
+        if "WCSAXES" in var_attrs:
+            # NOTE We have to cast this to an INT because spacepy does not let us directly set a
+            # zAttr type when writing a variable attribute to a CDF. It tries to guess the type
+            # of the attribute based on they type of the data.
+            naxis = int(var_attrs["WCSAXES"])
+        else:
+            naxis = len(var_data.shape)
+        wcs = astropy.wcs.WCS(naxis=naxis)
+
+        for keyword, prop, default in self.schema.wcs_keyword_to_astropy_property:
+            prop_value = self._get_tensor_attribute(
+                var_attrs=var_attrs,
+                naxis=naxis,
+                attribute_name=keyword,
+                default_attribute=default,
+            )
+            setattr(wcs.wcs, prop, prop_value)
+
+        # wcs.wcs.ctype = 'WAVE', 'HPLT-TAN', 'HPLN-TAN'
+        # wcs.wcs.cunit = 'keV', 'deg', 'deg'
+        # wcs.wcs.cdelt = 0, 0, 0
+        # wcs.wcs.crpix = 0, 0, 01
+        # wcs.wcs.crval = 0, 0, 0
+        # wcs.wcs.cname = 'wavelength', 'HPC lat', 'HPC lon'
+
+        # TIME ATTRIBUTES
+        wcs.wcs.timesys = "UTC"
+        # Set the MJDREF (Modified  Julian Date Reference) to the start of the TimeSeries
+        # An unexpected (feature?) of the WCS API is that MJDREF is an vector
+        # attribute rather than a scalar attribute
+        wcs.wcs.mjdref = [time[0].mjd, 0]
+        wcs.wcs.timeunit = "ns"
+        time_delta = time[1] - time[0]
+        wcs.wcs.timedel = time_delta.to("ns").value
+
+        return wcs
+
+    def _load_spectra_variable(self, spectra, var_name, var_data, var_attrs, time):
+        print(f"\nVar: {var_name}")
+
+        # Create a World Cordinate System for the Tensor
+        var_wcs = self._get_world_coords(var_data, var_attrs, time)
+        # Create a Cube
+        var_cube = NDCube(
+            data=var_data, wcs=var_wcs, meta=var_attrs, unit=var_attrs["UNITS"]
+        )
+        # Add to Spectra
+        spectra.append((var_name, var_cube))
 
     def save_data(self, data, file_path):
         """
@@ -259,6 +367,21 @@ class CDFHandler(HermesDataIOHandler):
                 recVary=False,
             )
 
+            # Add the Variable Attributes
+            for var_attr_name, var_attr_val in var_data.meta.items():
+                if var_attr_val is None:
+                    raise ValueError(
+                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                    )
+                else:
+                    # Add the Attribute to the CDF File
+                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+
+        # Loop through High-Dimensional/Spectra Variables
+        for var_name in data.spectra:
+            var_data = data.spectra[var_name]
+            # Add the Variable to the CDF File
+            cdf_file[var_name] = var_data.data
             # Add the Variable Attributes
             for var_attr_name, var_attr_val in var_data.meta.items():
                 if var_attr_val is None:

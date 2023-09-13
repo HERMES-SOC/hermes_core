@@ -13,14 +13,21 @@ from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
 from astropy.nddata import NDData
+import astropy.wcs
+from ndcube import NDCollection
+from ndcube import NDCube
 from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 import hermes_core
 from hermes_core.timedata import HermesData
+from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util.validation import validate
 
 
 def get_bad_timeseries():
+    """
+    TimeSeries returned does not contain Quantity Measurements
+    """
     ts = TimeSeries()
 
     # Create an astropy.Time object
@@ -38,6 +45,9 @@ def get_bad_timeseries():
 
 
 def get_test_timeseries():
+    """
+    Function to get test astropy.timeseries.TimeSeries to re-use in other tests
+    """
     ts = TimeSeries()
 
     # Create an astropy.Time object
@@ -58,38 +68,78 @@ def get_test_timeseries():
 
 
 def get_test_hermes_data():
+    """
+    Function to get test hermes_core.timedata.HermesData objects to re-use in other tests
+    """
+
+    # Astropy TimeSeries
     ts = TimeSeries(
         time_start="2016-03-22T12:30:31",
         time_delta=3 * u.s,
         data={"Bx": Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)},
     )
+
+    # Support Data / Non-Time Varying Data
+    support = {"support_counts": NDData(data=[1])}
+
+    # Spectra Data
+    spectra = NDCollection(
+        [
+            (
+                "test_spectra",
+                NDCube(
+                    data=random(size=(4, 10)),
+                    wcs=astropy.wcs.WCS(naxis=2),
+                    meta={"CATDESC": "Test Spectra Variable"},
+                    unit="eV",
+                ),
+            )
+        ]
+    )
+
+    # Global Metadata Attributes
     input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
-    hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+
+    # Create HermesData Object
+    hermes_data = HermesData(
+        timeseries=ts, support=support, spectra=spectra, meta=input_attrs
+    )
     hermes_data.timeseries["Bx"].meta.update({"CATDESC": "Test"})
     return hermes_data
 
 
-def get_test_global_meta():
-    global_attrs_template = HermesData.global_attribute_template()
-
-
 def test_non_timeseries():
+    """
+    Test Asserts the `timeseries` parameter must accept an astropy.timeseries.TimeSeries
+    """
     with pytest.raises(TypeError):
         _ = HermesData(timeseries=[], meta={})
 
 
 def test_hermes_data_empty_ts():
+    """
+    Test asserts the `timeseries` parameter must accept an astropy.timeseries.TimeSeries
+    that includes `Time` and at least one other measurement.
+    """
     with pytest.raises(ValueError):
         _ = HermesData(timeseries=TimeSeries())
 
 
 def test_hermes_data_bad_ts():
+    """
+    Test asserts that all measurements in `timeseries` member must be of type
+    `astropy.units.Quantity`
+    """
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
         _ = HermesData(timeseries=ts)
 
 
 def test_hermes_data_default():
+    """
+    Test asserts that a HermesDate object is created with the minimal set of required
+    global metadata: Descriptor, Data_level, Data_version.
+    """
     ts = get_test_timeseries()
 
     with pytest.raises(ValueError) as e:
@@ -102,7 +152,11 @@ def test_hermes_data_default():
     del ts
 
 
-def test_multidimensional_data():
+def test_multidimensional_timeseries():
+    """
+    Test asserts that HermesData cannot be created with multi-dimensional data in
+    the astropy.timeseries.TimeSeries member
+    """
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
 
@@ -111,6 +165,9 @@ def test_multidimensional_data():
 
 
 def test_support_data():
+    """
+    Test asserts support / non-time-varying data is created properly
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -135,7 +192,51 @@ def test_support_data():
     assert test_data.support["support_var"].data[0] == 1
 
 
+def test_spectra_data():
+    """
+    Test asserts spectra / high-dimensional data is created properly
+    through ndcube.NDCollection structures.
+    """
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+    ts = get_test_timeseries()
+
+    # Bad Spectra
+    spectra = random(size=(10, 4))
+    with pytest.raises(TypeError):
+        _ = HermesData(ts, spectra=spectra, meta=input_attrs)
+
+    # Good Spectra
+    spectra = NDCollection(
+        [
+            (
+                "test_spectra",
+                NDCube(
+                    data=random(size=(10, 10)),
+                    wcs=astropy.wcs.WCS(naxis=2),
+                    meta={"CATDESC": "Test Spectra Variable"},
+                    unit="eV",
+                ),
+            )
+        ]
+    )
+
+    # Create HermesData
+    test_data = HermesData(ts, spectra=spectra, meta=input_attrs)
+
+    assert "test_spectra" in test_data.spectra
+    assert test_data.spectra["test_spectra"].data.shape == (10, 10)
+
+
 def test_hermes_data_valid_attrs():
+    """
+    Test asserts that a minmally-defined HermesData object can be created
+    and saved to a CDF file.
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -157,6 +258,10 @@ def test_hermes_data_valid_attrs():
 
 
 def test_global_attribute_template():
+    """
+    Test asserts that the HermesData.global_attribute_template()
+    function can be used to create a minimal subset of required metadata
+    """
     # default
     assert isinstance(HermesData.global_attribute_template(), OrderedDict)
 
@@ -182,18 +287,11 @@ def test_global_attribute_template():
 
 
 def test_default_properties():
-    # fmt: off
-    input_attrs = {
-        "Descriptor": "EEA>Electron Electrostatic Analyzer",
-        "Data_level": "l1>Level 1",
-        "Data_version": "v0.0.1",
-        "Start_time": datetime.datetime.now()
-    }
-    # fmt: on
-
-    ts = get_test_timeseries()
+    """
+    Test asserts the values of HermesData class attributes.
+    """
     # Initialize a CDF File Wrapper
-    test_data = HermesData(ts, meta=input_attrs)
+    test_data = get_test_hermes_data()
 
     # data
     assert isinstance(test_data.timeseries, TimeSeries)
@@ -204,8 +302,15 @@ def test_default_properties():
     # time_range
     assert isinstance(test_data.time_range, tuple)
 
+    # __repr__
+    assert isinstance(test_data.__repr__(), str)
+
 
 def test_hermes_data_single_measurement():
+    """
+    Test assers that a HermesData object with a single added measurement
+    can be created and saved to a CDF file.
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -234,6 +339,10 @@ def test_hermes_data_single_measurement():
 
 
 def test_hermes_data_add_measurement():
+    """
+    Asserts the HermesData.add_measurement() function adds data to the timeseries
+    member as expected.
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -323,6 +432,10 @@ def test_hermes_data_add_support():
 
 
 def test_hermes_data_plot():
+    """
+    Test asserts the HermesData.plot() function generates matplotlib
+    images as expected.
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -351,6 +464,10 @@ def test_hermes_data_plot():
 
 
 def test_hermes_data_append():
+    """
+    Test asserts the HermesData.append() function adds to the TimeSeries member
+    as expected.
+    """
     # fmt: off
     input_attrs = {
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
@@ -397,6 +514,10 @@ def test_hermes_data_append():
 
 
 def test_hermes_data_generate_valid_cdf():
+    """
+    Test asserts the HermesData data container can create an ISTP compliant CDF based on
+    the spacepy.pycdf.istp module.
+    """
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -505,6 +626,9 @@ def test_hermes_data_generate_valid_cdf():
 
 
 def test_hermes_data_from_cdf():
+    """
+    Test asserts that the HermesData class can be created by loading a CDF file.
+    """
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -604,6 +728,7 @@ def test_hermes_data_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
+        print(result)
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter
@@ -623,6 +748,10 @@ def test_hermes_data_from_cdf():
 
 
 def test_hermes_data_idempotency():
+    """
+    Test asserts that a HermesData object that is saved and loaded does not have any
+    changes in it members, measurements, or metadata.
+    """
     # fmt: off
     input_attrs = {
         "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -710,6 +839,22 @@ def test_hermes_data_idempotency():
                 test_data.support[var].meta["VAR_TYPE"]
                 == loaded_data.support[var].meta["VAR_TYPE"]
             )
+
+        schema = HermesDataSchema()
+        for var in test_data.spectra:
+            assert var in loaded_data.spectra
+            assert (
+                test_data.spectra[var].data.shape == loaded_data.spectra[var].data.shape
+            )
+            assert len(test_data.spectra[var].meta) == len(
+                loaded_data.spectra[var].meta
+            )
+            for _, prop, _ in schema.wcs_keyword_to_astropy_property:
+                pval1 = getattr(test_data.spectra[var].wcs.wcs, prop)
+                pval2 = getattr(loaded_data.spectra[var].wcs.wcs, prop)
+                assert len(pval1) == len(pval2)
+                for i in range(len(pval1)):
+                    assert pval1[i] == pval2[i]
 
 
 @pytest.mark.parametrize(
