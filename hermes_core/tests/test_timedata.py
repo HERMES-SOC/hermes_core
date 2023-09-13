@@ -371,7 +371,7 @@ def test_hermes_data_add_measurement():
     test_data.add_measurement(measure_name="test", data=q)
     assert test_data.timeseries["test"].shape == (10,)
 
-    # Add Dimensionless Record-Varying Data
+    # Add Dimensionless measurements (or Record-Varying) Data
     q = Quantity(value=random(size=(10)), unit=u.dimensionless_unscaled)
     test_data.add_measurement(
         measure_name="Test Dimensionless",

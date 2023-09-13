@@ -30,7 +30,7 @@ class HermesData:
     timeseries :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
     support : `dict[astropy.nddata.NDData]`, optional
-        Non-Record-Varying data associated with the timeseries data.
+        Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
     meta : `dict`, optional
         The metadata describing the time series in an ISTP-compliant format.
 
@@ -415,6 +415,7 @@ class HermesData:
         Raises
         ------
         TypeError: If var_data is not of type Quantity.
+        ValueError: If data has more than one dimension
         """
         # Verify that all Measurements are `Quantity`
         if (not isinstance(data, u.Quantity)) or (not data.unit):
@@ -440,16 +441,16 @@ class HermesData:
 
     def add_support(self, name: str, data: NDData, meta: dict = None):
         """
-        Add a new non-time-varying measurement (column).
+        Add a new non-time-varying data array.
 
         Parameters
         ----------
         name: `str`
-            Name of the measurement to add.
+            Name of the data array to add.
         data: `astropy.nddata.NDData`,
             The data to add.
         meta: `dict`, optional
-            The metadata associated with the measurement.
+            The metadata associated for the data array.
 
         Raises
         ------
@@ -469,12 +470,12 @@ class HermesData:
 
     def remove(self, measure_name: str):
         """
-        Remove an existing measurement (column).
+        Remove an existing measurement or support data array.
 
         Parameters
         ----------
         measure_name: `str`
-            Name of the measurement to remove.
+            Name of the variable to remove.
         """
         if measure_name in self._timeseries.columns:
             self._timeseries.remove_column(measure_name)
@@ -485,7 +486,7 @@ class HermesData:
 
     def plot(self, axes=None, columns=None, subplots=True, **plot_args):
         """
-        Plot the data.
+        Plot the measurement data.
 
         Parameters
         ----------

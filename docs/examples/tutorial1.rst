@@ -60,7 +60,7 @@ measurement data easier when reading and writing CDF data.
     global_attrs_template["PI_name"] = "Dr. Eftyhia Zesta"
     global_attrs_template["TEXT"] = "Sample HERMES NEMISIS CDF File"
 
-    example_data = HermesData(data=ts, meta=global_attrs_template)
+    example_data = HermesData(timeseries=ts, meta=global_attrs_template)
 
     # To make the creation of variable metadata easier you can use the static
     # `HermesData.measurement_attribute_template()` function.

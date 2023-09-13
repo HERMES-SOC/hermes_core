@@ -32,7 +32,7 @@ Additionally, metadata attributes can be associated with the table, allowing for
 The :py:class:`~hermes_core.timedata.HermesData` class aims to provide a simplified interface to reading and writing HERMES data and metadata to CDF files while automatically handling the complexities of the underlying CDF file format.
 
 Creating a ``HermesData`` object
-==============================
+================================
 
 A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
 There are many ways to initialize one but here is one example:
@@ -62,7 +62,7 @@ You can also create your time array directly
 Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
 
 Next create a `dict` or `~collections.OrderedDict` containing the required CDF global metadata.
-The class function :py:func:`~hermes_core.timedata.HermesData.global_attribute_template`:: will provide you an empty version that you can fill in if needed.
+The class function :py:func:`~hermes_core.timedata.HermesData.global_attribute_template` will provide you an empty version that you can fill in.
 Here is an example with filled in values.
 
     >>> input_attrs = {
@@ -105,13 +105,14 @@ You can now create the :py:class:`~hermes_core.timedata.HermesData` object,
     >>> from hermes_core.timedata import HermesData
     >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
 
-The :py:class:`~hermes_core.timedata.HermesData` object also accepts optional arguments for loading
-non-record-varying (NRV) support data. These arguments are required to be a `dict`
-of :py:class:`~astropy.nddata.NDData` objects.
+The :py:class:`~hermes_core.timedata.HermesData` object also accepts additional arbitrary data arrays, 
+so-called non-record-varying (NRV) data, which is frequently support data. These data are required to be a `dict`
+of :py:class:`~astropy.nddata.NDData` objects which are data containers for physical data.
+A guide to the `~astropy.nddata` package is available in the `astropy documentation <https://docs.astropy.org/en/stable/nddata/>`_.
 
     >>> from astropy.nddata import NDData
-    >>> support = {"const_param": NDData(data=[1e-3])}
-    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs, support=support)
+    >>> support_data = {"const_param": NDData(data=[1e-3])}
+    >>> timedata = HermesData(timeseries=ts, meta=input_attrs, support=support_data)
 
 The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
@@ -148,10 +149,12 @@ The :py:class:`~hermes_core.timedata.HermesData` can the be updated, measurement
 Adding data to a ``HermesData`` Container
 =========================================
 
-A new column of data, support data, or NRV data can be added to an existing instance. Remember 
-that new data measurements must have the same time stamps as the existing ones and therefore 
-the same number of entries. Support data and non-record-varying data can be added as needed.
-You can add the new column by using the :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
+A new set of measurements or support data can be added to an existing instance. Remember 
+that new measurements must have the same time stamps as the existing ones and therefore 
+the same number of entries. Support data can be added as needed.
+You can add the new measurments in one of two ways.
+
+The more explicit approach is to use :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
 
     >>> data = u.Quantity(np.arange(len(hermes_data.timeseries['Bx'])), 'Gauss', dtype=np.uint16)
     >>> hermes_data.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
@@ -314,7 +317,7 @@ If you use the :py:func:`~hermes_core.timedata.HermesData.add_measurement` funct
 automatically fill most of them in for you. Additional pieces of metadata can be added if desired.
 
 Visualizing data in a ``HermesData`` Container
-============================================
+==============================================
 
 The :py:class:`~hermes_core.timedata.HermesData` provides a quick way to visualize its data through `~hermes_core.timedata.HermesData.plot`.
 By default, a plot will be generated with each measurement in its own plot panel.
