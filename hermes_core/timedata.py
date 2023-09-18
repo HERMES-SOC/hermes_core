@@ -11,7 +11,7 @@ from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy.nddata import NDData
 from astropy import units as u
-from ndcube import NDCollection
+from ndcube import NDCube, NDCollection
 import hermes_core
 from hermes_core.util.io import CDFHandler
 from hermes_core.util.schema import HermesDataSchema
@@ -401,7 +401,7 @@ class HermesData:
 
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
-        Add a new time-varying measurement (column).
+        Add a new time-varying scalar measurement (column).
 
         Parameters
         ----------
@@ -468,6 +468,40 @@ class HermesData:
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
+    def add_spectra(self, name: str, data: NDCube, meta: dict = None):
+        """
+        Add a new time-varying vector measurement. This include higher-dimensional time-varying
+        data.
+
+        Parameters
+        ----------
+        name: `str`
+            Name of the measurement to add.
+        data: `ndcube.NDCube`
+            The data to add. Must have the same time stamps as the existing data.
+        meta: `dict`, optional
+            The metadata associated with the measurement.
+
+        Raises
+        ------
+        TypeError: If var_data is not of type NDCube.
+        """
+        # Verify that all Measurements are `NDCube`
+        if not isinstance(data, NDCube):
+            raise TypeError(f"Measurement {name} must be type `ndcube.NDCube`.")
+
+        # Add the new measurement
+        if len(self._spectra) == 0:
+            self._spectra = NDCollection([(name, data)])
+        else:
+            self._spectra.update([(name, data)], self._spectra.aligned_axes)
+        # Add any Metadata Passed not in the NDCube
+        if meta:
+            self._spectra[name].meta.update(meta)
+
+        # Derive Metadata Attributes for the Measurement
+        self._derive_metadata()
+
     def remove(self, measure_name: str):
         """
         Remove an existing measurement or support data array.
@@ -481,6 +515,14 @@ class HermesData:
             self._timeseries.remove_column(measure_name)
         elif measure_name in self._support:
             self._support.pop(measure_name)
+        elif measure_name in self._spectra:
+            try:
+                self._spectra.pop(measure_name)
+            except AttributeError:
+                # There is a potential bug in the NDCollection source for the `pop()` function that
+                # throws this error when the `NDCollection.aligned_axes` are `None`.
+                # https://github.com/sunpy/ndcube/issues/641
+                pass
         else:
             raise ValueError(f"Data for Measurement {measure_name} not found.")
 

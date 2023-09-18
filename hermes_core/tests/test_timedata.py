@@ -431,6 +431,63 @@ def test_hermes_data_add_support():
     assert "Test Metadata" not in test_data.support
 
 
+def test_hermes_data_add_spectra():
+    """Function to Test Adding Spectra/ High-Dimensional Data"""
+    # fmt: off
+    input_attrs = {
+        "Descriptor": "EEA>Electron Electrostatic Analyzer",
+        "Data_level": "l1>Level 1",
+        "Data_version": "v0.0.1",
+    }
+    # fmt: on
+
+    ts = get_test_timeseries()
+    # Initialize a CDF File Wrapper
+    test_data = HermesData(ts, meta=input_attrs)
+
+    # Add non-NDCube
+    with pytest.raises(TypeError):
+        test_data.add_spectra(name="test", data=[], meta={})
+
+    # Add Test Data
+    data = NDCube(
+        data=random(size=(10, 10)),
+        wcs=astropy.wcs.WCS(naxis=2),
+        meta={"CATDESC": "Test Spectra Variable"},
+        unit="eV",
+    )
+    test_data.add_spectra(
+        name="Test Spectra",
+        data=data,
+        meta={"VAR_TYPE": "data"},
+    )
+    assert "Test Spectra" in test_data.spectra
+    assert "CATDESC" in test_data.spectra["Test Spectra"].meta
+    assert "VAR_TYPE" in test_data.spectra["Test Spectra"].meta
+    assert test_data.spectra["Test Spectra"].data.shape == (10, 10)
+
+    # Add a Second NDCube
+    data = NDCube(
+        data=random(size=(10, 10)),
+        wcs=astropy.wcs.WCS(naxis=2),
+        meta={"CATDESC": "Second Spectra Variable"},
+        unit="eV",
+    )
+    test_data.add_spectra(
+        name="Test2",
+        data=data,
+        meta={"VAR_TYPE": "data"},
+    )
+    assert "Test2" in test_data.spectra
+    assert "CATDESC" in test_data.spectra["Test2"].meta
+    assert "VAR_TYPE" in test_data.spectra["Test2"].meta
+    assert test_data.spectra["Test2"].data.shape == (10, 10)
+
+    # Test remove Support Data
+    test_data.remove("Test Spectra")
+    assert "Test Spectra" not in test_data.spectra
+
+
 def test_hermes_data_plot():
     """
     Test asserts the HermesData.plot() function generates matplotlib
