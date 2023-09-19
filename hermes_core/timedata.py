@@ -492,9 +492,12 @@ class HermesData:
 
         # Add the new measurement
         if len(self._spectra) == 0:
-            self._spectra = NDCollection([(name, data)])
+            aligned_axes = (0,)
+            self._spectra = NDCollection([(name, data)], aligned_axes)
         else:
-            self._spectra.update([(name, data)], self._spectra.aligned_axes)
+            first_aligned_axes = self.spectra.aligned_axes[self.spectra._first_key]
+            aligned_axes = tuple(0 for _ in range(len(first_aligned_axes)))
+            self._spectra.update([(name, data)], aligned_axes)
         # Add any Metadata Passed not in the NDCube
         if meta:
             self._spectra[name].meta.update(meta)

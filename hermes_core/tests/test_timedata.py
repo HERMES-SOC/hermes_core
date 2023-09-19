@@ -785,7 +785,6 @@ def test_hermes_data_from_cdf():
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
-        print(result)
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Try to Load the CDF File in a new CDFWriter

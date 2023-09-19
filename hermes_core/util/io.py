@@ -192,7 +192,12 @@ class CDFHandler(HermesDataIOHandler):
                     self._load_support_variable(support, var_name, var_data, var_attrs)
 
         # Create a NDCollection
-        spectra = NDCollection(spectra)
+        if len(spectra) > 0:
+            # Implement assertion that all spectra are aligned along time-varying dimension
+            aligned_axes = tuple(0 for _ in spectra)
+            spectra = NDCollection(spectra, aligned_axes=aligned_axes)
+        else:
+            spectra = NDCollection(spectra)
 
         # Return the given TimeSeries, NRV Data
         return ts, support, spectra
@@ -280,8 +285,6 @@ class CDFHandler(HermesDataIOHandler):
         return wcs
 
     def _load_spectra_variable(self, spectra, var_name, var_data, var_attrs, time):
-        print(f"\nVar: {var_name}")
-
         # Create a World Cordinate System for the Tensor
         var_wcs = self._get_world_coords(var_data, var_attrs, time)
         # Create a Cube
