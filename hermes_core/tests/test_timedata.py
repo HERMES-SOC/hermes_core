@@ -198,6 +198,19 @@ def test_default_properties():
     # data
     assert isinstance(test_data.timeseries, TimeSeries)
 
+    # support
+    assert isinstance(test_data.support, dict)
+
+    # data
+    assert isinstance(test_data.data, dict)
+    assert "timeseries" in test_data.data
+    assert isinstance(test_data.data["timeseries"], TimeSeries)
+    assert "support" in test_data.data
+    assert isinstance(test_data.data["support"], dict)
+
+    # meta
+    assert isinstance(test_data.meta, dict)
+
     # time
     assert isinstance(test_data.time, Time)
 

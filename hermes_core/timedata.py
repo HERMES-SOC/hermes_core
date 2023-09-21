@@ -130,6 +130,13 @@ class HermesData:
         return self._support
 
     @property
+    def data(self):
+        """
+        (`dict`) A `dict` containing each of `timeseries` and `support`.
+        """
+        return {"timeseries": self.timeseries, "support": self.support}
+
+    @property
     def meta(self):
         """
         (`collections.OrderedDict`) Global metadata associated with the measurement data.
