@@ -4,7 +4,10 @@ Container class for Measurement Data.
 
 from pathlib import Path
 from collections import OrderedDict
+from copy import deepcopy
+from typing import Optional, Union
 import numpy as np
+import astropy
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
@@ -27,9 +30,9 @@ class TimeData:
     ----------
     data :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
-    support : `dict[astropy.nddata.NDData]`, optional
+    support : `Optional[dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]]`
         Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
-    meta : `dict`, optional
+    meta : `Optional[dict]`
         The metadata describing the time series in an ISTP-compliant format.
 
     Examples
@@ -56,7 +59,14 @@ class TimeData:
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, data, support=None, meta=None):
+    def __init__(
+        self,
+        data: astropy.timeseries.TimeSeries,
+        support: Optional[
+            dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]
+        ] = None,
+        meta: Optional[dict] = None,
+    ):
         # Verify TimeSeries compliance
         if not isinstance(data, TimeSeries):
             raise TypeError("Data must be a TimeSeries object.")
@@ -79,9 +89,12 @@ class TimeData:
         # Check NRV Data
         if support:
             for key in support:
-                if not (isinstance(support[key], NDData)):
+                if not (
+                    isinstance(support[key], u.Quantity)
+                    or isinstance(support[key], NDData)
+                ):
                     raise TypeError(
-                        f"Variable '{key}' must be an astropy.nddata.NDData object"
+                        f"Variable '{key}' must be an astropy.units.Quantity or astropy.nddata.NDData object"
                     )
 
         # Copy the TimeSeries
@@ -105,9 +118,16 @@ class TimeData:
 
         # Copy the Non-Record Varying Data
         if support:
-            self._support = support
+            self._support = deepcopy(support)
         else:
             self._support = {}
+
+        # Add Support Metadata
+        for key in self._support:
+            if hasattr(support[key], "meta"):
+                self._support[key].meta.update(support[key].meta)
+            else:
+                self._support[key].meta = self.measurement_attribute_template()
 
         # Derive Metadata
         self.schema = HERMESDataSchema()
@@ -123,7 +143,7 @@ class TimeData:
     @property
     def support(self):
         """
-        (`dict[astropy.nddata.NDData]`) A `dict` containing one or more non-time-varying support variables.
+        (`dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]`) A `dict` containing one or more non-time-varying support variables.
         """
         return self._support
 
@@ -444,7 +464,12 @@ class TimeData:
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
-    def add_support(self, name: str, data: NDData, meta: dict = None):
+    def add_support(
+        self,
+        name: str,
+        data: Union[astropy.units.Quantity, astropy.nddata.NDData],
+        meta: Optional[dict] = None,
+    ):
         """
         Add a new non-time-varying data array.
 
@@ -452,9 +477,9 @@ class TimeData:
         ----------
         name: `str`
             Name of the data array to add.
-        data: `astropy.nddata.NDData`,
+        data: `Union[astropy.units.Quantity, astropy.nddata.NDData]`,
             The data to add.
-        meta: `dict`, optional
+        meta: `Optional[dict]`, optional
             The metadata associated for the data array.
 
         Raises
@@ -462,10 +487,15 @@ class TimeData:
         TypeError: If var_data is not of type NDData.
         """
         # Verify that all Measurements are `NDData`
-        if not isinstance(data, NDData):
+        if not (isinstance(data, u.Quantity) or isinstance(data, NDData)):
             raise TypeError(f"Measurement {name} must be type `astropy.nddata.NDData`.")
 
         self._support[name] = data
+        # Add any Metadata from the original Quantity or NDData
+        if hasattr(data, "meta"):
+            self._support[name].meta.update(data.meta)
+        else:
+            self._support[name].meta = self.measurement_attribute_template()
         # Add any Metadata Passed not in the NDData
         if meta:
             self._support[name].meta.update(meta)

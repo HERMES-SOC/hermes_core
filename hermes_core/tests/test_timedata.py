@@ -125,14 +125,20 @@ def test_support_data():
     with pytest.raises(TypeError):
         _ = TimeData(ts, support=support, meta=input_attrs)
 
-    # Good Support
-    support = {"support_var": NDData(data=[1])}
+    # Support as NDData
+    support = {}
+    support["support_nddata"] = NDData(data=[1])
+
+    # Support as Quantity
+    support["support_quantity"] = Quantity(value=[1], unit="count")
 
     # Create TimeData
     test_data = TimeData(ts, support=support, meta=input_attrs)
 
-    assert "support_var" in test_data.support
-    assert test_data.support["support_var"].data[0] == 1
+    assert "support_nddata" in test_data.support
+    assert test_data.support["support_nddata"].data[0] == 1
+    assert "support_quantity" in test_data.support
+    assert test_data.support["support_quantity"].data[0] == 1
 
 
 def test_timedata_valid_attrs():
@@ -687,11 +693,20 @@ def test_timedata_idempotency():
     test_data.meta["Test Null Attr"] = ""
 
     # Induce an Non-Record-Varying Variable
-    test_data.add_support(name="NRV_var", data=NDData(["Test NRV Data"]))
+    test_data.add_support(
+        name="NRV_var", data=NDData(["Test NRV Data"]), meta={"CATDESC": "NRV Variable"}
+    )
 
     # Induce a Variable with Bad UNITS
     test_data.add_support(
-        name="Bad_units_var", data=NDData([1, 2, 3, 4], meta={"UNITS": "Not A Unit"})
+        name="Bad_units_var",
+        data=NDData(
+            [1, 2, 3, 4],
+            meta={
+                "UNITS": "Not A Unit",
+                "CATDESC": "Test Variable with Incoherent UNITS",
+            },
+        ),
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
