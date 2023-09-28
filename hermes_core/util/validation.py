@@ -1,5 +1,6 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
+from typing import Union
 from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
 from hermes_core.util.schema import HERMESDataSchema
@@ -7,7 +8,7 @@ from hermes_core.util.schema import HERMESDataSchema
 __all__ = ["validate", "CDFValidator"]
 
 
-def validate(filepath):
+def validate(filepath: str) -> list[str]:
     """
     Validate a data file such as a CDF.
 
@@ -40,7 +41,7 @@ class TimeDataValidator(ABC):
     """
 
     @abstractmethod
-    def validate(self, file_path):
+    def validate(self, file_path: str) -> list[str]:
         """
         Validate the heliophysics data file.
 
@@ -68,7 +69,7 @@ class CDFValidator(TimeDataValidator):
         # CDF Schema
         self.schema = HERMESDataSchema()
 
-    def validate(self, file_path):
+    def validate(self, file_path: str) -> list[str]:
         """
         Validate the CDF file.
 
@@ -109,7 +110,7 @@ class CDFValidator(TimeDataValidator):
 
         return validation_errors
 
-    def _validate_global_attr_schema(self, cdf_file: CDF):
+    def _validate_global_attr_schema(self, cdf_file: CDF) -> list[str]:
         """
         Function to ensure all required global attributes in the schema are present
         in the generated CDF File.
@@ -136,7 +137,7 @@ class CDFValidator(TimeDataValidator):
                 )
         return global_attr_validation_errors
 
-    def _validate_variable_attr_schema(self, cdf_file: CDF):
+    def _validate_variable_attr_schema(self, cdf_file: CDF) -> list[str]:
         """
         Function to ensure all required variable attributes in the schema are present
         in the generated CDF file.
@@ -161,7 +162,9 @@ class CDFValidator(TimeDataValidator):
 
         return variable_attr_validation_errors
 
-    def _validate_variable(self, cdf_file: CDF, var_name: str, var_type: str):
+    def _validate_variable(
+        self, cdf_file: CDF, var_name: str, var_type: str
+    ) -> list[str]:
         """
         Function to Validate an individual Variable.
         """
@@ -223,7 +226,7 @@ class CDFValidator(TimeDataValidator):
 
         return variable_errors
 
-    def _validate_format(self, cdf_file: CDF, var_name: str):
+    def _validate_format(self, cdf_file: CDF, var_name: str) -> Union[str, None]:
         # Save the Current Format
         variable_format = cdf_file[var_name].meta["FORMAT"]
         # Get the target Format for the Variable
@@ -236,7 +239,7 @@ class CDFValidator(TimeDataValidator):
         else:
             return None
 
-    def _file_checks(self, cdf_file: CDF):
+    def _file_checks(self, cdf_file: CDF) -> list[str]:
         """
         Function to call individual pieces of the `spacepy.pycdf.istp.FileChecks` Class.
         We do not want to run all validation checks from this class using the `all()` function
@@ -264,7 +267,7 @@ class CDFValidator(TimeDataValidator):
 
         return file_checks_errors
 
-    def _variable_checks(self, cdf_file: CDF, var_name: str):
+    def _variable_checks(self, cdf_file: CDF, var_name: str) -> list[str]:
         """
         Function to call individual pieces of the `spacepy.pycdf.istp.VariableChecks` Class.
         We do not want to run all validation checks from this class using the `all()` function

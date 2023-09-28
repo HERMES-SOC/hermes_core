@@ -262,7 +262,9 @@ class TimeData:
             yield (name, var_data)
 
     @staticmethod
-    def global_attribute_template(instr_name="", data_level="", version=""):
+    def global_attribute_template(
+        instr_name: str = "", data_level: str = "", version: str = ""
+    ) -> OrderedDict:
         """
         Function to generate a template of the required ISTP-compliant global attributes.
 
@@ -316,7 +318,7 @@ class TimeData:
         return meta
 
     @staticmethod
-    def measurement_attribute_template():
+    def measurement_attribute_template() -> OrderedDict:
         """
         Function to generate a template of the required measurement attributes.
 
@@ -659,7 +661,7 @@ class TimeData:
         # Re-Derive Metadata
         self._derive_metadata()
 
-    def save(self, output_path=None, overwrite=False):
+    def save(self, output_path: str = None, overwrite: bool = False):
         """
         Save the data to a HERMES CDF file.
 
@@ -685,7 +687,7 @@ class TimeData:
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod
-    def load(cls, file_path):
+    def load(cls, file_path: str):
         """
         Load data from a file.
 
