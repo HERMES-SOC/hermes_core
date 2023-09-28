@@ -9,8 +9,8 @@ from astropy.timeseries import TimeSeries
 import astropy.units as u
 from spacepy.pycdf import CDF
 import hermes_core
-from hermes_core.timedata import TimeData
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.timedata import HermesData
+from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util.validation import validate
 
 SAMPLE_CDF_FILE = "hermes_nms_default_l1_20160322_123031_v0.0.1.cdf"
@@ -56,10 +56,10 @@ def test_non_existant_file():
 def test_missing_global_attrs():
     """Function to ensure missing global attributes are reported in validation"""
 
-    # Create a Test TimeData
+    # Create a Test HermesData
     ts = get_test_timeseries()
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
-    td = TimeData(data=ts, meta=template)
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -80,10 +80,10 @@ def test_missing_global_attrs():
 def test_missing_var_type():
     """Function to ensure missing variable attributes are reported in validation"""
 
-    # Create a Test TimeData
+    # Create a Test HermesData
     ts = get_test_timeseries()
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
-    td = TimeData(data=ts, meta=template)
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -103,10 +103,10 @@ def test_missing_var_type():
 def test_missing_variable_attrs():
     """Function to ensure missing variable attributes are reported in validation"""
 
-    # Create a Test TimeData
+    # Create a Test HermesData
     ts = get_test_timeseries()
-    template = TimeData.global_attribute_template("eea", "l2", "0.0.0")
-    td = TimeData(data=ts, meta=template)
+    template = HermesData.global_attribute_template("eea", "l2", "0.0.0")
+    td = HermesData(timeseries=ts, meta=template)
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:

@@ -21,7 +21,7 @@ author = "HERMES SOC Team"
 
 # The full version, including alpha/beta/rc tags
 from hermes_core import __version__
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 
 version = __version__
 
@@ -50,15 +50,15 @@ extensions = [
 automodapi_toctreedirnm = "generated/api"
 
 # -- Generate CSV Files for Docs ---------------------------------------------
-if not os.path.exists('generated'):
-    os.mkdir('generated')  # generate the directory before putting things in it
+if not os.path.exists("generated"):
+    os.mkdir("generated")  # generate the directory before putting things in it
 # Global Attributes to CSV
 
-global_info = HERMESDataSchema.global_attribute_info()
+global_info = HermesDataSchema.global_attribute_info()
 global_info.write("./generated/global_attributes.csv", overwrite=True)
 
 # Variable Attributes to CSV
-variable_info = HERMESDataSchema.measurement_attribute_info()
+variable_info = HermesDataSchema.measurement_attribute_info()
 variable_info.write("./generated/variable_attributes.csv", overwrite=True)
 
 # Add any paths that contain templates here, relative to this directory.
