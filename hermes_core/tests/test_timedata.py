@@ -333,7 +333,7 @@ def test_timedata_add_support():
     with pytest.raises(TypeError):
         test_data.add_support(name="test", data=[], meta={})
 
-    # Add Test Metadata
+    # Add Test Metadata as NDData
     c = NDData(data=[1])
     test_data.add_support(
         name="Test Metadata",
@@ -342,6 +342,15 @@ def test_timedata_add_support():
     )
     assert "Test Metadata" in test_data.support
     assert test_data.support["Test Metadata"].data[0] == 1
+
+    # Add Test Metadata as Quantity
+    test_data.add_support(
+        name="Test Count",
+        data=Quantity(value=[1], unit="count", dtype=np.uint16),
+        meta={"CATDESC": "Test Metadata Count", "VAR_TYPE": "metadata"},
+    )
+    assert "Test Count" in test_data.support
+    assert test_data.support["Test Count"].data[0] == 1
 
     # Test remove Support Data
     test_data.remove("Test Metadata")
