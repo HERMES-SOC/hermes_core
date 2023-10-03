@@ -167,7 +167,7 @@ class CDFHandler(HermesDataIOHandler):
                         else:
                             # Load as Record-Varying `data`
                             try:
-                                self._load_data_variable(
+                                self._load_timeseries_variable(
                                     ts, var_name, var_data, var_attrs
                                 )
                             except ValueError:
@@ -179,7 +179,7 @@ class CDFHandler(HermesDataIOHandler):
                                 var_attrs[
                                     "UNITS"
                                 ] = u.dimensionless_unscaled.to_string()
-                                self._load_data_variable(
+                                self._load_timeseries_variable(
                                     ts, var_name, var_data, var_attrs
                                 )
                     else:
@@ -202,7 +202,7 @@ class CDFHandler(HermesDataIOHandler):
         # Return the given TimeSeries, NRV Data
         return ts, support, spectra
 
-    def _load_data_variable(self, ts, var_name, var_data, var_attrs):
+    def _load_timeseries_variable(self, ts, var_name, var_data, var_attrs):
         # Create the Quantity object
         var_data = u.Quantity(value=var_data, unit=var_attrs["UNITS"], copy=False)
         ts[var_name] = var_data

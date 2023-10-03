@@ -74,7 +74,6 @@ def get_test_hermes_data():
     # Create HermesData Object
     hermes_data = HermesData(timeseries=ts, support=support, spectra=spectra)
 
-    hermes_data = HermesData(timeseries=ts)
     return hermes_data
 
 
