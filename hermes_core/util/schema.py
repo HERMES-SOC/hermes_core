@@ -19,29 +19,29 @@ from hermes_core import log
 from hermes_core.util import util, const
 from hermes_core.util.exceptions import warn_user
 
-__all__ = ["HERMESDataSchema"]
+__all__ = ["HermesDataSchema"]
 
 DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.yaml"
 DEFAULT_GLOBAL_CDF_ATTRS_FILE = "hermes_default_global_cdf_attrs.yaml"
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
 
 
-class HERMESDataSchema:
+class HermesDataSchema:
     """Class representing the schema of a file type."""
 
     def __init__(self):
         super().__init__()
 
         # Data Validation, Complaiance, Derived Attributes
-        self._global_attr_schema = HERMESDataSchema._load_default_global_attr_schema()
+        self._global_attr_schema = HermesDataSchema._load_default_global_attr_schema()
 
         # Data Validation and Compliance for Variable Data
         self._variable_attr_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
 
         # Load Default Global Attributes
-        self._default_global_attributes = HERMESDataSchema._load_default_attributes()
+        self._default_global_attributes = HermesDataSchema._load_default_attributes()
 
         self.cdftypenames = {
             const.CDF_BYTE.value: "CDF_BYTE",
@@ -111,7 +111,7 @@ class HERMESDataSchema:
             / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HermesDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_variable_attr_schema() -> dict:
@@ -122,7 +122,7 @@ class HERMESDataSchema:
             / DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE
         )
         # Load the Schema
-        return HERMESDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
+        return HermesDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
     def _load_default_attributes() -> dict:
@@ -132,7 +132,7 @@ class HERMESDataSchema:
             / "data"
             / DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE
         )
-        global_schema = HERMESDataSchema._load_yaml_data(
+        global_schema = HermesDataSchema._load_yaml_data(
             yaml_file_path=default_attributes_path
         )
         return {
@@ -175,8 +175,8 @@ class HERMESDataSchema:
             A template for required global attributes that must be provided.
         """
         template = OrderedDict()
-        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
-        default_global_attributes = HERMESDataSchema._load_default_attributes()
+        global_attribute_schema = HermesDataSchema._load_default_global_attr_schema()
+        default_global_attributes = HermesDataSchema._load_default_attributes()
         for attr_name, attr_schema in global_attribute_schema.items():
             if (
                 attr_schema["required"]
@@ -199,7 +199,7 @@ class HERMESDataSchema:
         """
         template = OrderedDict()
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
         for attr_name, attr_schema in measurement_attribute_schema[
             "attribute_key"
@@ -218,12 +218,12 @@ class HERMESDataSchema:
         - description: (`str`) A brief description of the attribute
         - default: (`str`) The default value used if none is provided
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+            :py:class:`~hermes_core.util.schema.HermesDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
         - validate: (`bool`) Whether the attribute is included in the
             :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
             are required are validated)
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
 
@@ -241,7 +241,7 @@ class HERMESDataSchema:
         ------
         KeyError: If attribute_name is not a recognized global attribute.
         """
-        global_attribute_schema = HERMESDataSchema._load_default_global_attr_schema()
+        global_attribute_schema = HermesDataSchema._load_default_global_attr_schema()
 
         # Strip the Description of New Lines
         for attr_name in global_attribute_schema.keys():
@@ -276,9 +276,9 @@ class HERMESDataSchema:
 
         - description: (`str`) A brief description of the attribute
         - derived: (`bool`) Whether the attibute can be derived by the HERMES
-            :py:class:`~hermes_core.util.schema.HERMESDataSchema` class
+            :py:class:`~hermes_core.util.schema.HermesDataSchema` class
         - required: (`bool`) Whether the attribute is required by HERMES standards
-        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HERMESDataSchema`
+        - overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
             attribute derivations will overwrite an existing attribute value with an updated
             attribute value from the derivation process.
         - valid_values: (`str`) List of allowed values the attribute can take for HERMES products,
@@ -304,7 +304,7 @@ class HERMESDataSchema:
         KeyError: If attribute_name is not a recognized global attribute.
         """
         measurement_attribute_schema = (
-            HERMESDataSchema._load_default_variable_attr_schema()
+            HermesDataSchema._load_default_variable_attr_schema()
         )
         measurement_attribute_key = measurement_attribute_schema["attribute_key"]
 
@@ -415,7 +415,7 @@ class HERMESDataSchema:
         @raise ValueError: if L{data} has irregular dimensions
 
         """
-        d = HERMESDataSchema._check_well_formed(data)
+        d = HermesDataSchema._check_well_formed(data)
         dims = d.shape
         elements = 1
         types = []
@@ -645,8 +645,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from
         var_name : `str`
             The name of the measurement to derive metadata for
         guess_types : `list[int]`, optional
@@ -728,8 +728,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------
@@ -760,8 +760,8 @@ class HERMESDataSchema:
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` to derive metadata from.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` to derive metadata from.
 
         Returns
         -------

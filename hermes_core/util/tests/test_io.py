@@ -11,10 +11,10 @@ from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.units import Quantity
 from spacepy.pycdf import CDFError, CDF
-from hermes_core.timedata import TimeData
+from hermes_core.timedata import HermesData
 
 
-def get_test_timedata():
+def get_test_hermes_data():
     ts = TimeSeries()
     ts.meta.update(
         {
@@ -45,23 +45,24 @@ def get_test_timedata():
             "CATDESC": "Test Data",
         }
     )
-    timedata = TimeData(data=ts)
-    return timedata
+    hermes_data = HermesData(timeseries=ts)
+    return hermes_data
 
 
 def test_cdf_io():
     """Test CDF IO Handler on Default Data"""
     # Get Test Datas
-    td = get_test_timedata()
+    td = get_test_hermes_data()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # Convert TimeData the to a CDF File
+        # Convert HermesData the to a CDF File
         test_file_output_path = td.save(output_path=tmpdirname)
 
-        # Load the CDF to a TimeData Object
-        td_loaded = TimeData.load(test_file_output_path)
+        # Load the CDF to a HermesData Object
+        td_loaded = HermesData.load(test_file_output_path)
 
-        assert td.shape == td_loaded.shape
+        assert len(td.timeseries) == len(td_loaded.timeseries)
+        assert len(td.timeseries.columns) == len(td_loaded.timeseries.columns)
 
         with pytest.raises(CDFError):
             td_loaded.save(output_path=tmpdirname)
@@ -72,7 +73,7 @@ def test_cdf_bad_file_path():
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Try loading from non-existant_path
         with pytest.raises(FileNotFoundError):
-            _ = TimeData.load(tmpdirname + "non_existant_file.cdf")
+            _ = HermesData.load(tmpdirname + "non_existant_file.cdf")
 
 
 def test_cdf_nrv_support_data():
@@ -80,10 +81,10 @@ def test_cdf_nrv_support_data():
     Test Loading Non-Record-Varying data with CDF IO Handler
     """
     # Get Test Datas
-    td = get_test_timedata()
+    td = get_test_hermes_data()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # Convert TimeData the to a CDF File
+        # Convert HermesData the to a CDF File
         test_file_output_path = td.save(output_path=tmpdirname)
 
         # Load the JSON file as JSON
@@ -96,7 +97,7 @@ def test_cdf_nrv_support_data():
             cdf_file["Test_Support_Var"].meta["UNITS"] = "counts"
 
         # Make sure we can load the modified JSON
-        td_loaded = TimeData.load(test_file_output_path)
+        td_loaded = HermesData.load(test_file_output_path)
 
         assert "Test_NRV_Var" in td_loaded.support
-        assert "Test_Support_Var" in td_loaded.columns
+        assert "Test_Support_Var" in td_loaded.timeseries.columns

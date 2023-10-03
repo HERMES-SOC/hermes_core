@@ -7,7 +7,7 @@ from astropy.time import Time
 from astropy.nddata import NDData
 import astropy.units as u
 from hermes_core.util.exceptions import warn_user
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["CDFHandler"]
 
@@ -16,7 +16,7 @@ __all__ = ["CDFHandler"]
 # ================================================================================================
 
 
-class TimeDataIOHandler(ABC):
+class HermesDataIOHandler(ABC):
     """
     Abstract base class for handling input/output operations of heliophysics data.
     """
@@ -47,8 +47,8 @@ class TimeDataIOHandler(ABC):
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` containing the data to be saved.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` containing the data to be saved.
         file_path : `str`
             The fully specified file path to save into.
         """
@@ -60,9 +60,9 @@ class TimeDataIOHandler(ABC):
 # ================================================================================================
 
 
-class CDFHandler(TimeDataIOHandler):
+class CDFHandler(HermesDataIOHandler):
     """
-    A concrete implementation of TimeDataIOHandler for handling heliophysics data in CDF format.
+    A concrete implementation of HermesDataIOHandler for handling heliophysics data in CDF format.
 
     This class provides methods to load and save heliophysics data from/to a CDF file.
     """
@@ -71,7 +71,7 @@ class CDFHandler(TimeDataIOHandler):
         super().__init__()
 
         # CDF Schema
-        self.schema = HERMESDataSchema()
+        self.schema = HermesDataSchema()
 
     def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
         """
@@ -156,7 +156,7 @@ class CDFHandler(TimeDataIOHandler):
                             self._load_data_variable(ts, var_name, var_data, var_attrs)
                         except ValueError:
                             warn_user(
-                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS {u.dimensionless_unscaled}."
+                                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
                             )
                             # Swap Units
                             var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
@@ -192,8 +192,8 @@ class CDFHandler(TimeDataIOHandler):
 
         Parameters
         ----------
-        data : `hermes_core.timedata.TimeData`
-            An instance of `TimeData` containing the data to be saved.
+        data : `hermes_core.timedata.HermesData`
+            An instance of `HermesData` containing the data to be saved.
         file_path : `str`
             The path to save the CDF file.
 
@@ -228,7 +228,8 @@ class CDFHandler(TimeDataIOHandler):
 
     def _convert_variable_attributes_to_cdf(self, data, cdf_file):
         # Loop through Variable Attributes
-        for var_name, var_data in data.__iter__():
+        for var_name in data.timeseries.colnames:
+            var_data = data.timeseries[var_name]
             if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 cdf_file["Epoch"] = var_data.to_datetime()

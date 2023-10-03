@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
-from hermes_core.util.schema import HERMESDataSchema
+from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["validate", "CDFValidator"]
 
@@ -35,7 +35,7 @@ def validate(filepath: str) -> list[str]:
     return validator.validate(filepath)
 
 
-class TimeDataValidator(ABC):
+class HermesDataValidator(ABC):
     """
     Abstract base class for heliophysics data validators.
     """
@@ -58,7 +58,7 @@ class TimeDataValidator(ABC):
         pass
 
 
-class CDFValidator(TimeDataValidator):
+class CDFValidator(HermesDataValidator):
     """
     Validator for CDF files.
     """
@@ -67,7 +67,7 @@ class CDFValidator(TimeDataValidator):
         super().__init__()
 
         # CDF Schema
-        self.schema = HERMESDataSchema()
+        self.schema = HermesDataSchema()
 
     def validate(self, file_path: str) -> list[str]:
         """
