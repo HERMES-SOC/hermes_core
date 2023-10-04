@@ -56,7 +56,8 @@ test = [
   'pytest',
   'pytest-astropy',
   'pytest-cov',
-  'coverage[toml]'
+  'coverage[toml]',
+  'sphinx',
 ]
 
 style = [

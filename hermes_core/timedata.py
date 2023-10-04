@@ -542,12 +542,14 @@ class HermesData:
         else:
             # Check to see if we need to maintain the aligned axes
             if self._spectra.aligned_axes:
-                first_aligned_axes = self._spectra.aligned_axes[self._spectra._first_key]
+                first_aligned_axes = self._spectra.aligned_axes[
+                    self._spectra._first_key
+                ]
                 aligned_axes = tuple(0 for _ in range(len(first_aligned_axes)))
                 self._spectra.update([(name, data)], aligned_axes)
             else:
                 self._spectra.update([(name, data)], self._spectra.aligned_axes)
-                
+
         # Add any Metadata Passed not in the NDCube
         if meta:
             self._spectra[name].meta.update(meta)
