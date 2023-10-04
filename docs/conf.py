@@ -44,6 +44,7 @@ extensions = [
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
     "sphinx_copybutton",
+    "hermes_core.util.sphinx.code_context",
 ]
 
 # Set automodapi to generate files inside the generated directory
@@ -108,6 +109,7 @@ intersphinx_mapping = {
     ),
     "astropy": ("http://docs.astropy.org/en/stable/", None),
     "sunpy": ("https://docs.sunpy.org/en/stable/", None),
+    "ndcube": ("https://docs.sunpy.org/projects/ndcube/en/stable/", None),
 }
 
 # -- Options for HTML output -------------------------------------------------

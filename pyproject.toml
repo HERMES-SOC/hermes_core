@@ -31,7 +31,7 @@ dependencies = [
   'numpy>=1.18.0',
   'sunpy>=5.0.1',
   'spacepy>=0.4.1',
-  'ndcube>=2.0.3',
+  'ndcube>=2.1.3',
   'pyyaml>=5.3.1',
 ]
 
@@ -76,6 +76,7 @@ write_to = "hermes_core/_version.py"
 [tool.pytest.ini_options]
 testpaths = [
    "hermes_core/tests",
+   "hermes_core/util/tests",
    "docs"
 ]
 doctest_plus = "enabled"
@@ -84,6 +85,7 @@ addopts = "--doctest-rst"
 
 [tool.coverage.run]
 omit = [
+  'hermes_core/util/sphinx/*',
   'hermes_core/__init*',
   'hermes_core/conftest.py',
   'hermes_core/*setup_package*',

@@ -11,6 +11,10 @@ measurement data easier when reading and writing CDF data.
     import numpy as np
     import astropy.units as u
     from astropy.timeseries import TimeSeries
+    from astropy.nddata import NDData
+    from astropy.wcs import WCS
+    from ndcube import NDCube, NDCollection
+    import tempfile
 
     # Import the `hermes_core` Package
     from hermes_core.timedata import HermesData
@@ -30,6 +34,26 @@ measurement data easier when reading and writing CDF data.
     # You can also add new measurements to the TimeSeries directly
     ts.add_column(col=u.Quantity(value=by, unit="nanoTesla", dtype=np.int16),
         name="By GSE")
+
+    # Create support data or non-time-varying (time invariant) data
+    support_data = {
+        "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    }
+
+    # Create high-dimensional data leveraging the API of NDCube
+    spectra = NDCollection(
+        [
+            (
+                "example_spectra",
+                NDCube(
+                    data=np.random.random(size=(4, 10)),
+                    wcs=WCS(naxis=2),
+                    meta={"CATDESC": "Example Spectra Variable"},
+                    unit="eV",
+                ),
+            )
+        ]
+    )
 
     # To make the creation of global metadata easier you can use the static
     # `HermesData.global_attribute_template()` function.
@@ -60,19 +84,24 @@ measurement data easier when reading and writing CDF data.
     global_attrs_template["PI_name"] = "Dr. Eftyhia Zesta"
     global_attrs_template["TEXT"] = "Sample HERMES NEMISIS CDF File"
 
-    example_data = HermesData(timeseries=ts, meta=global_attrs_template)
+    example_data = HermesData(
+        timeseries=ts, 
+        support=support_data, 
+        spectra=spectra, 
+        meta=global_attrs_template
+    )
 
     # To make the creation of variable metadata easier you can use the static
     # `HermesData.measurement_attribute_template()` function.
     template = HermesData.measurement_attribute_template()
 
     # Update the Metadata for each of the Measurements
-    example_data["Bx GSE"].meta.update(
+    example_data.tiemseries["Bx GSE"].meta.update(
         OrderedDict({"CATDESC": "X component of magnetic Field GSE"}))
-    example_data["By GSE"].meta.update(
+    example_data.tiemseries["By GSE"].meta.update(
         OrderedDict({"CATDESC": "Y component of magnetic Field GSE"}))
 
-    # You can also add new Measurements to the HermesData container
+    # You can add new scalar time-variant measurements to the HermesData container
     bz = np.random.choice(a=[-1, 0, 1], size=1000).cumsum(0)
     example_data.add_measurement(
         measure_name="Bz GSE",
@@ -83,8 +112,36 @@ measurement data easier when reading and writing CDF data.
         },
     )
 
+    # You can add new time-invariant data to the HermesData container
+    example_data.add_support(
+        name="calibration_const",
+        data=NDData(data=[1e-1]),
+        meta={
+            "CATDESC": "Calibration Factor", 
+            "VAR_TYPE": "metadata"
+        },
+    )
+
+    # You can ass new spectral or high-dimensional data to the HermesData container
+    data = NDCube(
+        data=np.random.random(size=(1000, 10)),
+        wcs=WCS(naxis=2),
+        meta={"CATDESC": "Example Spectra Variable"},
+        unit="eV",
+    )
+    example_data.add_spectra(
+        name="added_spectra",
+        data=data,
+        meta={"VAR_TYPE": "data"},
+    )
+
     # create the CDF File
-    cdf_file_path = example_data.save(output_path="./", overwrite=True)
+    DRYRUN=True
+    if DRYRUN:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            cdf_file_path = example_data.save(output_path=tmpdirname)
+    else:
+        cdf_file_path = example_data.save(output_path="./", overwrite=True)
 
 The file that this code generates is made available as a sample file in this
-repository in :file:`hermes_core/data/sample/hermes_nms_default_l1_20160322_123031_v0.0.1.cdf`.
+repository in :file:`hermes_core/data/sample/hermes_nms_default_l1_20160322T123031_v0.0.1.cdf`.
