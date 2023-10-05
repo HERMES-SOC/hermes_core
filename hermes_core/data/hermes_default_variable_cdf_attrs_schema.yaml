@@ -344,6 +344,134 @@ attribute_key:
     overwrite: false
     valid_values: null
     alternate: null
+  WCSAXES:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. 
+      The value field shall contain a non-negative integer no
+      greater than 999, representing the number of axes in the associated
+      data array.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  MJDREF:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a floating
+      point number representing the reference time position of the time stamps along the 
+      0'th axis of the measurement.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TIMEUNIT:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a character
+      string giving the units of the time stamps along the 0'th axis of the measurement. 
+      The TIMEUNIT should match the CUNITi along the time axis of the measurement
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  TIMEDEL:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. The value shall contain a floating
+      point number representing the resolution of the time stamps along the 0'th axis of 
+      the measurement. The TIMEDEL should match the CRDELi along the time axis of the 
+      measurement.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CNAMEi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value shall contain a charachter string represnting the name of the i'th axis.
+      The name is used for comment/documentation purposes only and is not used as a part
+      of the i'th axis coordinate transformations.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CTYPEi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a character string, giving
+      the name of the coordinate represented by axis i.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CUNITi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value shall be the units along axis i, compatible with CTYPEi to be used for
+      scaling and coordinate transformations along the i'th axis. 
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CRPIXi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number, 
+      identifying the location of a reference point along axis i, in units of
+      the axis index.  This value is based upon a counter that runs from 1 to
+      NAXISn with an increment of 1 per pixel.  The reference point value
+      need not be that for the center of a pixel nor lie within the actual
+      data array.  Use comments to indicate the location of the index point
+      relative to the pixel.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CRVALi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number,
+      giving the value of the coordinate specified by the CTYPEn keyword at
+      the reference point CRPIXi.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
+  CDELTi:
+    description: > 
+      This is a FITS WCS Keyword being repurposed for handling WCS transformations with 
+      high-dimensional or spectral CDF data variables. This metadata attribte should be 
+      used for the i'th dimension (1-based) and reapeated for all WCSAXES dimensions. 
+      The value field shall contain a floating point number 
+      giving the partial derivative of the coordinate specified by the CTYPEi 
+      keywords with respect to the pixel index, evaluated at the reference 
+      point CRPIXi, in units of the coordinate specified by  the CTYPEi 
+      keyword.
+    derived: true
+    required: false   # NOT Required in HERMES Format Guide
+    overwrite: false
+    valid_values: null
+    alternate: null
 data:
   - CATDESC
   - DEPEND_0

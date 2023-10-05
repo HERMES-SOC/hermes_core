@@ -87,8 +87,9 @@ class HermesDataSchema:
             const.CDF_TIME_TT2000.value,
         ]
 
-        # Dict of Iterable WCS Keywords / Astropy Properties that are stored as lists
-        # Where there is one entry for each dimension in the astropy.WCS object
+        # List of Tuple of (WCS Keyword, Astropy Property, Default Value)
+        # There is one entry for each keyword/property along each dimension of
+        # the spectra scored in the astropy.wcs.WCS object
         self.wcs_keyword_to_astropy_property = [
             ("CNAME", "cname", "NoName"),
             ("CTYPE", "ctype", "TEST"),
@@ -732,7 +733,7 @@ class HermesDataSchema:
             )
 
         # Derive Attributes Specific to `spectra` Data
-        if isinstance(var_data, NDCube):
+        if hasattr(var_data, "wcs") and getattr(var_data, "wcs") is not None:
             spectra_attributes = self._derive_spectra_attributes(var_data)
             measurement_attributes.update(spectra_attributes)
 
@@ -832,18 +833,15 @@ class HermesDataSchema:
                 dimension_attr_name = (
                     f"{keyword}{dimension_i+1}"  # KeynameName Indexed 1-4 vs 0-3
                 )
-                # Get the Property for the given WCS Keyword for the given Axis
-                property_value = getattr(var_data.wcs.wcs, prop)[dimension_i]
-                # Convert to a String as needed
-                if isinstance(property_value, u.UnitBase):
-                    property_value = property_value.to_string()
                 # Add the Property Value for the given Axis as a Metadata Attribute
-                spectra_attributes[dimension_attr_name] = property_value
+                spectra_attributes[dimension_attr_name] = self._get_wcs_dimension_attr(
+                    var_data=var_data, prop=prop, dimension=dimension_i
+                )
 
         # Derive WCS Time Attributes
-        spectra_attributes["MJDREF"] = var_data.wcs.wcs.mjdref[0]
-        spectra_attributes["TIMEUNIT"] = var_data.wcs.wcs.timeunit
-        spectra_attributes["TIMEDEL"] = var_data.wcs.wcs.timedel
+        spectra_attributes["MJDREF"] = self._get_wcs_timeref(var_data)
+        spectra_attributes["TIMEUNIT"] = self._get_wcs_timeunit(var_data)
+        spectra_attributes["TIMEDEL"] = self._get_wcs_timedel(var_data)
 
         return spectra_attributes
 
@@ -1146,6 +1144,50 @@ class HermesDataSchema:
         else:
             attr_value = var_data.meta[attr_name]
         return int(attr_value)
+
+    def _get_wcs_timeref(self, var_data):
+        """
+        Function to get the reference time within a spectra WCS member
+        """
+        attr_name = "MJDREF"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.mjdref[0]
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_timeunit(self, var_data):
+        """
+        Function to get the time units within a spectra WCS member
+        """
+        attr_name = "TIMEUNIT"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.timeunit
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_timedel(self, var_data):
+        """
+        Function to get the time delta (between points) within a spectra WCS member
+        """
+        attr_name = "TIMEDEL"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.timedel
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_dimension_attr(self, var_data, prop, dimension):
+        """
+        Function to get the spectra's WCS keywork property along the given axis
+        """
+        # Get the Property for the given WCS Keyword for the given Axis
+        property_value = getattr(var_data.wcs.wcs, prop)[dimension]
+        # Convert to a String as needed
+        if isinstance(property_value, u.UnitBase):
+            property_value = property_value.to_string()
+        return property_value
 
     # =============================================================================================
     #                             GLOBAL METADATA DERIVATIONS
