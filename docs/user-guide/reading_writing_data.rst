@@ -201,10 +201,18 @@ function to create a minimal subset of global metadata attributes:
 Using Defined Elements to create a ``HermesData`` Data Container
 ----------------------------------------------------------------
 
-For a complete example with instantiation of all objects in one code example: 
+Putting it all together here is instantiation of a :py:class:`~hermes_core.timedata.HermesData`
+object: 
 
-.. expanding-code-block:: python
-  :summary: Click to see full instantiation of all objects in one code example.
+    >>> from hermes_core.timedata import HermesData
+    >>> hermes_data = HermesData(
+    ...     timeseries=ts, 
+    ...     support=support_data, 
+    ...     spectra=spectra, 
+    ...     meta=input_attrs
+    ... )
+
+For a complete example with instantiation of all objects in one code example: 
 
     >>> import numpy as np
     >>> import astropy.units as u
@@ -236,17 +244,6 @@ For a complete example with instantiation of all objects in one code example:
     >>> # Create Global Metadata Attributes
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
     >>> # Create HermesData Object
-    >>> hermes_data = HermesData(
-    ...     timeseries=ts, 
-    ...     support=support_data, 
-    ...     spectra=spectra, 
-    ...     meta=input_attrs
-    ... )
-
-Putting it all together here is instantiation of a :py:class:`~hermes_core.timedata.HermesData`
-object: 
-
-    >>> from hermes_core.timedata import HermesData
     >>> hermes_data = HermesData(
     ...     timeseries=ts, 
     ...     support=support_data, 

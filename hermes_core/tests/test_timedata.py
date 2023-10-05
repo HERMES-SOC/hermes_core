@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 from pathlib import Path
-import datetime
 import pytest
 import numpy as np
 from numpy.random import random
@@ -13,12 +12,10 @@ from astropy.time import Time
 from astropy.units import Quantity
 import astropy.units as u
 from astropy.nddata import NDData
-import astropy.wcs
-from ndcube import NDCollection
-from ndcube import NDCube
+from astropy.wcs import WCS
+from ndcube import NDCube, NDCollection
 from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
-import hermes_core
 from hermes_core.timedata import HermesData
 from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util.validation import validate
@@ -89,7 +86,7 @@ def get_test_hermes_data():
                 "test_spectra",
                 NDCube(
                     data=random(size=(4, 10)),
-                    wcs=astropy.wcs.WCS(naxis=2),
+                    wcs=WCS(naxis=2),
                     meta={"CATDESC": "Test Spectra Variable"},
                     unit="eV",
                 ),
@@ -217,7 +214,7 @@ def test_spectra_data():
                 "test_spectra",
                 NDCube(
                     data=random(size=(10, 10)),
-                    wcs=astropy.wcs.WCS(naxis=2),
+                    wcs=WCS(naxis=2),
                     meta={"CATDESC": "Test Spectra Variable"},
                     unit="eV",
                 ),
@@ -467,7 +464,7 @@ def test_hermes_data_add_spectra():
     # Add Test Data
     data = NDCube(
         data=random(size=(10, 10)),
-        wcs=astropy.wcs.WCS(naxis=2),
+        wcs=WCS(naxis=2),
         meta={"CATDESC": "Test Spectra Variable"},
         unit="eV",
     )
@@ -484,7 +481,7 @@ def test_hermes_data_add_spectra():
     # Add a Second NDCube
     data = NDCube(
         data=random(size=(10, 10)),
-        wcs=astropy.wcs.WCS(naxis=2),
+        wcs=WCS(naxis=2),
         meta={"CATDESC": "Second Spectra Variable"},
         unit="eV",
     )

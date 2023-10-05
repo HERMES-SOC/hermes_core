@@ -11,9 +11,8 @@ from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.units import Quantity
 from astropy.nddata import NDData
-import astropy.wcs
-from ndcube import NDCollection
-from ndcube import NDCube
+from astropy.wcs import WCS
+from ndcube import NDCube, NDCollection
 from spacepy.pycdf import CDFError, CDF
 from hermes_core.timedata import HermesData
 
@@ -63,7 +62,7 @@ def get_test_hermes_data():
                 "test_spectra",
                 NDCube(
                     data=random(size=(10, 10)),
-                    wcs=astropy.wcs.WCS(naxis=2),
+                    wcs=WCS(naxis=2),
                     meta={"CATDESC": "Test Spectra Variable"},
                     unit="eV",
                 ),

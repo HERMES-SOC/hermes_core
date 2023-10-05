@@ -57,7 +57,6 @@ test = [
   'pytest-astropy',
   'pytest-cov',
   'coverage[toml]',
-  'sphinx',
 ]
 
 style = [
@@ -86,7 +85,6 @@ addopts = "--doctest-rst"
 
 [tool.coverage.run]
 omit = [
-  'hermes_core/util/sphinx/*',
   'hermes_core/__init*',
   'hermes_core/conftest.py',
   'hermes_core/*setup_package*',

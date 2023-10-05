@@ -4,7 +4,6 @@ Container class for Measurement Data.
 
 from pathlib import Path
 from collections import OrderedDict
-from copy import deepcopy
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
@@ -148,7 +147,7 @@ class HermesData:
 
         # Copy the Non-Record Varying Data
         if support:
-            self._support = deepcopy(support)
+            self._support = support
         else:
             self._support = {}
 

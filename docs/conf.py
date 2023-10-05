@@ -44,7 +44,6 @@ extensions = [
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
     "sphinx_copybutton",
-    "hermes_core.util.sphinx.code_context",
 ]
 
 # Set automodapi to generate files inside the generated directory

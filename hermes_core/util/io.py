@@ -4,7 +4,7 @@ from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.nddata import NDData
-import astropy.wcs
+from astropy.wcs import WCS
 import astropy.units as u
 from ndcube import NDCollection
 from ndcube import NDCube
@@ -254,7 +254,7 @@ class CDFHandler(HermesDataIOHandler):
             naxis = int(var_attrs["WCSAXES"])
         else:
             naxis = len(var_data.shape)
-        wcs = astropy.wcs.WCS(naxis=naxis)
+        wcs = WCS(naxis=naxis)
 
         for keyword, prop, default in self.schema.wcs_keyword_to_astropy_property:
             prop_value = self._get_tensor_attribute(
