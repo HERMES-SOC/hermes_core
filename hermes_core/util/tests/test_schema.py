@@ -306,24 +306,24 @@ def test_min_max_TT2000():
     """Get min/max values for TT2000 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_TIME_TT2000)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(2292, 4, 11, 11, 46, 7, 670776)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Epoch16():
     """Get min/max values for Epoch16 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH16)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Epoch():
     """Get min/max values for EPOCH types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Float():
