@@ -209,11 +209,6 @@ class CDFValidator(HermesDataValidator):
                                 f"Was {attr_value}, expected one of {attr_valid_values}",
                             )
                         )
-        # Validate `FORMAT` Attribute on the Variable
-        if "FORMAT" in var_type_attrs and "FORMAT" in var_data.meta:
-            format_errors = self._validate_format(cdf_file=cdf_file, var_name=var_name)
-            if format_errors:
-                variable_errors.append(format_errors)
 
         # Validate Variable using ISTP Module `VariableChecks` class
         variable_checks_errors = self._variable_checks(
@@ -222,19 +217,6 @@ class CDFValidator(HermesDataValidator):
         variable_errors.extend(variable_checks_errors)
 
         return variable_errors
-
-    def _validate_format(self, cdf_file: CDF, var_name: str):
-        # Save the Current Format
-        variable_format = cdf_file[var_name].meta["FORMAT"]
-        # Get the target Format for the Variable
-        target_format = self.schema._get_format(
-            var_data=cdf_file[var_name], cdftype=cdf_file[var_name].type()
-        )
-
-        if variable_format != target_format:
-            return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format '{target_format}'"
-        else:
-            return None
 
     def _file_checks(self, cdf_file: CDF):
         """
@@ -282,13 +264,19 @@ class CDFValidator(HermesDataValidator):
             # This function makes incorrect assumptions that the variable name must exactly
             # match the FILEDNAM metadata attribute.
             # VariableChecks.fieldnam,
-            VariableChecks.fillval,
+            # This function makes incorrect assumtions that the FILLVAL must be derived from
+            # the CDF data type of the variable. A FILLVAL should be allowed to be set as needed by
+            # instrument team developers.
+            # VariableChecks.fillval,
             VariableChecks.recordcount,
             # This function makes incorrect assumptions about the valid DISPLAY_TYPE options
             # based on the shape of the variable data.
             # VariableChecks.validdisplaytype,
-            VariableChecks.validrange,
-            VariableChecks.validscale,
+            # This Function makes inforrect assumptions that the VLIDMIN and VLIDIMAX must be
+            # derived from the CDF data type of the variable. A VALIDMIN and VALIDMAX should be
+            # allowed to be set as needed by instrument team developers.
+            # VariableChecks.validrange,
+            # VariableChecks.validscale,
         ]
 
         # Loop through the Functions we want to check

@@ -116,7 +116,6 @@ def test_missing_variable_attrs():
             del cdf["measurement"].meta["CATDESC"]
             del cdf["measurement"].meta["UNITS"]
             cdf["measurement"].meta["DISPLAY_TYPE"] = "bad_type"
-            cdf["measurement"].meta["FORMAT"] = "bad_format"
 
         # Validate
         result = validate(out_file)
@@ -129,7 +128,3 @@ def test_missing_variable_attrs():
             "Variable: measurement Attribute 'DISPLAY_TYPE' not one of valid options.",
             "Was bad_type, expected one of time_series time_series>noerrorbars spectrogram stack_plot image",
         ) in result
-        assert (
-            "Variable: measurement Attribute 'FORMAT' value 'bad_format' does not match derrived format 'I5'"
-            in result
-        )

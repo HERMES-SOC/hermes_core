@@ -354,7 +354,7 @@ def test_format():
         (const.CDF_FLOAT.value, "F6.3", 1, 10),
         (const.CDF_FLOAT.value, "F6.2", 1, 100),
         (const.CDF_FLOAT.value, "F6.1", 1, 1000),
-        (const.CDF_FLOAT.value, "G10.2E3", 1, -1),
+        (const.CDF_FLOAT.value, "G10.8E3", 1, -1),
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:

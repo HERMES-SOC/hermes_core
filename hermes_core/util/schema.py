@@ -962,7 +962,7 @@ class HermesDataSchema:
             else:
                 # No range, must not be populated, copied from REAL4/8(s) above
                 # OR we don't care because it's a 'big' number:
-                fmt = "G10.2E3"
+                fmt = "G10.8E3"
         elif cdftype in (
             const.CDF_CHAR.value,
             const.CDF_UCHAR.value,
