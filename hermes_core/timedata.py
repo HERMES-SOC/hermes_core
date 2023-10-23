@@ -165,7 +165,7 @@ class HermesData:
             self._support = deepcopy(support)
         else:
             self._support = {}
-            
+
         # Add Support Metadata
         for key in self._support:
             if hasattr(support[key], "meta"):
