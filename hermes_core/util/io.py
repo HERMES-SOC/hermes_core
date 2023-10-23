@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Tuple
 from collections import OrderedDict
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
@@ -24,7 +25,7 @@ class HermesDataIOHandler(ABC):
     """
 
     @abstractmethod
-    def load_data(self, file_path):
+    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
         """
         Load data from a file.
 
@@ -37,11 +38,13 @@ class HermesDataIOHandler(ABC):
         -------
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
+        support : `dict[astropy.nddata.NDData]`
+            Non-record-varying data contained in the file
         """
         pass
 
     @abstractmethod
-    def save_data(self, data, file_path):
+    def save_data(self, data, file_path: str):
         """
         Save data to a file.
 
@@ -73,7 +76,7 @@ class CDFHandler(HermesDataIOHandler):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def load_data(self, file_path):
+    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
         """
         Load heliophysics data from a CDF file.
 
@@ -86,7 +89,7 @@ class CDFHandler(HermesDataIOHandler):
         -------
         data : `~astropy.time.TimeSeries`
             An instance of `TimeSeries` containing the loaded data.
-        support : `dict`
+        support : `dict[astropy.nddata.NDData]`
             Non-record-varying data contained in the file
         """
         from spacepy.pycdf import CDF
@@ -294,7 +297,7 @@ class CDFHandler(HermesDataIOHandler):
         # Add to Spectra
         spectra.append((var_name, var_cube))
 
-    def save_data(self, data, file_path):
+    def save_data(self, data, file_path: str):
         """
         Save heliophysics data to a CDF file.
 

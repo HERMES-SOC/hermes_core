@@ -4,12 +4,16 @@ Container class for Measurement Data.
 
 from pathlib import Path
 from collections import OrderedDict
+from copy import deepcopy
+from typing import Optional, Union
 import numpy as np
+import astropy
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy.nddata import NDData
 from astropy import units as u
+import ndcube
 from ndcube import NDCube, NDCollection
 import hermes_core
 from hermes_core.util.io import CDFHandler
@@ -28,12 +32,12 @@ class HermesData:
     ----------
     timeseries :  `astropy.timeseries.TimeSeries`
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
-    support : `dict[astropy.nddata.NDData]`, optional
+    support : `Optional[dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]]`
         Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
-    spectra : `ndcube.NDCollection`
+    spectra : `Optional[ndcube.NDCollection]`
         One or more `ndcube.NDCube` objects containing spectral or higher-dimensional
         timeseries data.
-    meta : `dict`, optional
+    meta : `Optional[dict]`
         The metadata describing the time series in an ISTP-compliant format.
 
     Examples
@@ -89,7 +93,15 @@ class HermesData:
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
-    def __init__(self, timeseries, support=None, spectra=None, meta=None):
+    def __init__(
+        self,
+        timeseries: astropy.timeseries.TimeSeries,
+        support: Optional[
+            dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]
+        ] = None,
+        spectra: Optional[ndcube.NDCollection] = None,
+        meta: Optional[dict] = None,
+    ):
         # Verify TimeSeries compliance
         if not isinstance(timeseries, TimeSeries):
             raise TypeError(
@@ -113,10 +125,13 @@ class HermesData:
 
         # Check NRV Data
         if support is not None:
-            for colname in support:
-                if not (isinstance(support[colname], NDData)):
+            for key in support:
+                if not (
+                    isinstance(support[key], u.Quantity)
+                    or isinstance(support[key], NDData)
+                ):
                     raise TypeError(
-                        f"Support Variable '{colname}' must be an astropy.nddata.NDData object"
+                        f"Variable '{key}' must be an astropy.units.Quantity or astropy.nddata.NDData object"
                     )
 
         # Check Higher-Dimensional Spectra
@@ -147,9 +162,16 @@ class HermesData:
 
         # Copy the Non-Record Varying Data
         if support:
-            self._support = support
+            self._support = deepcopy(support)
         else:
             self._support = {}
+            
+        # Add Support Metadata
+        for key in self._support:
+            if hasattr(support[key], "meta"):
+                self._support[key].meta.update(support[key].meta)
+            else:
+                self._support[key].meta = self.measurement_attribute_template()
 
         # Copy the High-Dimensional Spectra
         if spectra:
@@ -171,7 +193,7 @@ class HermesData:
     @property
     def support(self):
         """
-        (`dict[astropy.nddata.NDData]`) A `dict` containing one or more non-time-varying support variables.
+        (`dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]`) A `dict` containing one or more non-time-varying support variables.
         """
         return self._support
 
@@ -247,7 +269,9 @@ class HermesData:
         return str_repr
 
     @staticmethod
-    def global_attribute_template(instr_name="", data_level="", version=""):
+    def global_attribute_template(
+        instr_name: str = "", data_level: str = "", version: str = ""
+    ) -> OrderedDict:
         """
         Function to generate a template of the required ISTP-compliant global attributes.
 
@@ -301,7 +325,7 @@ class HermesData:
         return meta
 
     @staticmethod
-    def measurement_attribute_template():
+    def measurement_attribute_template() -> OrderedDict:
         """
         Function to generate a template of the required measurement attributes.
 
@@ -483,7 +507,12 @@ class HermesData:
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
-    def add_support(self, name: str, data: NDData, meta: dict = None):
+    def add_support(
+        self,
+        name: str,
+        data: Union[astropy.units.Quantity, astropy.nddata.NDData],
+        meta: Optional[dict] = None,
+    ):
         """
         Add a new non-time-varying data array.
 
@@ -491,9 +520,9 @@ class HermesData:
         ----------
         name: `str`
             Name of the data array to add.
-        data: `astropy.nddata.NDData`,
+        data: `Union[astropy.units.Quantity, astropy.nddata.NDData]`,
             The data to add.
-        meta: `dict`, optional
+        meta: `Optional[dict]`, optional
             The metadata associated for the data array.
 
         Raises
@@ -501,10 +530,15 @@ class HermesData:
         TypeError: If var_data is not of type NDData.
         """
         # Verify that all Measurements are `NDData`
-        if not isinstance(data, NDData):
+        if not (isinstance(data, u.Quantity) or isinstance(data, NDData)):
             raise TypeError(f"Measurement {name} must be type `astropy.nddata.NDData`.")
 
         self._support[name] = data
+        # Add any Metadata from the original Quantity or NDData
+        if hasattr(data, "meta"):
+            self._support[name].meta.update(data.meta)
+        else:
+            self._support[name].meta = self.measurement_attribute_template()
         # Add any Metadata Passed not in the NDData
         if meta:
             self._support[name].meta.update(meta)
@@ -724,7 +758,7 @@ class HermesData:
         # Re-Derive Metadata
         self._derive_metadata()
 
-    def save(self, output_path=None, overwrite=False):
+    def save(self, output_path: str = None, overwrite: bool = False):
         """
         Save the data to a HERMES CDF file.
 
@@ -750,7 +784,7 @@ class HermesData:
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod
-    def load(cls, file_path):
+    def load(cls, file_path: str):
         """
         Load data from a file.
 
