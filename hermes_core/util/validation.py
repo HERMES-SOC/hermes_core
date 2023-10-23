@@ -1,6 +1,7 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 import numpy as np
+from typing import Union
 from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
 from hermes_core.util.schema import HermesDataSchema
@@ -8,7 +9,7 @@ from hermes_core.util.schema import HermesDataSchema
 __all__ = ["validate", "CDFValidator"]
 
 
-def validate(filepath):
+def validate(filepath: str) -> list[str]:
     """
     Validate a data file such as a CDF.
 
@@ -41,7 +42,7 @@ class HermesDataValidator(ABC):
     """
 
     @abstractmethod
-    def validate(self, file_path):
+    def validate(self, file_path: str) -> list[str]:
         """
         Validate the heliophysics data file.
 
@@ -69,7 +70,7 @@ class CDFValidator(HermesDataValidator):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def validate(self, file_path):
+    def validate(self, file_path: str) -> list[str]:
         """
         Validate the CDF file.
 
@@ -110,7 +111,7 @@ class CDFValidator(HermesDataValidator):
 
         return validation_errors
 
-    def _validate_global_attr_schema(self, cdf_file: CDF):
+    def _validate_global_attr_schema(self, cdf_file: CDF) -> list[str]:
         """
         Function to ensure all required global attributes in the schema are present
         in the generated CDF File.
@@ -137,7 +138,7 @@ class CDFValidator(HermesDataValidator):
                 )
         return global_attr_validation_errors
 
-    def _validate_variable_attr_schema(self, cdf_file: CDF):
+    def _validate_variable_attr_schema(self, cdf_file: CDF) -> list[str]:
         """
         Function to ensure all required variable attributes in the schema are present
         in the generated CDF file.
@@ -162,7 +163,9 @@ class CDFValidator(HermesDataValidator):
 
         return variable_attr_validation_errors
 
-    def _validate_variable(self, cdf_file: CDF, var_name: str, var_type: str):
+    def _validate_variable(
+        self, cdf_file: CDF, var_name: str, var_type: str
+    ) -> list[str]:
         """
         Function to Validate an individual Variable.
         """
@@ -247,7 +250,7 @@ class CDFValidator(HermesDataValidator):
 
         return file_checks_errors
 
-    def _variable_checks(self, cdf_file: CDF, var_name: str):
+    def _variable_checks(self, cdf_file: CDF, var_name: str) -> list[str]:
         """
         Function to call individual pieces of the `spacepy.pycdf.istp.VariableChecks` Class.
         We do not want to run all validation checks from this class using the `all()` function

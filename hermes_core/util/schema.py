@@ -7,10 +7,10 @@ This code is based on that provided by SpacePy see
 from pathlib import Path
 from collections import OrderedDict
 from copy import deepcopy
+from typing import Optional
 import math
 import datetime
 import yaml
-import ctypes
 import numpy as np
 from astropy.table import Table
 from astropy import units as u
@@ -89,17 +89,17 @@ class HermesDataSchema:
 
     @property
     def global_attribute_schema(self):
-        """Schema for variable attributes of the file."""
+        """(`dict`) Schema for variable attributes of the file."""
         return self._global_attr_schema
 
     @property
     def variable_attribute_schema(self):
-        """Schema for variable attributes of the file."""
+        """(`dict`) Schema for variable attributes of the file."""
         return self._variable_attr_schema
 
     @property
     def default_global_attributes(self):
-        """Default Global Attributes applied for all HERMES Data Files"""
+        """(`dict`) Default Global Attributes applied for all HERMES Data Files"""
         return self._default_global_attributes
 
     @staticmethod
@@ -125,7 +125,7 @@ class HermesDataSchema:
         return HermesDataSchema._load_yaml_data(yaml_file_path=default_schema_path)
 
     @staticmethod
-    def _load_default_attributes():
+    def _load_default_attributes() -> dict:
         # The Default Attributes file is contained in the `hermes_core/data` directory
         default_attributes_path = str(
             Path(hermes_core.__file__).parent
@@ -142,7 +142,7 @@ class HermesDataSchema:
         }
 
     @staticmethod
-    def _load_yaml_data(yaml_file_path):
+    def _load_yaml_data(yaml_file_path: str) -> dict:
         """
         Function to load data from a Yaml file.
 
@@ -164,7 +164,7 @@ class HermesDataSchema:
         return yaml_data
 
     @staticmethod
-    def global_attribute_template():
+    def global_attribute_template() -> OrderedDict:
         """
         Function to generate a template of required global attributes
         that must be set for a valid CDF.
@@ -187,7 +187,7 @@ class HermesDataSchema:
         return template
 
     @staticmethod
-    def measurement_attribute_template():
+    def measurement_attribute_template() -> OrderedDict:
         """
         Function to generate a template of required measurement attributes
         that must be set for a valid CDF measurement variable.
@@ -209,7 +209,7 @@ class HermesDataSchema:
         return template
 
     @staticmethod
-    def global_attribute_info(attribute_name=None):
+    def global_attribute_info(attribute_name: Optional[str] = None) -> Table:
         """
         Function to generate a `astropy.table.Table` of information about each global
         metadata attribute. The `astropy.table.Table` contains all information in the HERMES
@@ -268,7 +268,7 @@ class HermesDataSchema:
         return info
 
     @staticmethod
-    def measurement_attribute_info(attribute_name=None):
+    def measurement_attribute_info(attribute_name: Optional[str] = None) -> Table:
         """
         Function to generate a `astropy.table.Table` of information about each variable
         metadata attribute. The `astropy.table.Table` contains all information in the HERMES
@@ -630,7 +630,9 @@ class HermesDataSchema:
             raise ValueError("Unknown data type: {}".format(cdftype))
         return (inf.min, inf.max)
 
-    def derive_measurement_attributes(self, data, var_name, guess_types=None):
+    def derive_measurement_attributes(
+        self, data, var_name: str, guess_types: Optional[list[int]] = None
+    ) -> OrderedDict:
         """
         Function to derive metadata for the given measurement.
 
@@ -646,7 +648,7 @@ class HermesDataSchema:
         Returns
         -------
         attributes: `OrderedDict`
-            A dict containing `key: value` pairs of metadata attributes.
+            A dict containing `key: value` pairs of derived metadata attributes.
         """
         measurement_attributes = OrderedDict()
 
@@ -713,7 +715,7 @@ class HermesDataSchema:
 
         return measurement_attributes
 
-    def derive_time_attributes(self, data):
+    def derive_time_attributes(self, data) -> OrderedDict:
         """
         Function to derive metadata for the time measurement.
 
@@ -745,7 +747,7 @@ class HermesDataSchema:
         time_attributes["UNITS"] = self._get_time_units(guess_types[0])
         return time_attributes
 
-    def derive_global_attributes(self, data):
+    def derive_global_attributes(self, data) -> OrderedDict:
         """
         Function to derive global attributes for the given measurement data.
 
