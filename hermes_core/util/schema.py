@@ -845,6 +845,13 @@ class HermesDataSchema:
         return value
 
     def _get_format(self, var_data, cdftype):
+        """
+        Format can be specified using either Fortran or C format codes.
+        For instance, "F10.3" indicates that the data should be displayed across 10 characters
+        where 3 of those characters are to the right of the decimal. For a description of FORTRAN
+        formatting codes see the docs here:
+        https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
+        """
         minn = "VALIDMIN"
         maxx = "VALIDMAX"
 
