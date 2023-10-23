@@ -107,12 +107,18 @@ You can now create the :py:class:`~hermes_core.timedata.HermesData` object,
 
 The :py:class:`~hermes_core.timedata.HermesData` object also accepts additional arbitrary data arrays, 
 so-called non-record-varying (NRV) data, which is frequently support data. These data are required to be a `dict`
-of :py:class:`~astropy.nddata.NDData` objects which are data containers for physical data.
+of :py:class:`~astropy.nddata.NDData` or :py:class:`~astropy.units.Quantity` objects which are data containers for physical data.
+The :py:class:`~hermes_core.timedata.HermesData` class supports both `Quantity` and `NDData` objects since one may have advantages
+for the type of data being represented: `Quantity` objects in this support `dict` may be more advantageous for scalar or 1D-vector
+data while `NDData` objects in this support `dict` may be more advantageous for higher-dimensional vector data. 
 A guide to the `~astropy.nddata` package is available in the `astropy documentation <https://docs.astropy.org/en/stable/nddata/>`_.
 
     >>> from astropy.nddata import NDData
-    >>> support_data = {"const_param": NDData(data=[1e-3])}
-    >>> timedata = HermesData(timeseries=ts, meta=input_attrs, support=support_data)
+    >>> support_data = {
+    ...     "const_param": u.Quantity(value=[1e-3], unit="keV", dtype=np.uint16),
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ... }
+    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs, support=support_data)
 
 The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
 Your variable metadata can be found by querying the measurement column directly.
@@ -123,7 +129,7 @@ The class does its best to fill in metadata fields if it can and leaves others b
 Those should be filled in manually.
 Be careful when editing metadata that was automatically generated as you might make the resulting CDF file non-compliant.
 
-Putting it all together here is complete example
+Putting it all together, here is complete example
 
     >>> from hermes_core.timedata import HermesData
     >>> import astropy.units as u
@@ -142,7 +148,7 @@ Creating a ``HermesData`` from an existing CDF File
 Given a current CDF File you can load it into a :py:class:`~hermes_core.timedata.HermesData` by providing a path to the CDF file::
 
     >>> from hermes_core.timedata import HermesData
-    >>> hermes_data = HermesData.load("hermes_eea_default_ql_19700101_v0.0.1.cdf") # doctest: +SKIP
+    >>> hermes_data = HermesData.load("hermes_eea_default_ql_20240406T120621_v0.0.1.cdf") # doctest: +SKIP
 
 The :py:class:`~hermes_core.timedata.HermesData` can the be updated, measurements added, metadata added, and written to a new CDF file.
 
@@ -163,9 +169,15 @@ To add non-time-varying support data use the :py:func:`~hermes_core.timedata.Her
 
     >>> hermes_data.add_support(
     ...     name="Calibration_const",
-    ...     data=NDData(data=[1e-1]),
-    ...     meta={"CATDESC": "Calibration Factor", "VAR_TYPE": "metadata"},
+    ...     data=u.Quantity(value=[1e-1], unit="keV", dtype=np.uint16),
+    ...     meta={"CATDESC": "Calibration Factor", "VAR_TYPE": "support_data"},
     ... )
+    >>> hermes_data.add_support(
+    ...     name="Data Mask",
+    ...     data=NDData(data=np.eye(5, 5, dtype=np.uint16)),
+    ...     meta={"CATDESC": "Diagonal Data Mask", "VAR_TYPE": "support_data"},
+    ... )
+
 
 Adding metadata attributes
 ==========================
@@ -192,7 +204,9 @@ to be provided upon instantiation:
 - `Data_version`
 
 A :py:class:`~hermes_core.timedata.HermesData` container cannot be created without supplying at 
-lest this subset of global metadata attributes. 
+lest this subset of global metadata attributes. For assistance in defining required global 
+attributes, please see the :py:func:`~hermes_core.timedata.HermesData.global_attribute_template`
+function. 
 
 Derived Global Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -200,8 +214,10 @@ Derived Global Attributes
 The :py:class:`~hermes_core.util.schema.HermesDataSchema` class derives several global metadata 
 attributes required for ISTP compliance. The following global attribtues are derived:
 
+- `CDF_Lib_version`
 - `Data_type`
 - `Generation_date`
+- `HERMES_version`
 - `Logical_file_id`
 - `Logical_source`
 - `Logical_source_description`
