@@ -623,21 +623,14 @@ class HermesDataSchema:
         """
         if hasattr(cdftype, "value"):
             cdftype = cdftype.value
-        if cdftype == const.CDF_EPOCH.value:
+        if cdftype in [
+            const.CDF_EPOCH.value,
+            const.CDF_EPOCH16.value,
+            const.CDF_TIME_TT2000.value,
+        ]:
             return (
-                datetime.datetime(1, 1, 1),
-                # Can get asymptotically closer, but why bother
-                datetime.datetime(9999, 12, 31, 23, 59, 59),
-            )
-        elif cdftype == const.CDF_EPOCH16.value:
-            return (
-                datetime.datetime(1, 1, 1),
-                datetime.datetime(9999, 12, 31, 23, 59, 59),
-            )
-        elif cdftype == const.CDF_TIME_TT2000.value:
-            return (
-                datetime.datetime(1, 1, 1),
-                datetime.datetime(2292, 4, 11, 11, 46, 7, 670776),
+                datetime.datetime(1900, 1, 1, 0, 0, 0, 0),
+                datetime.datetime(2250, 1, 1, 0, 0, 0, 0),
             )
         dtype = self.numpytypedict.get(cdftype, None)
         if dtype is None:
@@ -900,6 +893,13 @@ class HermesDataSchema:
         return value
 
     def _get_format(self, var_data, cdftype):
+        """
+        Format can be specified using either Fortran or C format codes.
+        For instance, "F10.3" indicates that the data should be displayed across 10 characters
+        where 3 of those characters are to the right of the decimal. For a description of FORTRAN
+        formatting codes see the docs here:
+        https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
+        """
         minn = "VALIDMIN"
         maxx = "VALIDMAX"
 
@@ -1012,7 +1012,7 @@ class HermesDataSchema:
             else:
                 # No range, must not be populated, copied from REAL4/8(s) above
                 # OR we don't care because it's a 'big' number:
-                fmt = "G10.2E3"
+                fmt = "G10.8E3"
         elif cdftype in (
             const.CDF_CHAR.value,
             const.CDF_UCHAR.value,

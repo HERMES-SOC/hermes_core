@@ -1,5 +1,6 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
+import numpy as np
 from typing import Union
 from spacepy.pycdf import CDF, CDFError
 from spacepy.pycdf.istp import FileChecks, VariableChecks
@@ -212,11 +213,6 @@ class CDFValidator(HermesDataValidator):
                                 f"Was {attr_value}, expected one of {attr_valid_values}",
                             )
                         )
-        # Validate `FORMAT` Attribute on the Variable
-        if "FORMAT" in var_type_attrs and "FORMAT" in var_data.meta:
-            format_errors = self._validate_format(cdf_file=cdf_file, var_name=var_name)
-            if format_errors:
-                variable_errors.append(format_errors)
 
         # Validate Variable using ISTP Module `VariableChecks` class
         variable_checks_errors = self._variable_checks(
@@ -226,20 +222,7 @@ class CDFValidator(HermesDataValidator):
 
         return variable_errors
 
-    def _validate_format(self, cdf_file: CDF, var_name: str) -> Union[str, None]:
-        # Save the Current Format
-        variable_format = cdf_file[var_name].meta["FORMAT"]
-        # Get the target Format for the Variable
-        target_format = self.schema._get_format(
-            var_data=cdf_file[var_name], cdftype=cdf_file[var_name].type()
-        )
-
-        if variable_format != target_format:
-            return f"Variable: {var_name} Attribute 'FORMAT' value '{variable_format}' does not match derrived format '{target_format}'"
-        else:
-            return None
-
-    def _file_checks(self, cdf_file: CDF) -> list[str]:
+    def _file_checks(self, cdf_file: CDF):
         """
         Function to call individual pieces of the `spacepy.pycdf.istp.FileChecks` Class.
         We do not want to run all validation checks from this class using the `all()` function
@@ -285,13 +268,19 @@ class CDFValidator(HermesDataValidator):
             # This function makes incorrect assumptions that the variable name must exactly
             # match the FILEDNAM metadata attribute.
             # VariableChecks.fieldnam,
-            VariableChecks.fillval,
+            # This function makes incorrect assumtions that the FILLVAL must be derived from
+            # the CDF data type of the variable. A FILLVAL should be allowed to be set as needed by
+            # instrument team developers.
+            # VariableChecks.fillval,
             VariableChecks.recordcount,
             # This function makes incorrect assumptions about the valid DISPLAY_TYPE options
             # based on the shape of the variable data.
             # VariableChecks.validdisplaytype,
-            VariableChecks.validrange,
-            VariableChecks.validscale,
+            # This Function makes inforrect assumptions that the VLIDMIN and VLIDIMAX must be
+            # derived from the CDF data type of the variable. A VALIDMIN and VALIDMAX should be
+            # allowed to be set as needed by instrument team developers.
+            self._validrange,
+            self._validscale,
         ]
 
         # Loop through the Functions we want to check
@@ -308,3 +297,170 @@ class CDFValidator(HermesDataValidator):
                 )
 
         return variable_checks_errors
+
+    def _validrange(self, v):
+        """Check that all values are within VALIDMIN/VALIDMAX, or FILLVAL
+
+        Compare all values of this variable to `VALIDMIN
+        <https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html#VALIDMIN>`_
+        and ``VALIDMAX``; fails validation if any values are below
+        VALIDMIN or above ``VALIDMAX`` unless equal to `FILLVAL
+        <https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html#FILLVAL>`_.
+
+        Parameters
+        ----------
+        v : :class:`~spacepy.pycdf.Var`
+            Variable to check
+
+        Returns
+        -------
+        list of str
+            Description of each validation failure.
+
+        """
+        return self._validhelper(v)
+
+    def _validscale(self, v):
+        """Check SCALEMIN<=SCALEMAX, and both in range for CDF datatype.
+
+        Compares `SCALEMIN
+        <https://spdf.gsfc.nasa.gov/istp_guide/vattributes.html#SCALEMIN>`_
+        to ``SCALEMAX`` to make sure it isn't larger and both are
+        within range of the variable CDF datatype.
+
+        Parameters
+        ----------
+        v : :class:`~spacepy.pycdf.Var`
+            Variable to check
+
+        Returns
+        -------
+        list of str
+            Description of each validation failure.
+
+        """
+        return self._validhelper(v, False)
+
+    def _validhelper(self, v, rng=True):
+        """Helper function for checking SCALEMIN/MAX, VALIDMIN/MAX
+
+        Parameters
+        ----------
+        v : :class:`~spacepy.pycdf.Var`
+            Variable to check
+
+        rng : bool
+            Do range check (True, default) or scale check (False)
+
+        Returns
+        -------
+        list of str
+            Description of each validation failure.
+        """
+        validscale = "VALID" if rng else "SCALE"
+        whichmin, whichmax = (
+            ("VALIDMIN", "VALIDMAX") if rng else ("SCALEMIN", "SCALEMAX")
+        )
+        errs = []
+        vshape = v.shape
+        minval, maxval = self.schema._get_minmax(v.type())
+        if rng:
+            data = v[...]
+            is_fill = False
+            if "FILLVAL" in v.attrs:
+                filldtype = self.schema.numpytypedict.get(
+                    v.attrs.type("FILLVAL"), object
+                )
+                if np.issubdtype(v.dtype, np.floating) and np.issubdtype(
+                    filldtype, np.floating
+                ):
+                    is_fill = np.isclose(data, v.attrs["FILLVAL"])
+                elif np.can_cast(np.asanyarray(v.attrs["FILLVAL"]), v.dtype):
+                    is_fill = data == v.attrs["FILLVAL"]
+        for which in (whichmin, whichmax):
+            if which not in v.attrs:
+                continue
+            attrval = v.attrs[which]
+            multidim = bool(np.shape(attrval))  # multi-dimensional
+            if multidim:  # Compare shapes, require only 1D var
+                # Match attribute dim to first non-record var dim
+                firstdim = int(v.rv())
+                if vshape[firstdim] != np.shape(attrval)[0]:
+                    errs.append(
+                        (
+                            "{} element count {} does not match first data"
+                            " dimension size {}."
+                        ).format(which, np.shape(attrval)[0], v.shape[firstdim])
+                    )
+                    continue
+                if len(vshape) != firstdim + 1:  # only one non-record dim
+                    errs.append(
+                        "Multi-element {} only valid with 1D variable.".format(which)
+                    )
+                    continue
+                if firstdim:  # Add pseudo-record dim
+                    attrval = np.reshape(attrval, (1, -1))
+            # min, max, variable data all same dtype
+            if not np.can_cast(np.asanyarray(attrval), np.asanyarray(minval).dtype):
+                errs.append(
+                    "{} type {} not comparable to variable type {}.".format(
+                        which,
+                        self.schema.cdftypenames[v.attrs.type(which)],
+                        self.schema.cdftypenames[v.type()],
+                    )
+                )
+                continue  # Cannot do comparisons
+            if np.any((minval > attrval)) or np.any((maxval < attrval)):
+                errs.append(
+                    "{} ({}) outside valid data range ({},{}).".format(
+                        which, attrval[0, :] if multidim else attrval, minval, maxval
+                    )
+                )
+            if not rng or not len(v):  # nothing to compare
+                continue
+            # Always put numpy array on the left so knows to do element compare
+            idx = (data < attrval) if which == whichmin else (data > attrval)
+            idx = np.logical_and(idx, np.logical_not(is_fill))
+            if idx.any():
+                direction = "under" if which == whichmin else "over"
+                if len(vshape) == 0:  # Scalar
+                    errs.append(
+                        "Value {} {} {} {}.".format(
+                            data,
+                            direction,
+                            which,
+                            attrval[0, :] if multidim else attrval,
+                        )
+                    )
+                    continue
+                badidx = np.nonzero(idx)
+                badvals = data[badidx]
+                if len(badidx) > 1:  # Multi-dimensional data
+                    badidx = np.transpose(badidx)  # Group by value not axis
+                else:
+                    badidx = badidx[0]  # Just recover the index value
+                if len(badvals) < 10:
+                    badvalstr = ", ".join(str(d) for d in badvals)
+                    badidxstr = ", ".join(str(d) for d in badidx)
+                    errs.append(
+                        "Value {} at index {} {} {} {}.".format(
+                            badvalstr,
+                            badidxstr,
+                            direction,
+                            which,
+                            attrval[0, :] if multidim else attrval,
+                        )
+                    )
+                else:
+                    errs.append(
+                        "{} values {} {} {}".format(
+                            len(badvals),
+                            direction,
+                            which,
+                            attrval[0, :] if multidim else attrval,
+                        )
+                    )
+        if (whichmin in v.attrs) and (whichmax in v.attrs):
+            if np.any(v.attrs[whichmin] > v.attrs[whichmax]):
+                errs.append("{} > {}.".format(whichmin, whichmax))
+        return errs
