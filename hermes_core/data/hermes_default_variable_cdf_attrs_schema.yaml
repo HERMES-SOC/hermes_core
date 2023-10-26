@@ -179,7 +179,7 @@ attribute_key:
       ISTP standard fill values are listed in Table 5-4.
     derived: true
     required: true
-    overwrite: true
+    overwrite: false
     valid_values: null
     alternate: null
   FORMAT:           # NOTE Only one of FORMAT or FORM_PTR should be present
@@ -187,10 +187,12 @@ attribute_key:
       This field allows software to properly format the associated data when displayed on a
       screen or output to a file. Format can be specified using either Fortran or C format codes.
       For instance, "F10.3" indicates that the data should be displayed across 10 characters
-      where 3 of those characters are to the right of the decimal.
+      where 3 of those characters are to the right of the decimal. For a description of FORTRAN 
+      formatting codes see the docs here: 
+      https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
     derived: true
     required: true
-    overwrite: true
+    overwrite: false
     valid_values: null
     alternate: FORM_PTR
   FORM_PTR:
@@ -272,7 +274,7 @@ attribute_key:
       value must match the data type of the variable.
     derived: true
     required: true
-    overwrite: true
+    overwrite: false
     valid_values: null
     alternate: null
   VALIDMAX:
@@ -282,7 +284,7 @@ attribute_key:
       value must match the data type of the variable.
     derived: true
     required: true
-    overwrite: true
+    overwrite: false
     valid_values: null
     alternate: null
   VAR_TYPE:

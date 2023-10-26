@@ -306,24 +306,24 @@ def test_min_max_TT2000():
     """Get min/max values for TT2000 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_TIME_TT2000)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(2292, 4, 11, 11, 46, 7, 670776)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Epoch16():
     """Get min/max values for Epoch16 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH16)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Epoch():
     """Get min/max values for EPOCH types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1, 1, 1)
-    assert maxval == datetime.datetime(9999, 12, 31, 23, 59, 59)
+    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
 
 
 def test_min_max_Float():
@@ -341,7 +341,14 @@ def test_min_max_Int():
 
 
 def test_format():
-    """Set the format"""
+    """
+    Set the format
+    Format can be specified using either Fortran or C format codes.
+    For instance, "F10.3" indicates that the data should be displayed across 10 characters
+    where 3 of those characters are to the right of the decimal. For a description of FORTRAN
+    formatting codes see the docs here:
+    https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
+    """
     # This is done by: type, expected, validmin, validmax (None okay)
     expected = (
         (const.CDF_EPOCH.value, "A24", None, None),
@@ -354,7 +361,7 @@ def test_format():
         (const.CDF_FLOAT.value, "F6.3", 1, 10),
         (const.CDF_FLOAT.value, "F6.2", 1, 100),
         (const.CDF_FLOAT.value, "F6.1", 1, 1000),
-        (const.CDF_FLOAT.value, "G10.2E3", 1, -1),
+        (const.CDF_FLOAT.value, "G10.8E3", 1, -1),
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
