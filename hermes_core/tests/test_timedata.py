@@ -83,6 +83,23 @@ def test_hermes_data_empty_ts():
         _ = HermesData(timeseries=TimeSeries())
 
 
+def test_hermes_data_single_column():
+    ts = TimeSeries()
+
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    ts["time"] = time_col
+
+    # Meta
+    input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+
+    # Create TimeSeries with only Time - no measurements
+    hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+
+    assert len(hermes_data.timeseries.columns) == 1
+
+
 def test_hermes_data_bad_ts():
     ts = get_bad_timeseries()
     with pytest.raises(TypeError):
