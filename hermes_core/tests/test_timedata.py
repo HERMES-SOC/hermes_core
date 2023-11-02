@@ -102,6 +102,57 @@ def test_hermes_data_default():
     del ts
 
 
+def test_hermes_data_missing_descriptor():
+    ts = get_test_timeseries()
+    input_attrs = {}
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Descriptor' gloabl meta attribute required for HERMES Instrument name"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
+def test_hermes_data_missing_data_level():
+    ts = get_test_timeseries()
+    input_attrs = HermesData.global_attribute_template("eea")
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Data_level' global meta attribute required for HERMES data level"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
+def test_hermes_data_missing_data_version():
+    ts = get_test_timeseries()
+    input_attrs = HermesData.global_attribute_template("eea", "l1")
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Data_version' global meta attribute is required for HERMES data version"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
 def test_multidimensional_data():
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
