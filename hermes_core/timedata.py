@@ -67,6 +67,10 @@ class HermesData:
         ] = None,
         meta: Optional[dict] = None,
     ):
+        # ================================================
+        #               VALIDATE INPUTS
+        # ================================================
+
         # Verify TimeSeries compliance
         if not isinstance(timeseries, TimeSeries):
             raise TypeError(
@@ -91,6 +95,29 @@ class HermesData:
                     f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
                 )
 
+        # Global Metadata Attributes are compiled from two places. You can pass in
+        # global metadata throug the `meta` parameter or through the `TimeSeries.meta`
+        # attribute.
+        _meta = {}
+        if meta is not None and isinstance(meta, dict):
+            _meta.update(meta)
+        if timeseries.meta is not None and isinstance(timeseries.meta, dict):
+            _meta.update(timeseries.meta)
+
+        # Check Global Metadata Requirements - Require Descriptor, Data_level, Data_Version
+        if "Descriptor" not in _meta or _meta["Descriptor"] is None:
+            raise ValueError(
+                "'Descriptor' global meta attribute required for HERMES Instrument name"
+            )
+        if "Data_level" not in _meta or _meta["Data_level"] is None:
+            raise ValueError(
+                "'Data_level' global meta attribute required for HERMES data level"
+            )
+        if "Data_version" not in _meta or _meta["Data_version"] is None:
+            raise ValueError(
+                "'Data_version' global meta attribute is required for HERMES data version"
+            )
+
         # Check NRV Data
         if support:
             for key in support:
@@ -101,6 +128,10 @@ class HermesData:
                     raise TypeError(
                         f"Variable '{key}' must be an astropy.units.Quantity or astropy.nddata.NDData object"
                     )
+
+        # ================================================
+        #         CREATE HERMES DATA STRUCTURES
+        # ================================================
 
         # Copy the TimeSeries
         self._timeseries = TimeSeries(timeseries, copy=True)
@@ -114,7 +145,7 @@ class HermesData:
         if hasattr(timeseries["time"], "meta"):
             self._timeseries["time"].meta.update(timeseries["time"].meta)
 
-        # Add Measurement Metadata
+        # Add TimeSeries Measurement Metadata
         for col in self._timeseries.columns:
             if col != "time":
                 self._timeseries[col].meta = self.measurement_attribute_template()
@@ -133,6 +164,10 @@ class HermesData:
                 self._support[key].meta.update(support[key].meta)
             else:
                 self._support[key].meta = self.measurement_attribute_template()
+
+        # ================================================
+        #           DERIVE METADATA ATTRIBUTES
+        # ================================================
 
         # Derive Metadata
         self.schema = HermesDataSchema()
