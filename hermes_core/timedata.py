@@ -72,8 +72,11 @@ class HermesData:
             raise TypeError(
                 "timeseries must be a `astropy.timeseries.TimeSeries` object."
             )
-        if len(timeseries.columns) < 2:
-            raise ValueError("timeseries must have at least 2 columns")
+
+        if len(timeseries) == 0:
+            raise ValueError(
+                "timeseries cannot be empty, must include at least a 'time' column with valid times"
+            )
 
         # Check individual Columns
         for colname in timeseries.columns:
