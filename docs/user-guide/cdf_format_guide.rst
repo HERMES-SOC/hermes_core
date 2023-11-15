@@ -194,19 +194,19 @@ Attributes Webpage <http://spdf.gsfc.nasa.gov/istp_guide/gattributes.html>`_.
 --------------------------------------
 
 The following global attributes shown in Table 4-1 are required with HERMES data products.
-HERMES-specific values are provided where applicable. For each attribute the following 
+HERMES-specific values are provided where applicable. For each attribute the following
 information is provided:
 
 * description: (`str`) A brief description of the attribute
 * default: (`str`) The default value used if none is provided
-* derived: (`bool`) Whether the attibute can be derived by the HERMES 
+* derived: (`bool`) Whether the attibute can be derived by the HERMES
   :py:class:`~hermes_core.util.schema.HermesDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
-* validate: (`bool`) Whether the attribute is included in the 
-  :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that 
+* validate: (`bool`) Whether the attribute is included in the
+  :py:func:`~hermes_core.util.validation.validate` checks (Note, not all attributes that
   are required are validated)
 * overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
-  attribute derivations will overwrite an existing attribute value with an updated 
+  attribute derivations will overwrite an existing attribute value with an updated
   attribute value from the derivation process.
 
 Note that this table is derived from :file:`hermes_core/data/hermes_default_global_cdf_attrs_schema.yaml`
@@ -258,10 +258,10 @@ products. HERMES-specific values are provided where applicable.
 5. Variables
 ============
 
-There are three types of variables that should be included in CDF files: 
-* data, 
+There are three types of variables that should be included in CDF files:
+* data,
 * support data,
-* metadata. 
+* metadata.
 
 Additionally, required attributes are listed with each variable type listed
 below.
@@ -338,7 +338,7 @@ in Table 5-2. An example data variable would be `hermes_eea_n_gse_l2`.
 Note the following caveats in the variable naming conventions:
 
 * CDF variable names must begin with a letter and can contain numbers and underscores, but no other special characters.
-* In general, the instrumentId field follows the convention used for file names as defined in Section 3.1. 
+* In general, the instrumentId field follows the convention used for file names as defined in Section 3.1.
   However, since variable names cannot contain a hyphen, an underscore should be used instead of a hyphen when needing to separate
   instrument components. For instance, "eea-ion" is a valid instrumentId in a
   filename but when used in a variable name, "eea_ion" should be used instead.
@@ -346,7 +346,7 @@ Note the following caveats in the variable naming conventions:
   will consist of all lowercase characters.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5.1.2 Required Epoch Variable 
+5.1.2 Required Epoch Variable
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All HERMES CDF data files must contain at least one variable of data type
@@ -363,7 +363,7 @@ For ISTP, but not necessarily for all HERMES data, the time value of a record re
 to the center of the accumulation period for the record if the measurement is not an
 instantaneous one. All HERMES time variables used as DEPEND_0 are strongly
 recommended to have DELTA_PLUS_VAR and DELTA_MINUS_VAR attributes which delineate the
-time interval over which the data was sampled, integrated, or otherwise representative 
+time interval over which the data was sampled, integrated, or otherwise representative
 of. This also locates the timetag within that interval.
 
 The epoch datatype, CDF_TIME_TT2000, is defined as an 8-byte signed integer with the
@@ -392,8 +392,8 @@ leap seconds since 1960; for example, for 2009, deltaAT = 34s). Pad values of -
 9223372036854775808 (0x8000000000000000) which corresponds to 1707-09-
 22T12:13:15.145224192; recommended FILLVAL is same.
 
-It is proposed that the required data variables VALIDMIN and VALIDMAX are given values 
-corresponding to the dates 1990-01-01T00:00:00 and 2100-01-01T00:00:00 as these are well 
+It is proposed that the required data variables VALIDMIN and VALIDMAX are given values
+corresponding to the dates 1990-01-01T00:00:00 and 2100-01-01T00:00:00 as these are well
 outside any expected valid times.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -474,9 +474,9 @@ underscores, but no other special characters. Support data variable names need n
 the same naming convention as Data Variables (5.1.1) but may be shortened for
 convenience.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5.3.2 Required Attributes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.3.2 Required Attributes: Support Variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * CATDESC
 * DEPEND_0 (if time varying)
@@ -508,9 +508,9 @@ Metadata variable names must begin with a letter and can contain numbers and
 underscores, but no other special characters. Metadata variable names need not follow the
 same naming convention as Data Variables (5.1.1) but may be shortened for convenience.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-5.3.2 Required Attributes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5.4.2 Required Attributes: Metadata Variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * CATDESC
 * DEPEND_0 (if time varying, this value must be “Epoch”)
@@ -524,24 +524,24 @@ same naming convention as Data Variables (5.1.1) but may be shortened for conven
 --------------------------------------
 
 The following variable attributes shown in Table 5-4 are required with HERMES data products.
-HERMES-specific values are provided where applicable. For each attribute the following 
+HERMES-specific values are provided where applicable. For each attribute the following
 information is provided:
 
 * description: (`str`) A brief description of the attribute
-* derived: (`bool`) Whether the attibute can be derived by the HERMES 
+* derived: (`bool`) Whether the attibute can be derived by the HERMES
   :py:class:`~hermes_core.util.schema.HermesDataSchema` class
 * required: (`bool`) Whether the attribute is required by HERMES standards
 * overwrite: (`bool`) Whether the :py:class:`~hermes_core.util.schema.HermesDataSchema`
-  attribute derivations will overwrite an existing attribute value with an updated 
+  attribute derivations will overwrite an existing attribute value with an updated
   attribute value from the derivation process.
 * valid_values: (`list`) List of allowed values the attribute can take for HERMES products,
   if applicable
-* alternate: (`str`) An additional attribute name that can be treated as an alternative 
-  of the given attribute. Not all attributes have an alternative and only one of a given 
-  attribute or its alternate are required. 
+* alternate: (`str`) An additional attribute name that can be treated as an alternative
+  of the given attribute. Not all attributes have an alternative and only one of a given
+  attribute or its alternate are required.
 * var_types: (`str`) A list of the variable types that require the given
   attribute to be present.
-  
+
 Note that this table is derived from :file:`hermes_core/data/hermes_default_variable_cdf_attrs_schema.yaml`
 
 .. csv-table:: Table 5-4 HERMES Variable Attribute Schema

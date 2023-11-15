@@ -24,5 +24,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: rstcheck
+      run: |
+        python -m pip install -e '.[style]'
+        rstcheck -r docs 
     - name: Build docs
       run: sphinx-build docs docs/_build/html -W -b html
