@@ -112,7 +112,7 @@ def test_hermes_data_missing_descriptor():
 
         assert (
             str(excinfo.value)
-            == "'Descriptor' gloabl meta attribute required for HERMES Instrument name"
+            == "'Descriptor' global meta attribute required for HERMES Instrument name"
         )
 
     # Test Deleting the Writer

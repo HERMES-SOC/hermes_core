@@ -104,7 +104,7 @@ class HermesData:
         # Check Global Metadata Requirements - Require Descriptor, Data_level, Data_Version
         if "Descriptor" not in _meta or _meta["Descriptor"] is None:
             raise ValueError(
-                "'Descriptor' gloabl meta attribute required for HERMES Instrument name"
+                "'Descriptor' global meta attribute required for HERMES Instrument name"
             )
         if "Data_level" not in _meta or _meta["Data_level"] is None:
             raise ValueError(
