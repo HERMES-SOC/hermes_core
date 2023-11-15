@@ -62,7 +62,7 @@ def test_hermes_data_schema():
     assert schema.variable_attribute_schema is not None
     assert isinstance(schema.variable_attribute_schema, dict)
 
-    # Default Globla Attributes
+    # Default Global Attributes
     assert schema.default_global_attributes is not None
     assert isinstance(schema.default_global_attributes, dict)
 
