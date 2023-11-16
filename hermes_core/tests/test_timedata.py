@@ -169,6 +169,18 @@ def test_hermes_data_missing_data_version():
     del ts
 
 
+def test_none_attributes():
+    test_data = get_test_hermes_data()
+
+    # Add a Variable Attribute with Value None
+    test_data.timeseries["time"].meta["none_attr"] = None
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        with pytest.raises(ValueError):
+            # Throws an error that we cannot have None attribute values
+            test_data.save(output_path=tmpdirname)
+
+
 def test_multidimensional_data():
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)

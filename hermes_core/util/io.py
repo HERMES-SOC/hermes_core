@@ -230,9 +230,6 @@ class CDFHandler(HermesDataIOHandler):
             # We cannot add None Values to the CDF Global Attrs
             if attr_value is None:
                 cdf_file.attrs[attr_name] = ""
-            elif isinstance(attr_value, Time):
-                # Convert the Attribute to Datetime before adding to CDF File
-                cdf_file.attrs[attr_name] = attr_value.to_datetime()
             else:
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
