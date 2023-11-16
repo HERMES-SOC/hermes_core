@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 from pathlib import Path
-import datetime
 import pytest
 import numpy as np
 from numpy.random import random
@@ -25,7 +24,7 @@ def get_bad_timeseries():
 
     # Create an astropy.Time object
     time = np.arange(10)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
 
@@ -261,7 +260,7 @@ def test_default_properties():
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_level": "l1>Level 1",
         "Data_version": "v0.0.1",
-        "Start_time": datetime.datetime.now()
+        "Start_time": Time.now()
     }
     # fmt: on
 
@@ -469,7 +468,7 @@ def test_hermes_data_append():
     # Append Not-Enough Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     with pytest.raises(ValueError):
@@ -478,7 +477,7 @@ def test_hermes_data_append():
     # Append Too-Many Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     ts["test1"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
