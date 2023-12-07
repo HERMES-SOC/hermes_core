@@ -9,10 +9,10 @@ from collections import OrderedDict
 from copy import deepcopy
 from typing import Optional
 import math
-import datetime
 import yaml
 import numpy as np
 from astropy.table import Table
+from astropy.time import Time
 from astropy import units as u
 import hermes_core
 from hermes_core import log
@@ -356,7 +356,7 @@ class HermesDataSchema:
             data exactly.
         """
         msg = (
-            "Data must be well-formed, regular array of number, " "string, or datetime"
+            "Data must be well-formed, regular array of number, string, or astropy.time"
         )
         try:
             d = np.asanyarray(data)
@@ -381,7 +381,7 @@ class HermesDataSchema:
         the CDF types which can represent this data. This breaks down to:
           1. Proper kind (numerical, string, time)
           2. Proper range (stores highest and lowest number)
-          3. Sufficient resolution (EPOCH16 or TT2000 required if datetime has
+          3. Sufficient resolution (EPOCH16 or TT2000 required if astropy.time has
              microseconds or below.)
 
         If more than one value satisfies the requirements, types are returned
@@ -430,14 +430,8 @@ class HermesDataSchema:
                     elements // 4,  # numpy stores as 4-byte
                     np.char.encode(d, encoding=encoding).dtype.itemsize,
                 )
-        elif d.size and hasattr(np.ma.getdata(d).flat[0], "microsecond"):
-            if max((dt.microsecond % 1000 for dt in d.flat)) > 0:
-                types = [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH]
-            else:
-                types = [const.CDF_TIME_TT2000, const.CDF_EPOCH, const.CDF_EPOCH16]
-            if backward:
-                del types[types.index(const.CDF_EPOCH16)]
-                del types[0]
+        elif isinstance(data, Time):
+            types = [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH]
         elif d is data or isinstance(data, np.generic):
             # np array came in, use its type (or byte-swapped)
             types = [
@@ -588,7 +582,7 @@ class HermesDataSchema:
     def _get_minmax(self, cdftype):
         """Find minimum, maximum possible value based on CDF type.
 
-        This returns the processed value (e.g. datetimes for Epoch
+        This returns the processed value (e.g. astropy.times for Epoch
         types) because comparisons to EPOCH16s are otherwise
         difficult.
 
@@ -616,8 +610,8 @@ class HermesDataSchema:
             const.CDF_TIME_TT2000.value,
         ]:
             return (
-                datetime.datetime(1900, 1, 1, 0, 0, 0, 0),
-                datetime.datetime(2250, 1, 1, 0, 0, 0, 0),
+                Time("1900-1-1T00:00:00.000", format="isot"),
+                Time("2250-1-1T00:00:00.000", format="isot"),
             )
         dtype = self.numpytypedict.get(cdftype, None)
         if dtype is None:
@@ -657,9 +651,7 @@ class HermesDataSchema:
         if not guess_types:
             if var_name == "time":
                 # Guess the const CDF Data Type
-                (guess_dims, guess_types, guess_elements) = self._types(
-                    var_data.to_datetime()
-                )
+                (guess_dims, guess_types, guess_elements) = self._types(var_data)
             elif hasattr(var_data, "value"):
                 # Guess the const CDF Data Type
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
@@ -732,7 +724,7 @@ class HermesDataSchema:
 
         # Get the Variable Data
         var_data = data["time"]
-        (guess_dims, guess_types, guess_elements) = self._types(var_data.to_datetime())
+        (guess_dims, guess_types, guess_elements) = self._types(var_data)
 
         time_attributes = self.derive_measurement_attributes(
             data, "time", guess_types=guess_types
@@ -812,7 +804,7 @@ class HermesDataSchema:
     def _get_fillval(self, guess_type):
         # Get the Variable Data
         if guess_type == const.CDF_TIME_TT2000.value:
-            return datetime.datetime(9999, 12, 31, 23, 59, 59, 999999)
+            return Time("9999-12-31T23:59:59.999999", format="isot")
         else:
             # Get the FILLVAL for the gussed data type
             fillval = self._fillval_helper(cdf_type=guess_type)
@@ -992,17 +984,15 @@ class HermesDataSchema:
 
     def _get_resolution(self, data):
         # Get the Variable Data
-        var_data = data.time
-        times = len(var_data)
-        if times < 2:
+        times = data.time
+        if len(times) < 2:
             raise ValueError(
                 f"Can not derive Time Resolution, need 2 samples, found {times}."
             )
-        # Calculate the Timedelta between two datetimes
-        times = var_data.to_datetime()
+        # Calculate the Timedelta between two time samples
         delta = times[1] - times[0]
         # Get the number of second between samples.
-        delta_seconds = delta.total_seconds()
+        delta_seconds = delta.to_value("s")
         return f"{delta_seconds}s"
 
     def _get_si_conversion(self, data, var_name):
@@ -1054,26 +1044,14 @@ class HermesDataSchema:
         return unit
 
     def _get_validmin(self, guess_type):
-        # Get the Variable Data
-        if guess_type == const.CDF_TIME_TT2000.value:
-            # Get the Min Value
-            minval, maxval = self._get_minmax(guess_type)
-            return minval + datetime.timedelta(seconds=1)
-        else:
-            # Get the Min Value
-            minval, maxval = self._get_minmax(guess_type)
-            return minval
+        # Get the Min Value
+        minval, _ = self._get_minmax(guess_type)
+        return minval
 
     def _get_validmax(self, guess_type):
-        # Get the Variable Data
-        if guess_type == const.CDF_TIME_TT2000.value:
-            # Get the Max Value
-            minval, maxval = self._get_minmax(guess_type)
-            return maxval - datetime.timedelta(seconds=1)
-        else:
-            # Get the Max Value
-            minval, maxval = self._get_minmax(guess_type)
-            return maxval
+        # Get the Max Value
+        _, maxval = self._get_minmax(guess_type)
+        return maxval
 
     def _get_var_type(self, data, var_name):
         # Get the Variable Data
@@ -1321,8 +1299,7 @@ class HermesDataSchema:
         """
         Function to get the date that the CDF was generated.
         """
-        day = datetime.date.today()
-        return datetime.datetime(day.year, day.month, day.day)
+        return Time.now().strftime("%Y-%m-%d")
 
     def _get_start_time(self, data):
         """

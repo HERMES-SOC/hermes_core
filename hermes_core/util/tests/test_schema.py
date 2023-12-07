@@ -1,7 +1,5 @@
 import pytest
 import tempfile
-import yaml
-import datetime
 from collections import OrderedDict
 import numpy as np
 from numpy.random import random
@@ -166,9 +164,9 @@ def test_type_guessing():
         [1, 2, 3, 4],
         [[1.2, 1.3, 1.4], [2.2, 2.3, 2.4]],
         ["hello", "there", "everybody"],
-        datetime.datetime(2009, 1, 1),
-        datetime.datetime(2009, 1, 1, 12, 15, 12, 1000),
-        datetime.datetime(2009, 1, 1, 12, 15, 12, 1),
+        Time("2009-01-01T00:00:00.00", format="isot"),
+        Time("2009-01-01T12:15:12.1000", format="isot"),
+        Time("2009-01-01T12:15:12.1", format="isot"),
         [1.0],
         0.0,
         np.array([1, 2, 3], dtype=np.int32),
@@ -211,8 +209,8 @@ def test_type_guessing():
             1,
         ),
         ((3,), [const.CDF_CHAR, const.CDF_UCHAR], 9),
-        ((), [const.CDF_TIME_TT2000, const.CDF_EPOCH, const.CDF_EPOCH16], 1),
-        ((), [const.CDF_TIME_TT2000, const.CDF_EPOCH, const.CDF_EPOCH16], 1),
+        ((), [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH], 1),
+        ((), [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH], 1),
         ((), [const.CDF_TIME_TT2000, const.CDF_EPOCH16, const.CDF_EPOCH], 1),
         (
             (1,),
@@ -306,24 +304,24 @@ def test_min_max_TT2000():
     """Get min/max values for TT2000 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_TIME_TT2000)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
-    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
+    assert minval == Time("1900-1-1T00:00:00.000", format="isot")
+    assert maxval == Time("2250-1-1T00:00:00.000", format="isot")
 
 
 def test_min_max_Epoch16():
     """Get min/max values for Epoch16 types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH16)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
-    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
+    assert minval == Time("1900-1-1T00:00:00.000", format="isot")
+    assert maxval == Time("2250-1-1T00:00:00.000", format="isot")
 
 
 def test_min_max_Epoch():
     """Get min/max values for EPOCH types"""
     minval, maxval = HermesDataSchema()._get_minmax(const.CDF_EPOCH)
     # Make sure the minimum isn't just plain invalid
-    assert minval == datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
-    assert maxval == datetime.datetime(2250, 1, 1, 0, 0, 0, 0)
+    assert minval == Time("1900-1-1T00:00:00.000", format="isot")
+    assert maxval == Time("2250-1-1T00:00:00.000", format="isot")
 
 
 def test_min_max_Float():

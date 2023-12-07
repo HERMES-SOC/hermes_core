@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 from pathlib import Path
-import datetime
 import pytest
 import numpy as np
 from numpy.random import random
@@ -25,7 +24,7 @@ def get_bad_timeseries():
 
     # Create an astropy.Time object
     time = np.arange(10)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
 
@@ -170,6 +169,18 @@ def test_hermes_data_missing_data_version():
     del ts
 
 
+def test_none_attributes():
+    test_data = get_test_hermes_data()
+
+    # Add a Variable Attribute with Value None
+    test_data.timeseries["time"].meta["none_attr"] = None
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        with pytest.raises(ValueError):
+            # Throws an error that we cannot have None attribute values
+            test_data.save(output_path=tmpdirname)
+
+
 def test_multidimensional_data():
     ts = get_test_timeseries()
     ts["var"] = Quantity(value=random(size=(10, 2)), unit="s", dtype=np.uint16)
@@ -261,7 +272,7 @@ def test_default_properties():
         "Descriptor": "EEA>Electron Electrostatic Analyzer",
         "Data_level": "l1>Level 1",
         "Data_version": "v0.0.1",
-        "Start_time": datetime.datetime.now()
+        "Start_time": Time.now()
     }
     # fmt: on
 
@@ -469,7 +480,7 @@ def test_hermes_data_append():
     # Append Not-Enough Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     with pytest.raises(ValueError):
@@ -478,7 +489,7 @@ def test_hermes_data_append():
     # Append Too-Many Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     ts["test1"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)
