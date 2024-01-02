@@ -167,10 +167,8 @@ class HermesData:
         # Check Higher-Dimensional Spectra
         if spectra is not None:
             if not isinstance(spectra, NDCollection):
-                raise TypeError(
-                    f"Spectra must be an ndcube.NDCollection object"
-                )
-        
+                raise TypeError(f"Spectra must be an ndcube.NDCollection object")
+
         # ================================================
         #         CREATE HERMES DATA STRUCTURES
         # ================================================
@@ -212,7 +210,7 @@ class HermesData:
             self._spectra = spectra
         else:
             self._spectra = NDCollection([])
-        
+
         # ================================================
         #           DERIVE METADATA ATTRIBUTES
         # ================================================
