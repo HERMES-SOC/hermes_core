@@ -640,13 +640,7 @@ class HermesData:
         elif measure_name in self._support:
             self._support.pop(measure_name)
         elif measure_name in self._spectra:
-            try:
-                self._spectra.pop(measure_name)
-            except AttributeError:
-                # There is a potential bug in the NDCollection source for the `pop()` function that
-                # throws this error when the `NDCollection.aligned_axes` are `None`.
-                # https://github.com/sunpy/ndcube/issues/641
-                pass
+            self._spectra.pop(measure_name)
         else:
             raise ValueError(f"Data for Measurement {measure_name} not found.")
 
