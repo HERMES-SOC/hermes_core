@@ -41,6 +41,8 @@ class HermesDataIOHandler(ABC):
             An instance of `TimeSeries` containing the loaded data.
         support : `dict[astropy.nddata.NDData]`
             Non-record-varying data contained in the file
+        spectra : `ndcube.NDCollection`
+            Spectral or High-dimensional measurements in the loaded data.
         """
         pass
 
@@ -92,6 +94,8 @@ class CDFHandler(HermesDataIOHandler):
             An instance of `TimeSeries` containing the loaded data.
         support : `dict[astropy.nddata.NDData]`
             Non-record-varying data contained in the file
+        spectra : `ndcube.NDCollection`
+            Spectral or High-dimensional measurements in the loaded data.
         """
         from spacepy.pycdf import CDF
 
