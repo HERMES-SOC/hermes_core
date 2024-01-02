@@ -61,7 +61,8 @@ test = [
 
 style = [
   'black',
-  'flake8'
+  'flake8',
+  'rstcheck',
 ]
 
 [tool.setuptools.package-data]
@@ -101,3 +102,17 @@ omit = [
   '*/hermes_core/version*',
 ]
 
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_roles = [
+  "py:class",
+  "py:class",
+  "file",
+]
+ignore_directives = [
+    "plot",
+    "doctest",
+    "automodapi",
+    "csv-table",
+]
+ignore_messages = "not referenced"

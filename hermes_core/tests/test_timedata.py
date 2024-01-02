@@ -29,7 +29,7 @@ def get_bad_timeseries():
 
     # Create an astropy.Time object
     time = np.arange(10)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
 
@@ -122,6 +122,23 @@ def test_hermes_data_empty_ts():
         _ = HermesData(timeseries=TimeSeries())
 
 
+def test_hermes_data_single_column():
+    ts = TimeSeries()
+
+    # Create an astropy.Time object
+    time = np.arange(10)
+    time_col = Time(time, format="unix")
+    ts["time"] = time_col
+
+    # Meta
+    input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+
+    # Create TimeSeries with only Time - no measurements
+    hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+
+    assert len(hermes_data.timeseries.columns) == 1
+
+
 def test_hermes_data_bad_ts():
     """
     Test asserts that all measurements in `timeseries` member must be of type
@@ -147,6 +164,69 @@ def test_hermes_data_default():
 
     # Test Deleting the Writer
     del ts
+
+
+def test_hermes_data_missing_descriptor():
+    ts = get_test_timeseries()
+    input_attrs = {}
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Descriptor' global meta attribute required for HERMES Instrument name"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
+def test_hermes_data_missing_data_level():
+    ts = get_test_timeseries()
+    input_attrs = HermesData.global_attribute_template("eea")
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Data_level' global meta attribute required for HERMES data level"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
+def test_hermes_data_missing_data_version():
+    ts = get_test_timeseries()
+    input_attrs = HermesData.global_attribute_template("eea", "l1")
+
+    with pytest.raises(ValueError) as excinfo:
+        # We expect this to throw an error that 'Descriptor' is required
+        _ = HermesData(ts, meta=input_attrs)
+
+        assert (
+            str(excinfo.value)
+            == "'Data_version' global meta attribute is required for HERMES data version"
+        )
+
+    # Test Deleting the Writer
+    del ts
+
+
+def test_none_attributes():
+    test_data = get_test_hermes_data()
+
+    # Add a Variable Attribute with Value None
+    test_data.timeseries["time"].meta["none_attr"] = None
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        with pytest.raises(ValueError):
+            # Throws an error that we cannot have None attribute values
+            test_data.save(output_path=tmpdirname)
 
 
 def test_multidimensional_timeseries():
@@ -571,7 +651,7 @@ def test_hermes_data_append():
     # Append Not-Enough Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     with pytest.raises(ValueError):
@@ -580,7 +660,7 @@ def test_hermes_data_append():
     # Append Too-Many Columns
     ts = TimeSeries()
     time = np.arange(start=10, stop=20)
-    time_col = Time(time, format="unix").to_datetime()
+    time_col = Time(time, format="unix")
     col = Column(data=time_col, name="time", meta={})
     ts.add_column(col)
     ts["test1"] = Quantity(value=random(size=(10)), unit="m", dtype=np.uint16)

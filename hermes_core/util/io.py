@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Tuple
 from collections import OrderedDict
+from datetime import datetime
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.nddata import NDData
@@ -123,9 +124,7 @@ class CDFHandler(HermesDataIOHandler):
             # First Variable we need to add is time/Epoch
             if "Epoch" in input_file:
                 time_data = Time(input_file["Epoch"][:].copy())
-                time_attrs = {}
-                for attr_name in input_file["Epoch"].attrs:
-                    time_attrs[attr_name] = input_file["Epoch"].attrs[attr_name]
+                time_attrs = self._load_metadata_attributes(input_file["Epoch"])
                 # Create the Time object
                 ts["time"] = time_data
                 # Create the Metadata
@@ -139,9 +138,7 @@ class CDFHandler(HermesDataIOHandler):
             # Add Variable Attributtes from the CDF file to TimeSeries
             for var_name in variable_keys:
                 # Extract the Variable's Metadata
-                var_attrs = {}
-                for attr_name in input_file[var_name].attrs:
-                    var_attrs[attr_name] = input_file[var_name].attrs[attr_name]
+                var_attrs = self._load_metadata_attributes(input_file[var_name])
 
                 # Extract the Variable's Data
                 var_data = input_file[var_name][...]
@@ -204,6 +201,17 @@ class CDFHandler(HermesDataIOHandler):
 
         # Return the given TimeSeries, NRV Data
         return ts, support, spectra
+
+    def _load_metadata_attributes(self, var_data):
+        var_attrs = {}
+        for attr_name in var_data.attrs:
+            if isinstance(var_data.attrs[attr_name], datetime):
+                # Metadata Attribute is a Datetime - we want to convert to Astropy Time
+                var_attrs[attr_name] = Time(var_data.attrs[attr_name])
+            else:
+                # Metadata Attribute loaded without modifications
+                var_attrs[attr_name] = var_data.attrs[attr_name]
+        return var_attrs
 
     def _load_timeseries_variable(self, ts, var_name, var_data, var_attrs):
         # Create the Quantity object
@@ -323,7 +331,7 @@ class CDFHandler(HermesDataIOHandler):
             self._convert_global_attributes_to_cdf(data, cdf_file)
 
             # Add zAttributes
-            self._convert_variable_attributes_to_cdf(data, cdf_file)
+            self._convert_variables_to_cdf(data, cdf_file)
         return output_cdf_filepath
 
     def _convert_global_attributes_to_cdf(self, data, cdf_file):
@@ -337,28 +345,20 @@ class CDFHandler(HermesDataIOHandler):
                 # Add the Attribute to the CDF File
                 cdf_file.attrs[attr_name] = attr_value
 
-    def _convert_variable_attributes_to_cdf(self, data, cdf_file):
-        # Loop through Variable Attributes
+    def _convert_variables_to_cdf(self, data, cdf_file):
+        # Loop through Scalar TimeSeries Variables
         for var_name in data.timeseries.colnames:
             var_data = data.timeseries[var_name]
             if var_name == "time":
                 # Add 'time' in the TimeSeries as 'Epoch' within the CDF
                 cdf_file["Epoch"] = var_data.to_datetime()
                 # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    cdf_file["Epoch"].attrs[var_attr_name] = var_attr_val
+                self._convert_variable_attributes_to_cdf("Epoch", var_data, cdf_file)
             else:
                 # Add the Variable to the CDF File
                 cdf_file[var_name] = var_data.value
                 # Add the Variable Attributes
-                for var_attr_name, var_attr_val in var_data.meta.items():
-                    if var_attr_val is None:
-                        raise ValueError(
-                            f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                        )
-                    else:
-                        # Add the Attribute to the CDF File
-                        cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+                self._convert_variable_attributes_to_cdf(var_name, var_data, cdf_file)
 
         # Loop through Non-Record-Varying Data
         for var_name, var_data in data.support.items():
@@ -374,14 +374,7 @@ class CDFHandler(HermesDataIOHandler):
             )
 
             # Add the Variable Attributes
-            for var_attr_name, var_attr_val in var_data.meta.items():
-                if var_attr_val is None:
-                    raise ValueError(
-                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                    )
-                else:
-                    # Add the Attribute to the CDF File
-                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+            self._convert_variable_attributes_to_cdf(var_name, var_data, cdf_file)
 
         # Loop through High-Dimensional/Spectra Variables
         for var_name in data.spectra:
@@ -389,11 +382,17 @@ class CDFHandler(HermesDataIOHandler):
             # Add the Variable to the CDF File
             cdf_file[var_name] = var_data.data
             # Add the Variable Attributes
-            for var_attr_name, var_attr_val in var_data.meta.items():
-                if var_attr_val is None:
-                    raise ValueError(
-                        f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
-                    )
-                else:
-                    # Add the Attribute to the CDF File
-                    cdf_file[var_name].attrs[var_attr_name] = var_attr_val
+            self._convert_variable_attributes_to_cdf(var_name, var_data, cdf_file)
+
+    def _convert_variable_attributes_to_cdf(self, var_name, var_data, cdf_file):
+        for var_attr_name, var_attr_val in var_data.meta.items():
+            if var_attr_val is None:
+                raise ValueError(
+                    f"Variable {var_name}: Cannot Add vAttr: {var_attr_name}. Value was {str(var_attr_val)}"
+                )
+            elif isinstance(var_attr_val, Time):
+                # Convert the Attribute to Datetime before adding to CDF File
+                cdf_file[var_name].attrs[var_attr_name] = var_attr_val.to_datetime()
+            else:
+                # Add the Attribute to the CDF File
+                cdf_file[var_name].attrs[var_attr_name] = var_attr_val

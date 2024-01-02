@@ -102,13 +102,20 @@ class HermesData:
         spectra: Optional[ndcube.NDCollection] = None,
         meta: Optional[dict] = None,
     ):
+        # ================================================
+        #               VALIDATE INPUTS
+        # ================================================
+
         # Verify TimeSeries compliance
         if not isinstance(timeseries, TimeSeries):
             raise TypeError(
                 "timeseries must be a `astropy.timeseries.TimeSeries` object."
             )
-        if len(timeseries.columns) < 2:
-            raise ValueError("timeseries must have at least 2 columns")
+
+        if len(timeseries) == 0:
+            raise ValueError(
+                "timeseries cannot be empty, must include at least a 'time' column with valid times"
+            )
 
         # Check individual Columns
         for colname in timeseries.columns:
@@ -122,6 +129,29 @@ class HermesData:
                 raise ValueError(
                     f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
                 )
+
+        # Global Metadata Attributes are compiled from two places. You can pass in
+        # global metadata throug the `meta` parameter or through the `TimeSeries.meta`
+        # attribute.
+        _meta = {}
+        if meta is not None and isinstance(meta, dict):
+            _meta.update(meta)
+        if timeseries.meta is not None and isinstance(timeseries.meta, dict):
+            _meta.update(timeseries.meta)
+
+        # Check Global Metadata Requirements - Require Descriptor, Data_level, Data_Version
+        if "Descriptor" not in _meta or _meta["Descriptor"] is None:
+            raise ValueError(
+                "'Descriptor' global meta attribute required for HERMES Instrument name"
+            )
+        if "Data_level" not in _meta or _meta["Data_level"] is None:
+            raise ValueError(
+                "'Data_level' global meta attribute required for HERMES data level"
+            )
+        if "Data_version" not in _meta or _meta["Data_version"] is None:
+            raise ValueError(
+                "'Data_version' global meta attribute is required for HERMES data version"
+            )
 
         # Check NRV Data
         if support is not None:
@@ -138,8 +168,12 @@ class HermesData:
         if spectra is not None:
             if not isinstance(spectra, NDCollection):
                 raise TypeError(
-                    f"Spectra '{colname}' must be an ndcube.NDCollection object"
+                    f"Spectra must be an ndcube.NDCollection object"
                 )
+        
+        # ================================================
+        #         CREATE HERMES DATA STRUCTURES
+        # ================================================
 
         # Copy the TimeSeries
         self._timeseries = TimeSeries(timeseries, copy=True)
@@ -153,7 +187,7 @@ class HermesData:
         if hasattr(timeseries["time"], "meta"):
             self._timeseries["time"].meta.update(timeseries["time"].meta)
 
-        # Add Measurement Metadata
+        # Add TimeSeries Measurement Metadata
         for col in self._timeseries.columns:
             if col != "time":
                 self._timeseries[col].meta = self.measurement_attribute_template()
@@ -178,6 +212,10 @@ class HermesData:
             self._spectra = spectra
         else:
             self._spectra = NDCollection([])
+        
+        # ================================================
+        #           DERIVE METADATA ATTRIBUTES
+        # ================================================
 
         # Derive Metadata
         self.schema = HermesDataSchema()
