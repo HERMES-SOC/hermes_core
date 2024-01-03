@@ -12,7 +12,7 @@ from spacepy.pycdf import CDF
 import hermes_core
 from hermes_core.timedata import HermesData
 from hermes_core.util import const
-from hermes_core.util.validation import validate, CDFValidator
+from swxsoc_core.util.validation import validate, CDFValidator
 
 SAMPLE_CDF_FILE = "hermes_nms_default_l1_20160322_123031_v0.0.1.cdf"
 
