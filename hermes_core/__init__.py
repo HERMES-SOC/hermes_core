@@ -7,7 +7,7 @@ except ImportError:
     version_tuple = (0, 0, "unknown version")
 
 from hermes_core.util.config import load_config, print_config
-from hermes_core.util.logger import _init_log
+from swxsoc_core.util.logger import _init_log
 
 # Load user configuration
 config = load_config()
