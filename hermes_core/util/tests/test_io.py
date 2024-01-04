@@ -10,11 +10,17 @@ import tempfile
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
 from astropy.units import Quantity
+from astropy.nddata import NDData
+from astropy.wcs import WCS
+from ndcube import NDCube, NDCollection
 from spacepy.pycdf import CDFError, CDF
 from hermes_core.timedata import HermesData
 
 
 def get_test_hermes_data():
+    """
+    Function to get test hermes_core.timedata.HermesData objects to re-use in other tests
+    """
     ts = TimeSeries()
     ts.meta.update(
         {
@@ -45,7 +51,28 @@ def get_test_hermes_data():
             "CATDESC": "Test Data",
         }
     )
-    hermes_data = HermesData(timeseries=ts)
+
+    # Support Data / Non-Time Varying Data
+    support = {"support_counts": NDData(data=[1])}
+
+    # Spectra Data
+    spectra = NDCollection(
+        [
+            (
+                "test_spectra",
+                NDCube(
+                    data=random(size=(10, 10)),
+                    wcs=WCS(naxis=2),
+                    meta={"CATDESC": "Test Spectra Variable"},
+                    unit="eV",
+                ),
+            )
+        ]
+    )
+
+    # Create HermesData Object
+    hermes_data = HermesData(timeseries=ts, support=support, spectra=spectra)
+
     return hermes_data
 
 
@@ -101,3 +128,26 @@ def test_cdf_nrv_support_data():
 
         assert "Test_NRV_Var" in td_loaded.support
         assert "Test_Support_Var" in td_loaded.timeseries.columns
+
+
+def test_cdf_spectra_data():
+    """
+    Test Loading High-Dimensional/ Spectra data with CDF IO Handler
+    """
+    # Get Test Datas
+    td = get_test_hermes_data()
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # Convert HermesData the to a CDF File
+        test_file_output_path = td.save(output_path=tmpdirname)
+
+        # Load the JSON file as JSON
+        with CDF(test_file_output_path, readonly=False) as cdf_file:
+            # Add Spectra Data Variable
+            cdf_file["Test_Spectra_Var"] = np.random.random(size=(10, 10))
+            cdf_file["Test_Spectra_Var"].meta["UNITS"] = "counts"
+
+        # Make sure we can load the modified JSON
+        td_loaded = HermesData.load(test_file_output_path)
+
+        assert "Test_Spectra_Var" in td_loaded.spectra

@@ -20,7 +20,7 @@ In addition, HERMES maintains it's own standards in the CDF guide.
 The CDF C library must be properly installed in order to use this package to save and load CDF files. 
 The CDF library can be downloaded from the `SPDF CDF Page <https://cdf.gsfc.nasa.gov/>`_ to use the 
 CDF libraries in your local environment. Alternatively, the CDF library is installed and available
-through the HERMES development Docker continer environment. For more information on the HERMES Docker
+through the HERMES development Docker container environment. For more information on the HERMES Docker
 container please see our :doc:`Development Environment Page </dev-guide/dev_env>`.
 
 To make it easier to work with HERMES data, the :py:class:`~hermes_core.timedata.HermesData` class facilitates the abstraction of HERMES CDF files.
@@ -34,36 +34,134 @@ The :py:class:`~hermes_core.timedata.HermesData` class aims to provide a simplif
 Creating a ``HermesData`` object
 ================================
 
-A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a `~astropy.timeseries.TimeSeries` object with at least one measurement.
-There are many ways to initialize one but here is one example:
+Creating a :py:class:`~hermes_core.timedata.HermesData` data container from scratch involves four 
+pieces of data:
+
+- `timeseries` (required) - an `~astropy.timeseries.TimeSeries` containing the time dimension of 
+    the data as well as at least one other measurement. This data structure must be used for all 
+    scalar time-varying measurement data. 
+- `spectra` (optional) - an `~ndcube.NDCollection` containing one or more `~ndcube.NDCube` objects
+    representing higher-dimensional measurements and spectral data. This data must should be used
+    for all vector or tensor-based measurement data. 
+- `support` (optional) - a `dict[astropy.nddata.NDdata | astropy.units.Quantity]` containing one
+    or more non-time-varying (time invariant) measurements, time-invariant support or metadata
+    variables. 
+- `meta` (optional) - a `dict` containing global metadata information about the CDF. This data
+    structure must be used for all global metadata required for ISTP compliance.  
+
+
+Alternatively, a :py:class:`~hermes_core.timedata.HermesData` data container can be loaded from 
+an existing CDF file using the :py:func:`~hermes_core.timedata.HermesData.load` function. 
+
+Creating a ``TimeSeries`` for ``HermesData`` `timeseries`
+---------------------------------------------------------
+
+A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a 
+`~astropy.timeseries.TimeSeries` object with at least one measurement. There are many ways to 
+initialize one but here is one example:
 
     >>> import numpy as np
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
-    >>> ts = TimeSeries(time_start='2016-03-22T12:30:31',
-    ...                    time_delta=3 * u.s,
-    ...                    data={'Bx': u.Quantity([1, 2, 3, 4], 'nanoTesla', dtype=np.uint16)}
-    ...                )
+    >>> ts = TimeSeries(
+    ...     time_start='2016-03-22T12:30:31',
+    ...     time_delta=3 * u.s,
+    ...     data={'Bx': u.Quantity(
+    ...         value=[1, 2, 3, 4], 
+    ...         unit='nanoTesla', 
+    ...         dtype=np.uint16
+    ...     )}
+    ... )
 
 Be mindful to set the right number of bits per measurement, in this case 16 bits.
-If you do not, it will likely default to float64 and if you write a CDF file, it will be larger than expected or needed.
-The valid `~numpy.dtype` choices are uint8, uint16, uint32, uint64, int8, int16, int32, int64, float16, float32, float64, float164.
-You can also create your time array directly
+If you do not, it will likely default to float64 and if you write a CDF file, it will be larger 
+than expected or needed. The valid `~numpy.dtype` choices are uint8, uint16, uint32, uint64, 
+int8, int16, int32, int64, float16, float32, float64, float164. You can also create your time 
+array directly
 
     >>> from astropy.time import Time, TimeDelta
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> times = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
     >>> ts = TimeSeries(
-    ...        time=times, 
-    ...        data={'diff_e_flux': u.Quantity(np.arange(100) * 1e-3, '1/(cm**2 * s * eV * steradian)', dtype=np.float32)}
-    ...    )
+    ...     time=times, 
+    ...     data={'diff_e_flux': u.Quantity(
+    ...         value=np.arange(100) * 1e-3, 
+    ...         unit='1/(cm**2 * s * eV * steradian)', 
+    ...         dtype=np.float32
+    ...     )}
+    ... )
 
-Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
+Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using 
+arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
 
-Next create a `dict` or `~collections.OrderedDict` containing the required CDF global metadata.
-The class function :py:func:`~hermes_core.timedata.HermesData.global_attribute_template` will provide you an empty version that you can fill in.
-Here is an example with filled in values.
+Creating a ``NDCollection`` for ``HermesData`` `spectra`
+--------------------------------------------------------
+
+The :py:class:`~hermes_core.timedata.HermesData` object leverages API functionality of the 
+`~ndcube` package to enable easier analysis of higher-dimensional and spectral data measurements. 
+The main advantage that this package provides in in it's handling of coordinate transformations 
+and slicing in real-world-coordinates compared to using index-based slicing for higher-dimensional
+data. For more information about the `~ndcube` package and its API functionality please read the 
+`SunPy NDCube documentation <https://docs.sunpy.org/projects/ndcube/en/stable/>`_.
+
+You can create a `~ndcube.NDCollection` object using an approach similar to the following example:
+
+    >>> import numpy as np
+    >>> from astropy.wcs import WCS
+    >>> from ndcube import NDCube, NDCollection
+    >>> spectra = NDCollection(
+    ...     [
+    ...         (
+    ...             "example_spectra",
+    ...             NDCube(
+    ...                 data=np.random.random(size=(4, 10)),
+    ...                 wcs=WCS(naxis=2),
+    ...                 meta={"CATDESC": "Example Spectra Variable"},
+    ...                 unit="eV",
+    ...             ),
+    ...         )
+    ...     ]
+    ... )
+
+The :py:class:`~ndcube.NDCollection` is created using a list of `tuple` containing named 
+`(str, NDCube)` pairs. Each :py:class:`~ndcube.NDCube` contains the required data array, a 
+:py:class:`~astropy.wcs.WCS` object responsible for the coordinate transformations, optional 
+metadata attributes as a `dict`, and an `~astropy.units` unit that is used to treat the data 
+array  as an `~astropy.units.Quantity`.
+
+
+Creating a ``dict`` for ``HermesData`` `support`
+------------------------------------------------
+
+The :py:class:`~hermes_core.timedata.HermesData` object also accepts additional arbitrary data 
+arrays, so-called non-record-varying (NRV) data, which is frequently support data. These data are 
+required to be a `dict` of :py:class:`~astropy.nddata.NDData` or 
+:py:class:`~astropy.units.Quantity` objects which are data containers for physical data. 
+The :py:class:`~hermes_core.timedata.HermesData` class supports both `Quantity` and `NDData` 
+objects since one may have advantages for the type of data being represented: `Quantity` 
+objects in this support `dict` may be more advantageous for scalar or 1D-vector data while 
+`NDData` objects in this support `dict` may be more advantageous for higher-dimensional vector 
+data. A guide to the `~astropy.nddata` package is available in the 
+`astropy documentation <https://docs.astropy.org/en/stable/nddata/>`_.
+
+
+    >>> from astropy.nddata import NDData
+    >>> support_data = {
+    ...     "const_param": u.Quantity(value=[1e-3], unit="keV", dtype=np.uint16),
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ... }
+
+Metadata passed in through the :py:class:`~astropy.nddata.NDData` object is used by 
+:py:class:`~hermes_core.timedata.HermesData` as variable metadata attributes required for ISTP 
+compliance. 
+
+Creating a ``dict`` for ``HermesData`` `meta`
+---------------------------------------------
+
+You must create a `dict` or `~collections.OrderedDict` containing the required CDF global metadata.
+The class function :py:func:`~hermes_core.timedata.HermesData.global_attribute_template` will 
+provide you an empty version that you can fill in. Here is an example with filled in values.
 
     >>> input_attrs = {
     ...     "DOI": "https://doi.org/<PREFIX>/<SUFFIX>",
@@ -100,47 +198,79 @@ Here is an example with filled in values.
     ...     "TEXT": "Valid Test Case",
     ... }
 
-You can now create the :py:class:`~hermes_core.timedata.HermesData` object,
+Here is an example using the :py:func:`~hermes_core.timedata.HermesData.global_attribute_template`
+function to create a minimal subset of global metadata attributes:
 
     >>> from hermes_core.timedata import HermesData
-    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+    >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
 
-The :py:class:`~hermes_core.timedata.HermesData` object also accepts additional arbitrary data arrays, 
-so-called non-record-varying (NRV) data, which is frequently support data. These data are required to be a `dict`
-of :py:class:`~astropy.nddata.NDData` or :py:class:`~astropy.units.Quantity` objects which are data containers for physical data.
-The :py:class:`~hermes_core.timedata.HermesData` class supports both `Quantity` and `NDData` objects since one may have advantages
-for the type of data being represented: `Quantity` objects in this support `dict` may be more advantageous for scalar or 1D-vector
-data while `NDData` objects in this support `dict` may be more advantageous for higher-dimensional vector data. 
-A guide to the `~astropy.nddata` package is available in the `astropy documentation <https://docs.astropy.org/en/stable/nddata/>`_.
 
+Using Defined Elements to create a ``HermesData`` Data Container
+----------------------------------------------------------------
+
+Putting it all together here is instantiation of a :py:class:`~hermes_core.timedata.HermesData`
+object: 
+
+    >>> from hermes_core.timedata import HermesData
+    >>> hermes_data = HermesData(
+    ...     timeseries=ts, 
+    ...     support=support_data, 
+    ...     spectra=spectra, 
+    ...     meta=input_attrs
+    ... )
+
+For a complete example with instantiation of all objects in one code example: 
+
+    >>> import numpy as np
+    >>> import astropy.units as u
+    >>> from astropy.timeseries import TimeSeries
+    >>> from ndcube import NDCube, NDCollection
     >>> from astropy.nddata import NDData
+    >>> from hermes_core.timedata import HermesData
+    >>> # Create a TimeSeries structure
+    >>> data = u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)
+    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": data})
+    >>> # Create a Spectra structure
+    >>> spectra = NDCollection(
+    ...     [
+    ...         (
+    ...             "example_spectra",
+    ...             NDCube(
+    ...                 data=np.random.random(size=(4, 10)),
+    ...                 wcs=WCS(naxis=2),
+    ...                 meta={"CATDESC": "Example Spectra Variable"},
+    ...                 unit="eV",
+    ...             ),
+    ...         )
+    ...     ]
+    ... )
+    >>> # Create a Support Structure
     >>> support_data = {
-    ...     "const_param": u.Quantity(value=[1e-3], unit="keV", dtype=np.uint16),
     ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
     ... }
-    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs, support=support_data)
+    >>> # Create Global Metadata Attributes
+    >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
+    >>> # Create HermesData Object
+    >>> hermes_data = HermesData(
+    ...     timeseries=ts, 
+    ...     support=support_data, 
+    ...     spectra=spectra, 
+    ...     meta=input_attrs
+    ... )
 
-The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact.
-Your variable metadata can be found by querying the measurement column directly.
+The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another 
+measurement column or edit the metadata after the fact. Your variable metadata can be found 
+by querying the measurement column directly.
 
+    >>> hermes_data.timeseries['Bx'].meta.update(
+    ...     {"CATDESC": "X component of the Magnetic field measured by HERMES"}
+    ... )
     >>> hermes_data.timeseries['Bx'].meta # doctest: +SKIP
 
-The class does its best to fill in metadata fields if it can and leaves others blank that it cannot.
-Those should be filled in manually.
-Be careful when editing metadata that was automatically generated as you might make the resulting CDF file non-compliant.
+The class does its best to fill in metadata fields if it can and leaves others blank that it 
+cannot. Those should be filled in manually. Be careful when editing metadata that was 
+automatically generated as you might make the resulting CDF file non-compliant.
 
-Putting it all together, here is complete example
-
-    >>> from hermes_core.timedata import HermesData
-    >>> import astropy.units as u
-    >>> ts = TimeSeries(
-    ...    time_start="2016-03-22T12:30:31",
-    ...    time_delta=3 * u.s,
-    ...    data={"Bx": u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)}
-    ... )
-    >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
-    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
-    >>> hermes_data.timeseries['Bx'].meta.update({"CATDESC": "X component of the Magnetic field measured by HERMES"})
 
 Creating a ``HermesData`` from an existing CDF File
 ===================================================
@@ -158,7 +288,7 @@ Adding data to a ``HermesData`` Container
 A new set of measurements or support data can be added to an existing instance. Remember 
 that new measurements must have the same time stamps as the existing ones and therefore 
 the same number of entries. Support data can be added as needed.
-You can add the new measurments in one of two ways.
+You can add the new measurements in one of two ways.
 
 The more explicit approach is to use :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
 
@@ -212,7 +342,7 @@ Derived Global Attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The :py:class:`~hermes_core.util.schema.HermesDataSchema` class derives several global metadata 
-attributes required for ISTP compliance. The following global attribtues are derived:
+attributes required for ISTP compliance. The following global attributes are derived:
 
 - `CDF_Lib_version`
 - `Data_type`
@@ -223,7 +353,7 @@ attributes required for ISTP compliance. The following global attribtues are der
 - `Logical_source_description`
 - `Start_time`
 
-For more information about each of these attriubtes please see the 
+For more information about each of these attributes please see the 
 :doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
 
 Using a Template for Global Metadata Attributes
@@ -276,7 +406,7 @@ You can also pass arguments into the function to get a partially populated templ
 This can make the definition of global metadata easier since instrument teams or users only need 
 to supply pieces of metadata that are in this template. Additional metadata items can be added 
 if desired. Once the template is instantiated and all attributes have been filled out, you can
-use this  duruing instantiation of your :py:class:`~hermes_core.timedata.HermesData` container.
+use this  during instantiation of your :py:class:`~hermes_core.timedata.HermesData` container.
 
 Variable Metadata Attributes
 ----------------------------
@@ -315,7 +445,7 @@ attributes required for ISTP compliance.
 -  `VALIDMAX`
 -  `VAR_TYPE`
 
-For more information about each of these attriubtes please see the 
+For more information about each of these attributes please see the 
 :doc:`HERMES CDF Format Guide </user-guide/cdf_format_guide>`
 
 Using a Template for Variable Metadata Attributes
@@ -363,7 +493,7 @@ Writing a CDF File
 
 The :py:class:`~hermes_core.timedata.HermesData` class writes CDF files using the `~spacepy.pycdf` module.
 This can be done using the :py:func:`~hermes_core.timedata.HermesData.save` method which only requires a path to the folder where the CDF file should be saved.
-The filename is automatically derived consistent with HERMES filenaming requirements.
+The filename is automatically derived consistent with HERMES file naming requirements.
 If no path is provided it writes the file to the current directory.
 This function returns the full path to the CDF file that was generated.
 From this you can validate and distribute your CDF file.

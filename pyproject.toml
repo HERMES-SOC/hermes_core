@@ -31,6 +31,7 @@ dependencies = [
   'numpy>=1.18.0',
   'sunpy>=5.0.1',
   'spacepy>=0.4.1',
+  'ndcube>=2.2.0',
   'pyyaml>=5.3.1',
 ]
 
@@ -55,7 +56,7 @@ test = [
   'pytest',
   'pytest-astropy',
   'pytest-cov',
-  'coverage[toml]'
+  'coverage[toml]',
 ]
 
 style = [
@@ -76,6 +77,7 @@ write_to = "hermes_core/_version.py"
 [tool.pytest.ini_options]
 testpaths = [
    "hermes_core/tests",
+   "hermes_core/util/tests",
    "docs"
 ]
 doctest_plus = "enabled"

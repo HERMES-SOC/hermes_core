@@ -13,6 +13,8 @@ from astropy.timeseries import TimeSeries
 from astropy.table import vstack
 from astropy.nddata import NDData
 from astropy import units as u
+import ndcube
+from ndcube import NDCube, NDCollection
 import hermes_core
 from hermes_core.util.io import CDFHandler
 from hermes_core.util.schema import HermesDataSchema
@@ -32,30 +34,62 @@ class HermesData:
         The time series of data. Columns must be `~astropy.units.Quantity` arrays.
     support : `Optional[dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]]`
         Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
+    spectra : `Optional[ndcube.NDCollection]`
+        One or more `ndcube.NDCube` objects containing spectral or higher-dimensional
+        timeseries data.
     meta : `Optional[dict]`
         The metadata describing the time series in an ISTP-compliant format.
 
     Examples
     --------
+    >>> import numpy as np
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
+    >>> from ndcube import NDCube, NDCollection
+    >>> from astropy.wcs import WCS
+    >>> from astropy.nddata import NDData
     >>> from hermes_core.timedata import HermesData
+    >>> # Create a TimeSeries structure
     >>> data = u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)
     >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": data})
+    >>> # Create a Spectra structure
+    >>> spectra = NDCollection(
+    ...     [
+    ...         (
+    ...             "test_spectra",
+    ...             NDCube(
+    ...                 data=np.random.random(size=(4, 10)),
+    ...                 wcs=WCS(naxis=2),
+    ...                 meta={"CATDESC": "Test Spectra Variable"},
+    ...                 unit="eV",
+    ...             ),
+    ...         )
+    ...     ]
+    ... )
+    >>> # Create a Support Structure
+    >>> support_data = {
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ... }
+    >>> # Create Global Metadata Attributes
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
-    >>> hermes_data = HermesData(timeseries=ts, meta=input_attrs)
+    >>> # Create HermesData Object
+    >>> hermes_data = HermesData(timeseries=ts, support=support_data, spectra=spectra, meta=input_attrs)
 
     Raises
     ------
     ValueError: If the number of columns is less than 2 or the required 'time' column is missing.
-    TypeError: If any column, excluding 'time', is not an astropy.Quantity object with units.
-    ValueError: If the elements of a column are multidimensional
+    TypeError: If any column, excluding 'time', is not an `astropy.units.Quantity` object with units.
+    ValueError: If the elements of a `TimeSeries` column are multidimensional
+    TypeError: If any `supoport` data elements are not type `astropy.nddata.NDData`
+    TypeError: If `spectra` is not an `NDCollection` object.
 
     References
     ----------
     * `Astropy TimeSeries <https://docs.astropy.org/en/stable/timeseries/index.html/>`_
     * `Astropy Quantity and Units <https://docs.astropy.org/en/stable/units/index.html>`_
     * `Astropy Time <https://docs.astropy.org/en/stable/time/index.html>`_
+    * `Astropy NDData <https://docs.astropy.org/en/stable/nddata/>`_
+    * `Sunpy NDCube and NDCollection <https://docs.sunpy.org/projects/ndcube/en/stable/>`_
     * `Space Physics Guidelines for CDF (ISTP) <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_
     """
 
@@ -65,6 +99,7 @@ class HermesData:
         support: Optional[
             dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]
         ] = None,
+        spectra: Optional[ndcube.NDCollection] = None,
         meta: Optional[dict] = None,
     ):
         # ================================================
@@ -119,7 +154,7 @@ class HermesData:
             )
 
         # Check NRV Data
-        if support:
+        if support is not None:
             for key in support:
                 if not (
                     isinstance(support[key], u.Quantity)
@@ -128,6 +163,11 @@ class HermesData:
                     raise TypeError(
                         f"Variable '{key}' must be an astropy.units.Quantity or astropy.nddata.NDData object"
                     )
+
+        # Check Higher-Dimensional Spectra
+        if spectra is not None:
+            if not isinstance(spectra, NDCollection):
+                raise TypeError(f"Spectra must be an ndcube.NDCollection object")
 
         # ================================================
         #         CREATE HERMES DATA STRUCTURES
@@ -165,6 +205,12 @@ class HermesData:
             else:
                 self._support[key].meta = self.measurement_attribute_template()
 
+        # Copy the High-Dimensional Spectra
+        if spectra:
+            self._spectra = spectra
+        else:
+            self._spectra = NDCollection([])
+
         # ================================================
         #           DERIVE METADATA ATTRIBUTES
         # ================================================
@@ -188,11 +234,22 @@ class HermesData:
         return self._support
 
     @property
+    def spectra(self):
+        """
+        (`ndcube.NDCollection]`) A `NDCollection` object containing high-dimensional spectra data.
+        """
+        return self._spectra
+
+    @property
     def data(self):
         """
         (`dict`) A `dict` containing each of `timeseries` and `support`.
         """
-        return {"timeseries": self.timeseries, "support": self.support}
+        return {
+            "timeseries": self.timeseries,
+            "spectra": self.spectra,
+            "support": self.support,
+        }
 
     @property
     def meta(self):
@@ -233,8 +290,18 @@ class HermesData:
         str_repr += f"Global Attrs:\n"
         for attr_name, attr_value in self._timeseries.meta.items():
             str_repr += f"\t{attr_name}: {attr_value}\n"
-        # Measurement Data
-        str_repr += f"Measurement Data:\n{self._timeseries}\n"
+        # TimeSeries Data
+        str_repr += f"TimeSeries Data:\n"
+        for var_name in self._timeseries.colnames:
+            str_repr += f"\t{var_name}\n"
+        # Support Data
+        str_repr += f"Support Data:\n"
+        for var_name in self._support.keys():
+            str_repr += f"\t{var_name}\n"
+        # Spectra Data
+        str_repr += f"Spectra Data:\n"
+        for var_name in self._spectra.keys():
+            str_repr += f"\t{var_name}\n"
         return str_repr
 
     @staticmethod
@@ -346,6 +413,15 @@ class HermesData:
                     var_name=col, attr_name=attr_name, attr_value=attr_value
                 )
 
+        # Spectra/ High-Dimensional Data
+        for col in self._spectra:
+            for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                self._spectra, col
+            ).items():
+                self._update_spectra_attribute(
+                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                )
+
     def _update_global_attribute(self, attr_name, attr_value):
         # If the attribute is set, check if we want to overwrite it
         if (
@@ -360,7 +436,7 @@ class HermesData:
                 and self.schema.global_attribute_schema[attr_name]["overwrite"]
             ):
                 warn_user(
-                    f"Overiding Global Attribute {attr_name} : {self._timeseries.meta[attr_name]} -> {attr_value}"
+                    f"Overriding Global Attribute {attr_name} : {self._timeseries.meta[attr_name]} -> {attr_value}"
                 )
                 self._timeseries.meta[attr_name] = attr_value
         # If the attribute is not set, set it
@@ -371,6 +447,7 @@ class HermesData:
         if (
             attr_name in self.timeseries[var_name].meta
             and self.timeseries[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
@@ -380,7 +457,7 @@ class HermesData:
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overiding {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overriding TimeSeries {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
                 )
                 self.timeseries[var_name].meta[attr_name] = attr_value
         else:
@@ -390,6 +467,7 @@ class HermesData:
         if (
             attr_name in self._support[var_name].meta
             and self._support[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
@@ -399,15 +477,35 @@ class HermesData:
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overiding {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overriding Support {var_name} Attribute {attr_name} : {self._support[var_name].meta[attr_name]} -> {attr_value}"
                 )
                 self._support[var_name].meta[attr_name] = attr_value
         else:
             self._support[var_name].meta[attr_name] = attr_value
 
+    def _update_spectra_attribute(self, var_name, attr_name, attr_value):
+        if (
+            attr_name in self._spectra[var_name].meta
+            and self._spectra[var_name].meta[attr_name] is not None
+            and attr_name in self.schema.variable_attribute_schema["attribute_key"]
+        ):
+            attr_schema = self.schema.variable_attribute_schema["attribute_key"][
+                attr_name
+            ]
+            if (
+                self._spectra[var_name].meta[attr_name] != attr_value
+                and attr_schema["overwrite"]
+            ):
+                warn_user(
+                    f"Overriding Spectra {var_name} Attribute {attr_name} : {self._spectra[var_name].meta[attr_name]} -> {attr_value}"
+                )
+                self._spectra[var_name].meta[attr_name] = attr_value
+        else:
+            self._spectra[var_name].meta[attr_name] = attr_value
+
     def add_measurement(self, measure_name: str, data: u.Quantity, meta: dict = None):
         """
-        Add a new column of time-varying measurements.
+        Add a new time-varying scalar measurement (column).
 
         Parameters
         ----------
@@ -484,6 +582,50 @@ class HermesData:
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
 
+    def add_spectra(self, name: str, data: NDCube, meta: dict = None):
+        """
+        Add a new time-varying vector measurement. This include higher-dimensional time-varying
+        data.
+
+        Parameters
+        ----------
+        name: `str`
+            Name of the measurement to add.
+        data: `ndcube.NDCube`
+            The data to add. Must have the same time stamps as the existing data.
+        meta: `dict`, optional
+            The metadata associated with the measurement.
+
+        Raises
+        ------
+        TypeError: If var_data is not of type NDCube.
+        """
+        # Verify that all Measurements are `NDCube`
+        if not isinstance(data, NDCube):
+            raise TypeError(f"Measurement {name} must be type `ndcube.NDCube`.")
+
+        # Add the new measurement
+        if len(self._spectra) == 0:
+            aligned_axes = (0,)
+            self._spectra = NDCollection([(name, data)], aligned_axes)
+        else:
+            # Check to see if we need to maintain the aligned axes
+            if self._spectra.aligned_axes:
+                first_aligned_axes = self._spectra.aligned_axes[
+                    self._spectra._first_key
+                ]
+                aligned_axes = tuple(0 for _ in range(len(first_aligned_axes)))
+                self._spectra.update([(name, data)], aligned_axes)
+            else:
+                self._spectra.update([(name, data)], self._spectra.aligned_axes)
+
+        # Add any Metadata Passed not in the NDCube
+        if meta:
+            self._spectra[name].meta.update(meta)
+
+        # Derive Metadata Attributes for the Measurement
+        self._derive_metadata()
+
     def remove(self, measure_name: str):
         """
         Remove an existing measurement or support data array.
@@ -497,6 +639,8 @@ class HermesData:
             self._timeseries.remove_column(measure_name)
         elif measure_name in self._support:
             self._support.pop(measure_name)
+        elif measure_name in self._spectra:
+            self._spectra.pop(measure_name)
         else:
             raise ValueError(f"Data for Measurement {measure_name} not found.")
 
@@ -699,5 +843,5 @@ class HermesData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a HermesData object
-        timeseries, support = handler.load_data(file_path)
-        return cls(timeseries=timeseries, support=support)
+        timeseries, support, spectra = handler.load_data(file_path)
+        return cls(timeseries=timeseries, support=support, spectra=spectra)

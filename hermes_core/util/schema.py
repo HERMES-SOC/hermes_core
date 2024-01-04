@@ -14,6 +14,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time
 from astropy import units as u
+from ndcube import NDCube
 import hermes_core
 from hermes_core import log
 from hermes_core.util import util, const
@@ -85,6 +86,18 @@ class HermesDataSchema:
             const.CDF_EPOCH.value,
             const.CDF_EPOCH16.value,
             const.CDF_TIME_TT2000.value,
+        ]
+
+        # List of Tuple of (WCS Keyword, Astropy Property, Default Value)
+        # There is one entry for each keyword/property along each dimension of
+        # the spectra scored in the astropy.wcs.WCS object
+        self.wcs_keyword_to_astropy_property = [
+            ("CNAME", "cname", "NoName"),
+            ("CTYPE", "ctype", "TEST"),
+            ("CUNIT", "cunit", u.dimensionless_unscaled.to_string()),
+            ("CRPIX", "crpix", 0),
+            ("CRVAL", "crval", 1),
+            ("CDELT", "cdelt", 1),
         ]
 
     @property
@@ -646,23 +659,24 @@ class HermesDataSchema:
         """
         measurement_attributes = OrderedDict()
 
-        # Get the Variable Data
+        # Guess the const CDF Data Type
         var_data = data[var_name]
         if not guess_types:
             if var_name == "time":
                 # Guess the const CDF Data Type
                 (guess_dims, guess_types, guess_elements) = self._types(var_data)
             elif hasattr(var_data, "value"):
-                # Guess the const CDF Data Type
+                # Support NDData use `.value`
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.value)
             else:
-                # Guess the const CDF Data Type
+                # TimeSeries Quantity and Spectra NDCube use `.data`
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.data)
 
         # Check the Attributes that can be derived
         var_type = self._get_var_type(data, var_name)
 
         if var_type == "data":
+            # Derive Attributes Specific to `data` VAR_TYPE
             if not var_name == "time":
                 measurement_attributes["DEPEND_0"] = self._get_depend()
             measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
@@ -680,6 +694,7 @@ class HermesDataSchema:
             measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
             measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
         elif var_type == "support_data":
+            # Derive Attributes Specific to `support_data` VAR_TYPE
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
             measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
             measurement_attributes["FORMAT"] = self._get_format(
@@ -694,6 +709,7 @@ class HermesDataSchema:
             measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
             measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
         elif var_type == "metadata":
+            # Derive Attributes Specific to `metadata` VAR_TYPE
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
             measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
             measurement_attributes["FORMAT"] = self._get_format(
@@ -704,6 +720,11 @@ class HermesDataSchema:
             warn_user(
                 f"Variable {var_name} has unrecognizable VAR_TYPE ({var_type}). Cannot Derive Metadata for Variable."
             )
+
+        # Derive Attributes Specific to `spectra` Data
+        if hasattr(var_data, "wcs") and getattr(var_data, "wcs") is not None:
+            spectra_attributes = self._derive_spectra_attributes(var_data)
+            measurement_attributes.update(spectra_attributes)
 
         return measurement_attributes
 
@@ -784,6 +805,34 @@ class HermesDataSchema:
             return self._get_cdf_lib_version(data)
         else:
             raise ValueError(f"Derivation for Attribute ({attr_name}) Not Recognized")
+
+    def _derive_spectra_attributes(self, var_data):
+        """
+        Function to Derive WCS-Keyword Metadata Attributes for a given spectra variable
+        based on the variables `.wcs` member.
+        """
+        spectra_attributes = OrderedDict()
+
+        # WCSAXIS is a Single Attribute
+        spectra_attributes["WCSAXES"] = self._get_wcs_naxis(var_data)
+
+        # Get Sets/Collections of Attributes
+        for keyword, prop, _ in self.wcs_keyword_to_astropy_property:
+            for dimension_i in range(spectra_attributes["WCSAXES"]):
+                dimension_attr_name = (
+                    f"{keyword}{dimension_i+1}"  # KeynameName Indexed 1-4 vs 0-3
+                )
+                # Add the Property Value for the given Axis as a Metadata Attribute
+                spectra_attributes[dimension_attr_name] = self._get_wcs_dimension_attr(
+                    var_data=var_data, prop=prop, dimension=dimension_i
+                )
+
+        # Derive WCS Time Attributes
+        spectra_attributes["MJDREF"] = self._get_wcs_timeref(var_data)
+        spectra_attributes["TIMEUNIT"] = self._get_wcs_timeunit(var_data)
+        spectra_attributes["TIMEDEL"] = self._get_wcs_timedel(var_data)
+
+        return spectra_attributes
 
     # =============================================================================================
     #                             VARIABLE METADATA DERIVATIONS
@@ -1062,6 +1111,65 @@ class HermesDataSchema:
         else:
             var_type = var_data.meta[attr_name]
         return var_type
+
+    # =============================================================================================
+    #                             SPECTRA METADATA DERIVATIONS
+    # =============================================================================================
+
+    def _get_wcs_naxis(self, var_data):
+        """
+        Function to get the number of axes within a spectra WCS member
+        """
+        attr_name = "WCSAXES"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.naxis
+        else:
+            attr_value = var_data.meta[attr_name]
+        return int(attr_value)
+
+    def _get_wcs_timeref(self, var_data):
+        """
+        Function to get the reference time within a spectra WCS member
+        """
+        attr_name = "MJDREF"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.mjdref[0]
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_timeunit(self, var_data):
+        """
+        Function to get the time units within a spectra WCS member
+        """
+        attr_name = "TIMEUNIT"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.timeunit
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_timedel(self, var_data):
+        """
+        Function to get the time delta (between points) within a spectra WCS member
+        """
+        attr_name = "TIMEDEL"
+        if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
+            attr_value = var_data.wcs.wcs.timedel
+        else:
+            attr_value = var_data.meta[attr_name]
+        return attr_value
+
+    def _get_wcs_dimension_attr(self, var_data, prop, dimension):
+        """
+        Function to get the spectra's WCS keywork property along the given axis
+        """
+        # Get the Property for the given WCS Keyword for the given Axis
+        property_value = getattr(var_data.wcs.wcs, prop)[dimension]
+        # Convert to a String as needed
+        if isinstance(property_value, u.UnitBase):
+            property_value = property_value.to_string()
+        return property_value
 
     # =============================================================================================
     #                             GLOBAL METADATA DERIVATIONS
