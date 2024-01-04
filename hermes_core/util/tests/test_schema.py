@@ -3,6 +3,7 @@ from collections import OrderedDict
 from astropy.table import Table
 from hermes_core.util.schema import HermesDataSchema
 
+
 def test_hermes_data_schema():
     """Test Schema Template and Info Functions"""
     schema = HermesDataSchema()
