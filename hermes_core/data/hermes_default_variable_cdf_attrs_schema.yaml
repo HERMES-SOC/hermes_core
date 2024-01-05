@@ -132,6 +132,7 @@ attribute_key:
       which change with time must have a DEPEND_0 attribute defined. See section 5.2.1
       which specifies the HERMES usage of DEPEND_0.
     derived: true
+    derivation_fn: _get_depend
     required: true
     overwrite: false
     valid_values: null
@@ -154,6 +155,7 @@ attribute_key:
     description: >
       This tells automated software, such as CDAWeb, how the data should be displayed.
     derived: true
+    derivation_fn: _get_display_type
     required: true
     overwrite: false
     valid_values:
@@ -168,6 +170,7 @@ attribute_key:
       A shortened version of CATDESC which can be used to label a plot axis or as a data
       listing heading. This is a string, up to ~30 characters in length.
     derived: true
+    derivation_fn: _get_fieldnam
     required: true
     overwrite: false
     valid_values: null
@@ -178,6 +181,7 @@ attribute_key:
       FILLVAL is required for time-varying variables. Fill data are always non-valid data. The
       ISTP standard fill values are listed in Table 5-4.
     derived: true
+    derivation_fn: _get_fillval
     required: true
     overwrite: false
     valid_values: null
@@ -191,6 +195,7 @@ attribute_key:
       formatting codes see the docs here: 
       https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
     derived: true
+    derivation_fn: _get_format
     required: true
     overwrite: false
     valid_values: null
@@ -209,6 +214,7 @@ attribute_key:
       Used to label a plot axis or to provide a heading for a data listing. This field is generally
       6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
     derived: true
+    derivation_fn: _get_lablaxis
     required: true
     overwrite: false
     valid_values: null
@@ -238,6 +244,7 @@ attribute_key:
       a blank space and the quotation marks are not included. Units which are not conveniently
       transformed into SI should follow the blank syntax " > " described above.
     derived: true
+    derivation_fn: _get_si_conversion
     required: true  # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -252,6 +259,7 @@ attribute_key:
       HERMES Science Working Team pages. Those pages also lay out the rules for
       formatting the UNITS string.
     derived: true
+    derivation_fn: _get_units
     required: true
     overwrite: false
     valid_values: null
@@ -273,6 +281,7 @@ attribute_key:
       mission. Used by application software to filter out values that are out of range. The
       value must match the data type of the variable.
     derived: true
+    derivation_fn: _get_validmin
     required: true
     overwrite: false
     valid_values: null
@@ -283,6 +292,7 @@ attribute_key:
       mission. Used by application software to filter out values that are out of range. The
       value must match the data type of the variable.
     derived: true
+    derivation_fn: _get_validmax
     required: true
     overwrite: false
     valid_values: null
@@ -291,6 +301,7 @@ attribute_key:
     description: >
       Used in CDAWeb to indicate if the data should be used directly by users. 
     derived: true
+    derivation_fn: _get_var_type
     required: true
     overwrite: false
     valid_values:

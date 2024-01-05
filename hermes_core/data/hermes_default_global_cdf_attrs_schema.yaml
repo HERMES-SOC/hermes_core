@@ -3,6 +3,7 @@ CDF_Lib_version:
     Version of the CDF Binaries library used to generate the CDF File
   default: null
   derived: true
+  derivation_fn: _get_cdf_lib_version
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: false
@@ -50,6 +51,7 @@ Data_type:
     product descriptor.
   default: null
   derived: true
+  derivation_fn: _get_data_type
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: true
@@ -89,6 +91,7 @@ Generation_date:
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
   default: null
   derived: true
+  derivation_fn: _get_generation_date
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
   overwrite: true
@@ -97,6 +100,7 @@ HERMES_version:
     Version of `hermes_core` originally used to generate the given CDF File
   default: null
   derived: true
+  derivation_fn: _get_hermes_version
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: false
@@ -161,6 +165,7 @@ Logical_file_id:
     in the case of accidental (or intentional) renaming.
   default: null
   derived: true
+  derivation_fn: _get_logical_file_id
   required: true
   validate: true
   overwrite: true
@@ -175,6 +180,7 @@ Logical_source:
     come from 'Data_type' attribute)
   default: null
   derived: true
+  derivation_fn: _get_logical_source
   required: true
   validate: true
   overwrite: true
@@ -185,6 +191,7 @@ Logical_source_description:
     this value on their website.
   default: null
   derived: true
+  derivation_fn: _get_logical_source_description
   required: true
   validate: true
   overwrite: true
@@ -259,6 +266,7 @@ Start_time:
     The start time of the contained data given in YYYYMMDD_hhmmss
   default: null
   derived: true
+  derivation_fn: _get_start_time
   required: true # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: true
