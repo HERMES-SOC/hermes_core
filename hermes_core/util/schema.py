@@ -17,8 +17,74 @@ class HermesDataSchema(SpaceWeatherDataSchema):
     Class representing a schema for data requirements and formatting, specific to the
     HERMES Mission.
 
-    There are two main componentes to the HERMES Data Schema, including both global and
+    There are two main components to the HERMES Data Schema, including both global and
     variable attribute information.
+
+    Global schema information is loaded from YAML (dict-like) files in the following format:
+
+    .. code-block:: yaml
+
+        attribute_name:
+            description: >
+                Include a meaningful description of the attribute and context needed to understand
+                its values.
+            default: <string> # A default value for the attribute if needed/desired
+            derived: <bool> # Whether or not the attribute's value can be derived using a python function
+            derivation_fn: <string> # The name of a Python function to derive the value. Must be a function member of the schema class and match the signature below.
+            required: <bool> # Whether the attribute is required
+            validate: <bool> # Whether the attribute should be validated by the Validation module
+            overwrite: <bool> # Whether an existing value for the attribute should be overwritten if a different value is derived.
+
+    The signature for all functions to derive global attributes should follow the format below.
+    The function takes in a parameter `data` which is a `HermesData` object, or that of an
+    extended data class, and returns a single attribute value for the given attribute to be
+    derived.
+
+    .. code-block:: python
+
+        def derivation_fn(self, data: HermesData):
+            # ... do manipulations as needed from `data`
+            return "attribute_value"
+
+    Variable schema information is loaded from YAML (dict-like) files in the following format:
+
+    .. code-block:: yaml
+
+        attribute_key:
+            attribute_name:
+                description: >
+                    Include a meaningful description of the attribute and context needed to understand
+                    its values.
+                derived: <bool> # Whether or not the attribute's value can be derived using a python function
+                derivation_fn: <string> # The name of a Python function to derive the value. Must be a function member of the schema class and match the signature below.
+                required: <bool> # Whether the attribute is required
+                validate: <bool> # Whether the attribute should be validated by the Validation module
+                overwrite: <bool> # Whether an existing value for the attribute should be overwritten if a different value is derived.
+                valid_values: <list> # A list of valid values that the attribute can take. The value of the attribute is checked against the `valid_values` in the Validation module.
+                alternate: <string> An additional attribute name that can be treated as an alternative of the given attribute.
+        data:
+            - attribute_name
+            - ...
+        support_data:
+            - ...
+        metadata:
+            - ...
+
+    The signature for all functions to derive variable attributes should follow the format below.
+    The function takes in parameters `var_name`, `var_data`, and `guess_type`, where:
+
+    - `var_name` is the variable name of the variable for which the attribute is being derived
+    - `var_data` is the variable data of the variable for which the attribute is being derived
+    - `guess_type` is the guessed CDF variable type of the data for which the attribute is being derived.
+
+    The function must return a single attribute value for the given attribute to be derived.
+
+    .. code-block:: python
+
+        def derivation_fn(self, var_name: str, var_data: Union[Quantity, NDData, NDCube], guess_type: ctypes.c_long):
+            # ... do manipulations as needed from data
+            return "attribute_value"
+
 
     Parameters
     ----------
