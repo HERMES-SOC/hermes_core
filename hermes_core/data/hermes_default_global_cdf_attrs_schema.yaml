@@ -4,7 +4,7 @@ CDF_Lib_version:
   default: null
   derived: true
   derivation_fn: _get_cdf_lib_version
-  required: true # NOT Required in ISTP Guide (Derived)
+  required: false
   validate: false
   overwrite: false
 DOI:
@@ -32,7 +32,7 @@ Data_level:
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: true
 Data_product_descriptor:
   description: > 
@@ -52,8 +52,8 @@ Data_type:
   default: null
   derived: true
   derivation_fn: _get_data_type
-  required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  required: true 
+  validate: true
   overwrite: true
 Data_version:
   description: >
@@ -101,7 +101,7 @@ HERMES_version:
   default: null
   derived: true
   derivation_fn: _get_hermes_version
-  required: true # NOT Required in ISTP Guide (Derived)
+  required: false # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: false
 HTTP_LINK:
@@ -121,7 +121,7 @@ Instrument_mode:
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: false
 Instrument_type:
   description: > 
@@ -268,7 +268,7 @@ Start_time:
   derived: true
   derivation_fn: _get_start_time
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: true
 TEXT:
   description: >

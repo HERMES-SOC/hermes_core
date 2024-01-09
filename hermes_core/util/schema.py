@@ -140,3 +140,12 @@ class HermesDataSchema(SpaceWeatherDataSchema):
             variable_schema_layers=_variable_schema_layers,
             use_defaults=use_defaults,
         )
+
+    def _get_hermes_version(self, data):
+        """Function to get the version of hermes_core used to generate the data"""
+        attr_name = "hermes_version"
+        if (attr_name not in data.meta) or (not data.meta[attr_name]):
+            hermes_version = hermes_core.__version__
+        else:
+            hermes_version = data.meta[attr_name]
+        return hermes_version

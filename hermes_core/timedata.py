@@ -6,6 +6,7 @@ from typing import Optional, Union
 import astropy
 import ndcube
 from swxsoc_core.timedata import SpaceWeatherData
+from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["HermesData"]
 
@@ -90,3 +91,7 @@ class HermesData(SpaceWeatherData):
     ):
         # Call SwxSOC Init
         super().__init__(timeseries, support, spectra, meta)
+
+        # Derive Metadata using custom Schema
+        self.schema = HermesDataSchema()
+        self._derive_metadata()
