@@ -5,13 +5,13 @@ Container class for Measurement Data.
 from typing import Optional, Union
 import astropy
 import ndcube
-from swxsoc_core.timedata import SpaceWeatherData
+from swxsoc.swxdata import SWXData
 from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["HermesData"]
 
 
-class HermesData(SpaceWeatherData):
+class HermesData(SWXData):
     """
     A generic object for loading, storing, and manipulating HERMES time series data.
 

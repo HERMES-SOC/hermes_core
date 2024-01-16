@@ -18,7 +18,7 @@ from spacepy.pycdf import CDF, CDFError
 from matplotlib.axes import Axes
 from hermes_core.timedata import HermesData
 from hermes_core.util.schema import HermesDataSchema
-from swxsoc_core.util.validation import validate
+from swxsoc.util.validation import validate
 
 
 def get_bad_timeseries():

@@ -6,6 +6,7 @@ This code is based on that provided by SunPy see
 """
 import os
 import shutil
+import json
 import configparser
 from pathlib import Path
 
@@ -62,6 +63,52 @@ def load_config():
         "downloads",
         "download_dir",
         (working_dir / download_dir).expanduser().resolve().as_posix(),
+    )
+
+    # Set Mission-Specific Configuration
+    config.set("mission", "inst_names", json.loads(config.get("mission", "inst_names")))
+    config.set(
+        "mission",
+        "inst_shortnames",
+        json.loads(config.get("mission", "inst_shortnames")),
+    )
+    config.set(
+        "mission", "inst_fullnames", json.loads(config.get("mission", "inst_fullnames"))
+    )
+    config.set(
+        "mission",
+        "inst_targetnames",
+        json.loads(config.get("mission", "inst_targetnames")),
+    )
+    config.set(
+        "mission",
+        "inst_to_shortname",
+        dict(
+            zip(
+                config.get("mission", "inst_names"),
+                config.get("mission", "inst_shortnames"),
+            )
+        ),
+    )
+    config.set(
+        "mission",
+        "inst_to_targetname",
+        dict(
+            zip(
+                config.get("mission", "inst_names"),
+                config.get("mission", "inst_targetnames"),
+            )
+        ),
+    )
+    config.set(
+        "mission",
+        "inst_to_fullname",
+        dict(
+            zip(
+                config.get("mission", "inst_names"),
+                config.get("mission", "inst_fullnames"),
+            )
+        ),
     )
 
     return config

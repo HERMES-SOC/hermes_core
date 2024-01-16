@@ -3,7 +3,7 @@ This module provides schema metadata derivations.
 """
 from pathlib import Path
 from typing import Optional
-from swxsoc_core.util.schema import SpaceWeatherDataSchema
+from swxsoc.util.schema import SWXSchema
 import hermes_core
 
 __all__ = ["HermesDataSchema"]
@@ -12,7 +12,7 @@ DEFAULT_GLOBAL_CDF_ATTRS_SCHEMA_FILE = "hermes_default_global_cdf_attrs_schema.y
 DEFAULT_VARIABLE_CDF_ATTRS_SCHEMA_FILE = "hermes_default_variable_cdf_attrs_schema.yaml"
 
 
-class HermesDataSchema(SpaceWeatherDataSchema):
+class HermesDataSchema(SWXSchema):
     """
     Class representing a schema for data requirements and formatting, specific to the
     HERMES Mission.

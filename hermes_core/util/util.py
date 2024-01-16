@@ -67,9 +67,9 @@ def create_science_filename(
     else:
         time_str = time.strftime(TIME_FORMAT)
 
-    if instrument not in hermes_core.INST_NAMES:
+    if instrument not in hermes_core.config["mission"]["inst_names"]:
         raise ValueError(
-            f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
+            f"Instrument, {instrument}, is not recognized. Must be one of {hermes_core.config['mission']['inst_names']}."
         )
     if level not in VALID_DATA_LEVELS[1:]:
         raise ValueError(
@@ -96,7 +96,7 @@ def create_science_filename(
             "The underscore symbol _ is not allowed in mode or descriptor."
         )
 
-    filename = f"hermes_{hermes_core.INST_TO_SHORTNAME[instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
+    filename = f"hermes_{hermes_core.config['mission']['inst_to_shortname'][instrument]}_{mode}_{level}{test_str}_{descriptor}_{time_str}_v{version}"
     filename = filename.replace("__", "_")  # reformat if mode or descriptor not given
 
     return filename + FILENAME_EXTENSION
@@ -139,11 +139,14 @@ def parse_science_filename(filepath: str) -> dict:
 
     filename_components = file_name.split("_")
 
-    if filename_components[0] != hermes_core.MISSION_NAME:
+    if filename_components[0] != hermes_core.config["mission"]["mission_name"]:
         raise ValueError(f"File {filename} not recognized. Not a valid mission name.")
 
     if file_ext == ".bin":
-        if filename_components[1] not in hermes_core.INST_TARGETNAMES:
+        if (
+            filename_components[1]
+            not in hermes_core.config["mission"]["inst_targetnames"]
+        ):
             raise ValueError(
                 f"File {filename} not recognized. Not a valid target name."
             )
@@ -160,18 +163,25 @@ def parse_science_filename(filepath: str) -> dict:
         else:
             result["level"] = filename_components[2 + offset]
         #  reverse the dictionary to look up instrument name from the short name
-        from_shortname = {v: k for k, v in hermes_core.INST_TO_TARGETNAME.items()}
+        from_shortname = {
+            v: k for k, v in hermes_core.config["mission"]["inst_to_targetname"].items()
+        }
 
         result["time"] = Time.strptime(filename_components[3 + offset], TIME_FORMAT_L0)
 
     elif file_ext == ".cdf":
-        if filename_components[1] not in hermes_core.INST_SHORTNAMES:
+        if (
+            filename_components[1]
+            not in hermes_core.config["mission"]["inst_shortnames"]
+        ):
             raise ValueError(
                 "File {filename} not recognized. Not a valid instrument name."
             )
 
         #  reverse the dictionary to look up instrument name from the short name
-        from_shortname = {v: k for k, v in hermes_core.INST_TO_SHORTNAME.items()}
+        from_shortname = {
+            v: k for k, v in hermes_core.config["mission"]["inst_to_shortname"].items()
+        }
 
         result["time"] = Time.strptime(filename_components[-2], TIME_FORMAT)
 
