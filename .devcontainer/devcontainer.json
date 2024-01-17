@@ -16,24 +16,23 @@
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestEnabled": true,
 				"python.languageServer": "Pylance",
-				"python.linting.enabled": true,
 				
 				//PyLint Settings
 				"pylint.enabled": true,
-				"pylint.path": "/usr/bin/pylint",
+				"pylint.path": ["/usr/bin/pylint"],
 				"pylint.lintOnChange": true,
 				
 				// Black Settings
 				"python.editor.defaultFormatter": "ms-python.black-formatter",
     			"python.editor.formatOnSave": true,
-				"black-formatter.path": "/usr/local/bin/black",
+				"black-formatter.path": ["/usr/local/bin/black"],
 				"black-formatter.args": [
 					"--line-length",
 					"100"
 				],
 
 				// Flake8 Settings
-				"flake8.path": "/usr/local/bin/flake8",
+				"flake8.path": ["/usr/local/bin/flake8"],
 				"flake8.lintOnChange": true,
 				
 				// Terminal Settings
