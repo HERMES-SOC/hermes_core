@@ -1,4 +1,0 @@
-{
-    "esbonio.server.enabled": true,
-    "python.formatting.blackPath": "/usr/local/bin/black"
-}
