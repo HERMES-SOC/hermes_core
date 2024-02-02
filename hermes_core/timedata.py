@@ -334,9 +334,9 @@ class HermesData:
                     f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.INST_NAMES}."
                 )
             # Set the Property
-            meta[
-                "Descriptor"
-            ] = f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+            meta["Descriptor"] = (
+                f"{instr_name.upper()}>{hermes_core.INST_TO_FULLNAME[instr_name]}"
+            )
 
         # Check the Optional Data Level
         if data_level:

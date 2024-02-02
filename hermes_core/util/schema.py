@@ -4,6 +4,7 @@ This module provides schema metadata derivations.
 This code is based on that provided by SpacePy see
     licenses/SPACEPY.rst
 """
+
 from pathlib import Path
 from collections import OrderedDict
 from copy import deepcopy
@@ -323,9 +324,9 @@ class HermesDataSchema:
 
         # Strip the Description of New Lines
         for attr_name in measurement_attribute_key.keys():
-            measurement_attribute_key[attr_name][
-                "description"
-            ] = measurement_attribute_key[attr_name]["description"].strip()
+            measurement_attribute_key[attr_name]["description"] = (
+                measurement_attribute_key[attr_name]["description"].strip()
+            )
 
         # Create New Column to describe which VAR_TYPE's require the given attribute
         for attr_name in measurement_attribute_key.keys():

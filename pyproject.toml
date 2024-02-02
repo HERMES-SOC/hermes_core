@@ -38,31 +38,31 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   'coverage>=5.0.3',
-  'pytest',
-  'pytest-astropy',
-  'pytest-cov',
-  'black',
-  'flake8',
-  'coverage[toml]'
+  'pytest==8.0.0',
+  'pytest-astropy==0.11.0',
+  'pytest-cov==4.1.0',
+  'black==24.1.1',
+  'flake8==7.0.0',
+  'coverage[toml]==7.4.1'
 ]
 
 docs = [
-  'sphinx',
-  'sphinx-automodapi',
-  'sphinx-copybutton'
+  'sphinx==7.2.6',
+  'sphinx-automodapi==0.16.0',
+  'sphinx-copybutton==0.5.2'
 ]
 
 test = [
-  'pytest',
-  'pytest-astropy',
-  'pytest-cov',
-  'coverage[toml]',
+  'pytest==8.0.0',
+  'pytest-astropy==0.11.0',
+  'pytest-cov==4.1.0',
+  'coverage[toml]==7.4.1'
 ]
 
 style = [
-  'black',
-  'flake8',
-  'rstcheck',
+  'black==24.1.1',
+  'flake8==7.0.0',
+  'rstcheck==6.2.0',
 ]
 
 [tool.setuptools.package-data]
