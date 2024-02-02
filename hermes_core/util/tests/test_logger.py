@@ -1,6 +1,7 @@
 """
 Tests for the logging module
 """
+
 import logging
 import os.path
 import warnings

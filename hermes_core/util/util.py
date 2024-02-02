@@ -1,6 +1,7 @@
 """
 This module provides general utility functions.
 """
+
 import os
 
 from astropy.time import Time

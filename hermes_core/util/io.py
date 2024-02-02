@@ -162,9 +162,9 @@ class CDFHandler(HermesDataIOHandler):
                                 )
                                 # Swap Units
                                 var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                                var_attrs[
-                                    "UNITS"
-                                ] = u.dimensionless_unscaled.to_string()
+                                var_attrs["UNITS"] = (
+                                    u.dimensionless_unscaled.to_string()
+                                )
                                 self._load_spectra_variable(
                                     spectra, var_name, var_data, var_attrs, ts.time
                                 )
@@ -180,9 +180,9 @@ class CDFHandler(HermesDataIOHandler):
                                 )
                                 # Swap Units
                                 var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                                var_attrs[
-                                    "UNITS"
-                                ] = u.dimensionless_unscaled.to_string()
+                                var_attrs["UNITS"] = (
+                                    u.dimensionless_unscaled.to_string()
+                                )
                                 self._load_timeseries_variable(
                                     ts, var_name, var_data, var_attrs
                                 )
