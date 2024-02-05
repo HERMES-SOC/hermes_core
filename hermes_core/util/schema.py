@@ -1,6 +1,7 @@
 """
 This module provides schema metadata derivations.
 """
+
 from pathlib import Path
 from typing import Optional
 from swxsoc.util.schema import SWXSchema

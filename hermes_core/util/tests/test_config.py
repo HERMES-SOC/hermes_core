@@ -1,6 +1,7 @@
 """
 Tests for the config module
 """
+
 import io
 import os
 from pathlib import Path
