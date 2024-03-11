@@ -12,8 +12,6 @@ build:
   jobs:
     pre_build:
       - pip install pip setuptools wheel --upgrade
-      - pip install numpy
-      - pip install spacepy --no-build-isolation
       - pip install -e .[docs,all]
 
 # Optionally build your docs in additional formats such as PDF and ePub
