@@ -36,42 +36,10 @@ jobs:
         pip install -e .[test]
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
 
-    - name: Install CDF library on Ubuntu
-      run: |
-        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
-        unzip latest.zip
-        echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
-      if: ${{(matrix.platform == 'ubuntu-latest')}}
-
-    - name: Install CDF library on MacOS
-      run: |
-        wget https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_0/macosx/CDF3_9_0-binary-signed.pkg
-        sudo installer -pkg CDF3_9_0-binary-signed.pkg -target /
-        ls -l
-        echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
-      if: ${{(matrix.platform == 'macos-latest')}}
-
     # Set up CDF and run tests on Windows
     - name: Install CDF on Windows
       shell: cmd
       run: |
-        # Download and unzip CDF
-        curl -L "https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/latest/windows/cdf3.9.0_64bit_WinZip_Installer.zip" --output cdf.zip
-        mkdir cdf_lib
-        tar -xf cdf.zip -C cdf_lib
-
-        # Set environment variables for CDF
-        set mydir=%cd%
-        set CDF_BASE=%mydir%\cdf_lib
-        set CDF_INC=%mydir%\cdf_lib\include
-        set CDF_LIB=%mydir%\cdf_lib\lib
-        set CDF_HELP=%mydir%\cdf_lib\help
-        set CDF_LEAPSECONDSTABLE=%mydir%\cdf_lib\CDFLeapSeconds.txt
-        set CLASSPATH=%mydir%\cdf_lib\CDFToolsDriver.jar;%mydir%\cdf_lib\lib\cdfjava.jar;%mydir%\cdf_lib\lib\cdfml.jar;%mydir%\cdf_lib\lib\cdfjson.jar;%mydir%\cdf_lib\lib\cdfj.jar;%mydir%\cdf_lib\lib\gson-2.8.6.jar;%mydir%\cdf_lib\lib\javax.json-1.0.4.jar;.
-        set PATH=%mydir%\cdf_lib;%mydir%\cdf_lib\bin;%PATH%
-        set TERMINFO=%mydir%\cdf_lib\lib\terminfo
-        set JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
-
         # Run tests
         pytest --pyargs hermes_core --cov hermes_core
       # Skip Windows Python 3.11 tests until SpacePy is updated
