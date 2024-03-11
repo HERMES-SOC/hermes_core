@@ -31,13 +31,11 @@ jobs:
       run: |
         pip install pip setuptools wheel --upgrade
         # Install spacepy without build isolation to avoid issues with numpy
-        pip install numpy==1.26.3
-        pip install spacepy==0.5.0 --no-build-isolation
         pip install -e .[test]
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
 
     # Set up CDF and run tests on Windows
-    - name: Install CDF on Windows
+    - name: Run tests on Windows
       shell: cmd
       run: |
         # Run tests
