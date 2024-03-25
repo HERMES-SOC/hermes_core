@@ -12,7 +12,7 @@ build:
   jobs:
     pre_build:
       - pip install pip setuptools wheel --upgrade
-      - pip install -e .[style,all]
+      - pip install -e .[style,docs,all]
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats:
