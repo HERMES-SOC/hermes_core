@@ -11,12 +11,8 @@ build:
     python: "3.9"
   jobs:
     pre_build:
-      - wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
-      - unzip latest.zip
       - pip install pip setuptools wheel --upgrade
-      - pip install numpy
-      - pip install spacepy --no-build-isolation
-      - pip install -e .[docs,all]
+      - pip install -e .[style,all]
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats:
