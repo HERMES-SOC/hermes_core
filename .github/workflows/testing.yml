@@ -13,7 +13,6 @@ on:
     - cron: 0 0 * * * # Scheduled run every day at midnight
 jobs:
   build:
-
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
@@ -30,7 +29,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install pip setuptools wheel --upgrade
-        # Install spacepy without build isolation to avoid issues with numpy
         pip install -e .[test]
       if: ${{ !(matrix.platform == 'windows-latest' && matrix.python-version == '3.11') }}
 
