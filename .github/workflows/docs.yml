@@ -29,7 +29,6 @@ jobs:
     - name: rstcheck
       run: |
         pip install pip setuptools wheel --upgrade
-        # Install spacepy without build isolation to avoid issues with numpy
         pip install -e .[all]
         rstcheck -r docs 
     - name: Build docs
