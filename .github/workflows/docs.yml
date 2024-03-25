@@ -30,8 +30,7 @@ jobs:
       run: |
         pip install pip setuptools wheel --upgrade
         # Install spacepy without build isolation to avoid issues with numpy
-        pip install -e .[test]
-        python -m pip install -e '.[style]'
+        pip install -e .[test, style]
         rstcheck -r docs 
     - name: Build docs
       run: sphinx-build docs docs/_build/html -W -b html
