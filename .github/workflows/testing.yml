@@ -33,9 +33,8 @@ jobs:
 
     # Run tests on Windows, Linux, and MacOS
     - name: Run Tests
-      run: |
-        # Run tests
-        pytest --pyargs hermes_core --cov hermes_core
-
+      run: pytest --pyargs hermes_core --cov hermes_core
+    
+    # Upload coverage reports to Codecov
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v3
