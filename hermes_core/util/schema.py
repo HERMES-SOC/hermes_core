@@ -1416,7 +1416,7 @@ class HermesDataSchema:
         given in format `YYYYMMDDThhmmss`
         """
         # Get the Start Time from the TimeSeries
-        return data["time"][0].isot
+        return data.time[0].isot
 
     def _get_version(self, data):
         """

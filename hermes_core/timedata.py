@@ -6,6 +6,7 @@ from pathlib import Path
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Optional, Union
+import astropy.timeseries
 import numpy as np
 import astropy
 from astropy.time import Time
@@ -23,6 +24,8 @@ from hermes_core.util.util import VALID_DATA_LEVELS
 
 __all__ = ["HermesData"]
 
+DEFAULT_TIMESERIES_KEY = "Epoch"
+
 
 class HermesData:
     """
@@ -30,8 +33,8 @@ class HermesData:
 
     Parameters
     ----------
-    timeseries :  `astropy.timeseries.TimeSeries`
-        The time series of data. Columns must be `~astropy.units.Quantity` arrays.
+    timeseries :  `Union[astropy.timeseries.TimeSeries, Dict[str, astropy.timeseries.TimeSeries]]`
+        The time-series data. This can be a single `astropy.timeseries.TimeSeries` object or a dictionary of `str` to `astropy.timeseries.TimeSeries` objects. Columns must be `~astropy.units.Quantity` arrays.
     support : `Optional[dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]]`
         Support data arrays which do not vary with time (i.e. Non-Record-Varying data).
     spectra : `Optional[ndcube.NDCollection]`
@@ -95,7 +98,9 @@ class HermesData:
 
     def __init__(
         self,
-        timeseries: astropy.timeseries.TimeSeries,
+        timeseries: Union[
+            astropy.timeseries.TimeSeries, dict[str, astropy.timeseries.TimeSeries]
+        ],
         support: Optional[
             dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]
         ] = None,
@@ -107,48 +112,35 @@ class HermesData:
         # ================================================
 
         # Verify TimeSeries compliance
-        if not isinstance(timeseries, TimeSeries):
-            raise TypeError(
-                "timeseries must be a `astropy.timeseries.TimeSeries` object."
-            )
-
-        if len(timeseries) == 0:
-            raise ValueError(
-                "timeseries cannot be empty, must include at least a 'time' column with valid times"
-            )
-
-        # Check individual Columns
-        for colname in timeseries.columns:
-            # Verify that all Measurements are `Quantity`
-            if colname != "time" and not isinstance(timeseries[colname], u.Quantity):
-                raise TypeError(
-                    f"Column '{colname}' must be an astropy.units.Quantity object"
-                )
-            # Verify that the Column is only a single dimension
-            if len(timeseries[colname].shape) > 1:  # If there is more than 1 Dimension
-                raise ValueError(
-                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
-                )
+        if isinstance(timeseries, dict):
+            for key, value in timeseries.items():
+                self._validate_timeseries(value)
+        else:
+            self._validate_timeseries(timeseries)
 
         # Global Metadata Attributes are compiled from two places. You can pass in
         # global metadata throug the `meta` parameter or through the `TimeSeries.meta`
         # attribute.
-        _meta = {}
+        self._meta = {}
         if meta is not None and isinstance(meta, dict):
-            _meta.update(meta)
-        if timeseries.meta is not None and isinstance(timeseries.meta, dict):
-            _meta.update(timeseries.meta)
+            self._meta.update(meta)
+        if (
+            isinstance(timeseries, TimeSeries)
+            and timeseries.meta is not None
+            and isinstance(timeseries.meta, dict)
+        ):
+            self._meta.update(timeseries.meta)
 
         # Check Global Metadata Requirements - Require Descriptor, Data_level, Data_Version
-        if "Descriptor" not in _meta or _meta["Descriptor"] is None:
+        if "Descriptor" not in self._meta or self._meta["Descriptor"] is None:
             raise ValueError(
                 "'Descriptor' global meta attribute required for HERMES Instrument name"
             )
-        if "Data_level" not in _meta or _meta["Data_level"] is None:
+        if "Data_level" not in self._meta or self._meta["Data_level"] is None:
             raise ValueError(
                 "'Data_level' global meta attribute required for HERMES data level"
             )
-        if "Data_version" not in _meta or _meta["Data_version"] is None:
+        if "Data_version" not in self._meta or self._meta["Data_version"] is None:
             raise ValueError(
                 "'Data_version' global meta attribute is required for HERMES data version"
             )
@@ -174,23 +166,25 @@ class HermesData:
         # ================================================
 
         # Copy the TimeSeries
-        self._timeseries = TimeSeries(timeseries, copy=True)
-
-        # Add Input Metadata
-        if meta is not None and isinstance(meta, dict):
-            self._timeseries.meta.update(meta)
+        if isinstance(timeseries, dict):
+            self._timeseries = {}
+            for key, value in timeseries.items():
+                self._timeseries[key] = TimeSeries(value, copy=True)
+        elif isinstance(timeseries, TimeSeries):
+            self._timeseries = {
+                DEFAULT_TIMESERIES_KEY: TimeSeries(timeseries, copy=True)
+            }
 
         # Add any Metadata from the original TimeSeries
-        self._timeseries["time"].meta = OrderedDict()
-        if hasattr(timeseries["time"], "meta"):
-            self._timeseries["time"].meta.update(timeseries["time"].meta)
-
-        # Add TimeSeries Measurement Metadata
-        for col in self._timeseries.columns:
-            if col != "time":
-                self._timeseries[col].meta = self.measurement_attribute_template()
-                if hasattr(timeseries[col], "meta"):
-                    self._timeseries[col].meta.update(timeseries[col].meta)
+        if isinstance(timeseries, dict):
+            for key, value in timeseries.items():
+                self._update_timeseries_measurement_meta(
+                    timeseries=value, epoch_key=key
+                )
+        else:
+            self._update_timeseries_measurement_meta(
+                timeseries=timeseries, epoch_key=DEFAULT_TIMESERIES_KEY
+            )
 
         # Copy the Non-Record Varying Data
         if support:
@@ -222,9 +216,13 @@ class HermesData:
     @property
     def timeseries(self):
         """
-        (`astropy.timeseries.TimeSeries`) A `TimeSeries` representing one or more measurements as a function of time.
+        (`astropy.timeseries.TimeSeries` or `dict`) A `TimeSeries` representing one or more measurements as a function of time.
+        If there are multiple `TimeSeries`, a dictionary is returned.
         """
-        return self._timeseries
+        if len(self._timeseries) > 1:
+            return {key: value for key, value in self._timeseries.items()}
+        else:
+            return self._timeseries[DEFAULT_TIMESERIES_KEY]
 
     @property
     def support(self):
@@ -256,14 +254,14 @@ class HermesData:
         """
         (`collections.OrderedDict`) Global metadata associated with the measurement data.
         """
-        return self._timeseries.meta
+        return self._meta
 
     @property
     def time(self):
         """
         (`astropy.time.Time`) The times of the measurements.
         """
-        t = Time(self._timeseries.time)
+        t = Time(self._timeseries[DEFAULT_TIMESERIES_KEY].time)
         # Set time format to enable plotting with astropy.visualisation.time_support()
         t.format = "iso"
         return t
@@ -273,7 +271,7 @@ class HermesData:
         """
         (`tuple`) The start and end times of the times.
         """
-        return (self._timeseries.time.min(), self._timeseries.time.max())
+        return (self.time.min(), self.time.max())
 
     def __repr__(self):
         """
@@ -288,12 +286,14 @@ class HermesData:
         str_repr = f"HermesData() Object:\n"
         # Global Attributes/Metedata
         str_repr += f"Global Attrs:\n"
-        for attr_name, attr_value in self._timeseries.meta.items():
+        for attr_name, attr_value in self._meta.items():
             str_repr += f"\t{attr_name}: {attr_value}\n"
         # TimeSeries Data
         str_repr += f"TimeSeries Data:\n"
-        for var_name in self._timeseries.colnames:
-            str_repr += f"\t{var_name}\n"
+        for epoch_key, ts in self._timeseries.items():
+            str_repr += f"\tTimeSeries: {epoch_key}\n"
+            for var_name in ts.colnames:
+                str_repr += f"\t\t{var_name}\n"
         # Support Data
         str_repr += f"Support Data:\n"
         for var_name in self._support.keys():
@@ -372,6 +372,78 @@ class HermesData:
         """
         return HermesDataSchema.measurement_attribute_template()
 
+    def _validate_timeseries(self, timeseries: astropy.timeseries.TimeSeries):
+        """
+        Validate a timeseries.
+
+        Parameters
+        ----------
+        timeseries : astropy.timeseries.TimeSeries
+            The timeseries to validate.
+
+        Raises
+        ------
+        TypeError
+            If the timeseries is not a `astropy.timeseries.TimeSeries` object or a dictionary of `str` to `astropy.timeseries.TimeSeries` objects.
+            If any column in the timeseries (other than 'time') is not an `astropy.units.Quantity` object.
+        ValueError
+            If the timeseries is empty.
+            If any column in the timeseries is not a one-dimensional measurement.
+        """
+        if not isinstance(timeseries, astropy.timeseries.TimeSeries):
+            raise TypeError(
+                "timeseries must be a `astropy.timeseries.TimeSeries` object or a dictionary of `str` to `astropy.timeseries.TimeSeries` objects."
+            )
+        if (
+            isinstance(timeseries, astropy.timeseries.TimeSeries)
+            and len(timeseries) == 0
+        ):
+            raise ValueError(
+                "timeseries cannot be empty, must include at least a 'time' column with valid times"
+            )
+        for colname in timeseries.columns:
+            # Verify that all Measurements are `Quantity`
+            if colname != "time" and not isinstance(timeseries[colname], u.Quantity):
+                raise TypeError(
+                    f"Column '{colname}' must be an astropy.units.Quantity object"
+                )
+            # Verify that the Column is only a single dimension
+            if len(timeseries[colname].shape) > 1:  # If there is more than 1 Dimension
+                raise ValueError(
+                    f"Column '{colname}' must be a one-dimensional measurement. Split additional dimensions into unique measurements."
+                )
+
+    def _update_timeseries_measurement_meta(
+        self, timeseries: TimeSeries, epoch_key: str
+    ):
+        """
+        Update the metadata for a specific timeseries in the collection.
+
+        This method updates the metadata for both the time attribute and the measurements
+        in the timeseries. If the time attribute or a measurement has a `meta` attribute,
+        its contents are added to the corresponding attribute in the stored timeseries.
+
+        Parameters
+        ----------
+        timeseries : `astropy.timeseries.TimeSeries`
+            The timeseries whose metadata is to be updated. This timeseries should already
+            be part of the collection.
+        epoch_key : str
+            The key identifying the timeseries in the collection.
+        """
+        # Time Attributes
+        self._timeseries[epoch_key]["time"].meta = OrderedDict()
+        if hasattr(timeseries["time"], "meta"):
+            self._timeseries[epoch_key]["time"].meta.update(timeseries["time"].meta)
+        # Measurement Attributes
+        for col in timeseries.columns:
+            if col != "time":
+                self._timeseries[epoch_key][
+                    col
+                ].meta = self.measurement_attribute_template()
+                if hasattr(timeseries[col], "meta"):
+                    self._timeseries[epoch_key][col].meta.update(timeseries[col].meta)
+
     def _derive_metadata(self):
         """
         Funtion to derive global and measurement metadata based on a HermesDataSchema
@@ -382,27 +454,30 @@ class HermesData:
             self._update_global_attribute(attr_name, attr_value)
 
         # Global Attributes
-        for attr_name, attr_value in self.schema.derive_global_attributes(
-            self._timeseries
-        ).items():
+        for attr_name, attr_value in self.schema.derive_global_attributes(self).items():
             self._update_global_attribute(attr_name, attr_value)
 
-        # Time Measurement Attributes
-        for attr_name, attr_value in self.schema.derive_time_attributes(
-            self._timeseries
-        ).items():
-            self._update_timeseries_attribute(
-                var_name="time", attr_name=attr_name, attr_value=attr_value
-            )
-
-        # Other Measurement Attributes
-        for col in [col for col in self._timeseries.columns if col != "time"]:
-            for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                self._timeseries, col
-            ).items():
+        for epoch_key, ts in self._timeseries.items():
+            # Time Measurement Attributes
+            for attr_name, attr_value in self.schema.derive_time_attributes(ts).items():
                 self._update_timeseries_attribute(
-                    var_name=col, attr_name=attr_name, attr_value=attr_value
+                    epoch_key=epoch_key,
+                    var_name="time",
+                    attr_name=attr_name,
+                    attr_value=attr_value,
                 )
+
+            # Other Measurement Attributes
+            for col in [col for col in ts.columns if col != "time"]:
+                for attr_name, attr_value in self.schema.derive_measurement_attributes(
+                    ts, col
+                ).items():
+                    self._update_timeseries_attribute(
+                        epoch_key=epoch_key,
+                        var_name=col,
+                        attr_name=attr_name,
+                        attr_value=attr_value,
+                    )
 
         # Support/ Non-Record-Varying Data
         for col in self._support:
@@ -424,44 +499,41 @@ class HermesData:
 
     def _update_global_attribute(self, attr_name, attr_value):
         # If the attribute is set, check if we want to overwrite it
-        if (
-            attr_name in self._timeseries.meta
-            and self._timeseries.meta[attr_name] is not None
-        ):
+        if attr_name in self._meta and self._meta[attr_name] is not None:
             # We want to overwrite if:
             #   1) The actual value is not the derived value
             #   2) The schema marks this attribute to be overwriten
             if (
-                self._timeseries.meta[attr_name] != attr_value
+                self._meta[attr_name] != attr_value
                 and self.schema.global_attribute_schema[attr_name]["overwrite"]
             ):
                 warn_user(
-                    f"Overriding Global Attribute {attr_name} : {self._timeseries.meta[attr_name]} -> {attr_value}"
+                    f"Overriding Global Attribute {attr_name} : {self._meta[attr_name]} -> {attr_value}"
                 )
-                self._timeseries.meta[attr_name] = attr_value
+                self._meta[attr_name] = attr_value
         # If the attribute is not set, set it
         else:
-            self._timeseries.meta[attr_name] = attr_value
+            self._meta[attr_name] = attr_value
 
-    def _update_timeseries_attribute(self, var_name, attr_name, attr_value):
+    def _update_timeseries_attribute(self, epoch_key, var_name, attr_name, attr_value):
         if (
-            attr_name in self.timeseries[var_name].meta
-            and self.timeseries[var_name].meta[attr_name] is not None
+            attr_name in self._timeseries[epoch_key][var_name].meta
+            and self._timeseries[epoch_key][var_name].meta[attr_name] is not None
             and attr_name in self.schema.variable_attribute_schema["attribute_key"]
         ):
             attr_schema = self.schema.variable_attribute_schema["attribute_key"][
                 attr_name
             ]
             if (
-                self.timeseries[var_name].meta[attr_name] != attr_value
+                self._timeseries[epoch_key][var_name].meta[attr_name] != attr_value
                 and attr_schema["overwrite"]
             ):
                 warn_user(
-                    f"Overriding TimeSeries {var_name} Attribute {attr_name} : {self.timeseries[var_name].meta[attr_name]} -> {attr_value}"
+                    f"Overriding TimeSeries {var_name} Attribute {attr_name} : {self._timeseries[epoch_key][var_name].meta[attr_name]} -> {attr_value}"
                 )
-                self.timeseries[var_name].meta[attr_name] = attr_value
+                self._timeseries[epoch_key][var_name].meta[attr_name] = attr_value
         else:
-            self.timeseries[var_name].meta[attr_name] = attr_value
+            self._timeseries[epoch_key][var_name].meta[attr_name] = attr_value
 
     def _update_support_attribute(self, var_name, attr_name, attr_value):
         if (
@@ -532,13 +604,17 @@ class HermesData:
                 f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
             )
 
-        self._timeseries[measure_name] = data
+        self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name] = data
         # Add any Metadata from the original Quantity
-        self._timeseries[measure_name].meta = self.measurement_attribute_template()
+        self._timeseries[DEFAULT_TIMESERIES_KEY][
+            measure_name
+        ].meta = self.measurement_attribute_template()
         if hasattr(data, "meta"):
-            self._timeseries[measure_name].meta.update(data.meta)
+            self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name].meta.update(
+                data.meta
+            )
         if meta:
-            self._timeseries[measure_name].meta.update(meta)
+            self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
@@ -635,13 +711,22 @@ class HermesData:
         measure_name: `str`
             Name of the variable to remove.
         """
-        if measure_name in self._timeseries.columns:
-            self._timeseries.remove_column(measure_name)
-        elif measure_name in self._support:
+        found = False
+        # Check TimeSeries
+        for epoch_key, ts in self._timeseries.items():
+            if measure_name in ts.columns:
+                self._timeseries[epoch_key].remove_column(measure_name)
+                found = True
+        # Check Support
+        if measure_name in self._support:
             self._support.pop(measure_name)
+            found = True
+        # Check Spectra
         elif measure_name in self._spectra:
             self._spectra.pop(measure_name)
-        else:
+            found = True
+        # Otherwise Raise and Error
+        if not found:
             raise ValueError(f"Data for Measurement {measure_name} not found.")
 
     def plot(self, axes=None, columns=None, subplots=True, **plot_args):
@@ -752,38 +837,37 @@ class HermesData:
             The data to be appended (rows) as a `TimeSeries` object.
         """
         # Verify TimeSeries compliance
-        if not isinstance(timeseries, TimeSeries):
-            raise TypeError("Data must be a TimeSeries object.")
-        if len(timeseries.columns) < 2:
-            raise ValueError("Data must have at least 2 columns")
-        if len(self.timeseries.columns) != len(timeseries.columns):
-            raise ValueError(
-                (
-                    f"Shape of curent TimeSeries ({len(self.timeseries.columns)}) does not match",
-                    f"shape of data to add ({len(timeseries.columns)}).",
-                )
-            )
+        self._validate_timeseries(timeseries)
 
-        # Check individual Columns
-        for colname in self.timeseries.columns:
-            if colname != "time" and not isinstance(
-                self.timeseries[colname], u.Quantity
-            ):
-                raise TypeError(
-                    f"Column '{colname}' must be an astropy.Quantity object"
-                )
+        # Check which epoch key to use
+        potential_epoch_keys = []
+        for epoch_key, ts in self._timeseries.items():
+            if len(ts.columns) == len(timeseries.columns):
+                potential_epoch_keys.append(epoch_key)
+        if len(potential_epoch_keys) == 0:
+            raise ValueError(
+                "No TimeSeries have the same length as the new data. Please specify which TimeSeries to append to."
+            )
+        elif len(potential_epoch_keys) > 1:
+            raise ValueError(
+                "Multiple TimeSeries have the same length as the new data. Please specify which TimeSeries to append to."
+            )
+        selected_epoch_key = potential_epoch_keys[0]
 
         # Save Metadata since it is not carried over with vstack
         metadata_holder = {
-            col: self.timeseries[col].meta for col in self.timeseries.columns
+            col: self._timeseries[selected_epoch_key][col].meta
+            for col in self._timeseries[selected_epoch_key].columns
         }
 
         # Vertically Stack the TimeSeries
-        self._timeseries = vstack([self._timeseries, timeseries])
+        self._timeseries[selected_epoch_key] = vstack(
+            [self._timeseries[selected_epoch_key], timeseries]
+        )
 
         # Add Metadata back to the Stacked TimeSeries
-        for col in self.timeseries.columns:
-            self.timeseries[col].meta = metadata_holder[col]
+        for col in self._timeseries[selected_epoch_key].columns:
+            self._timeseries[selected_epoch_key][col].meta = metadata_holder[col]
 
         # Re-Derive Metadata
         self._derive_metadata()
