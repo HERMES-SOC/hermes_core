@@ -375,19 +375,25 @@ class CDFHandler(HermesDataIOHandler):
                 cdf_file.attrs[attr_name] = attr_value
 
     def _convert_variables_to_cdf(self, data, cdf_file):
-        # Loop through Scalar TimeSeries Variables
-        for var_name in data.timeseries.colnames:
-            var_data = data.timeseries[var_name]
-            if var_name == "time":
-                # Add 'time' in the TimeSeries as 'Epoch' within the CDF
-                cdf_file["Epoch"] = var_data.to_datetime()
-                # Add the Variable Attributes
-                self._convert_variable_attributes_to_cdf("Epoch", var_data, cdf_file)
-            else:
-                # Add the Variable to the CDF File
-                cdf_file[var_name] = var_data.value
-                # Add the Variable Attributes
-                self._convert_variable_attributes_to_cdf(var_name, var_data, cdf_file)
+
+        for epoch_key, ts in data.timeseries_dict.items():
+            # Loop through Scalar TimeSeries Variables
+            for var_name in ts.colnames:
+                var_data = ts[var_name]
+                if var_name == "time":
+                    # Add 'time' in the TimeSeries as 'Epoch' within the CDF
+                    cdf_file[epoch_key] = var_data.to_datetime()
+                    # Add the Variable Attributes
+                    self._convert_variable_attributes_to_cdf(
+                        epoch_key, var_data, cdf_file
+                    )
+                else:
+                    # Add the Variable to the CDF File
+                    cdf_file[var_name] = var_data.value
+                    # Add the Variable Attributes
+                    self._convert_variable_attributes_to_cdf(
+                        var_name, var_data, cdf_file
+                    )
 
         # Loop through Non-Record-Varying Data
         for var_name, var_data in data.support.items():

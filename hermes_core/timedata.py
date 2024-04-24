@@ -224,6 +224,18 @@ class HermesData:
             return self._timeseries[DEFAULT_TIMESERIES_KEY]
 
     @property
+    def timeseries_dict(self):
+        """
+        Returns the dictionary of time-series data.
+
+        Returns
+        -------
+        dict
+            A dictionary of time-series data, where the keys are the names of the time-series variables and the values are `astropy.timeseries.TimeSeries` objects.
+        """
+        return self._timeseries
+
+    @property
     def support(self):
         """
         (`dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]`) A `dict` containing one or more non-time-varying support variables.
