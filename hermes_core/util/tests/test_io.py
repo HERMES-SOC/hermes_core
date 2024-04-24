@@ -15,6 +15,7 @@ from astropy.wcs import WCS
 from ndcube import NDCube, NDCollection
 from spacepy.pycdf import CDFError, CDF
 from hermes_core.timedata import HermesData
+from hermes_core.util import const
 
 
 def get_test_hermes_data():
@@ -117,7 +118,9 @@ def test_cdf_nrv_support_data():
         # Load the JSON file as JSON
         with CDF(test_file_output_path, readonly=False) as cdf_file:
             # Add Non-Record-Varying Variable
-            cdf_file["Test_NRV_Var"] = [1, 2, 3]
+            cdf_file.new(
+                name="Test_NRV_Var", data=[1, 2, 3], type=const.CDF_INT4, recVary=False
+            )
 
             # Add Support Data Variable
             cdf_file["Test_Support_Var"] = np.arange(10)

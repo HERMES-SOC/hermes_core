@@ -6,7 +6,6 @@ from pathlib import Path
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Optional, Union
-import astropy.timeseries
 import numpy as np
 import astropy
 from astropy.time import Time
@@ -927,5 +926,5 @@ class HermesData:
             raise ValueError(f"Unsupported file type: {file_extension}")
 
         # Load data using the handler and return a HermesData object
-        timeseries, support, spectra = handler.load_data(file_path)
-        return cls(timeseries=timeseries, support=support, spectra=spectra)
+        timeseries, support, spectra, meta = handler.load_data(file_path)
+        return cls(timeseries=timeseries, support=support, spectra=spectra, meta=meta)
