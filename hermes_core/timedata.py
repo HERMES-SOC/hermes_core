@@ -23,8 +23,6 @@ from hermes_core.util.util import VALID_DATA_LEVELS
 
 __all__ = ["HermesData"]
 
-DEFAULT_TIMESERIES_KEY = "Epoch"
-
 
 class HermesData:
     """
@@ -70,7 +68,7 @@ class HermesData:
     ... )
     >>> # Create a Support Structure
     >>> support_data = {
-    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16), meta={"CATDESC": "Data Mask", "VAR_TYPE": "metadata"})
     ... }
     >>> # Create Global Metadata Attributes
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
@@ -171,7 +169,7 @@ class HermesData:
                 self._timeseries[key] = TimeSeries(value, copy=True)
         elif isinstance(timeseries, TimeSeries):
             self._timeseries = {
-                DEFAULT_TIMESERIES_KEY: TimeSeries(timeseries, copy=True)
+                hermes_core.DEFAULT_TIMESERIES_KEY: TimeSeries(timeseries, copy=True)
             }
 
         # Add any Metadata from the original TimeSeries
@@ -182,7 +180,7 @@ class HermesData:
                 )
         else:
             self._update_timeseries_measurement_meta(
-                timeseries=timeseries, epoch_key=DEFAULT_TIMESERIES_KEY
+                timeseries=timeseries, epoch_key=hermes_core.DEFAULT_TIMESERIES_KEY
             )
 
         # Copy the Non-Record Varying Data
@@ -193,10 +191,9 @@ class HermesData:
 
         # Add Support Metadata
         for key in self._support:
+            self._support[key].meta = self.measurement_attribute_template()
             if hasattr(support[key], "meta"):
                 self._support[key].meta.update(support[key].meta)
-            else:
-                self._support[key].meta = self.measurement_attribute_template()
 
         # Copy the High-Dimensional Spectra
         if spectra:
@@ -221,7 +218,7 @@ class HermesData:
         if len(self._timeseries) > 1:
             return {key: value for key, value in self._timeseries.items()}
         else:
-            return self._timeseries[DEFAULT_TIMESERIES_KEY]
+            return self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY]
 
     @property
     def timeseries_dict(self):
@@ -272,7 +269,7 @@ class HermesData:
         """
         (`astropy.time.Time`) The times of the measurements.
         """
-        t = Time(self._timeseries[DEFAULT_TIMESERIES_KEY].time)
+        t = Time(self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY].time)
         # Set time format to enable plotting with astropy.visualisation.time_support()
         t.format = "iso"
         return t
@@ -314,6 +311,30 @@ class HermesData:
         for var_name in self._spectra.keys():
             str_repr += f"\t{var_name}\n"
         return str_repr
+
+    def __getitem__(self, var_name):
+        """
+        Get the data for a specific variable.
+
+        Parameters
+        ----------
+        var_name : `str`
+            The name of the variable to retrieve.
+
+        Returns
+        -------
+        `astropy.timeseries.TimeSeries` or `astropy.nddata.NDData`
+            The data for the variable.
+        """
+        for epoch_key, ts in self._timeseries.items():
+            if var_name in ts.columns:
+                return ts[var_name]
+        if var_name in self.support:
+            return self.support[var_name]
+        if var_name in self.spectra:
+            return self.spectra[var_name]
+        else:
+            raise KeyError(f"Variable {var_name} not found in HermesData object.")
 
     @staticmethod
     def global_attribute_template(
@@ -481,7 +502,7 @@ class HermesData:
             # Other Measurement Attributes
             for col in [col for col in ts.columns if col != "time"]:
                 for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                    ts, col
+                    self, col
                 ).items():
                     self._update_timeseries_attribute(
                         epoch_key=epoch_key,
@@ -493,7 +514,7 @@ class HermesData:
         # Support/ Non-Record-Varying Data
         for col in self._support:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                self._support, col
+                self, col
             ).items():
                 self._update_support_attribute(
                     var_name=col, attr_name=attr_name, attr_value=attr_value
@@ -502,7 +523,7 @@ class HermesData:
         # Spectra/ High-Dimensional Data
         for col in self._spectra:
             for attr_name, attr_value in self.schema.derive_measurement_attributes(
-                self._spectra, col
+                self, col
             ).items():
                 self._update_spectra_attribute(
                     var_name=col, attr_name=attr_name, attr_value=attr_value
@@ -615,17 +636,19 @@ class HermesData:
                 f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
             )
 
-        self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name] = data
+        self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][measure_name] = data
         # Add any Metadata from the original Quantity
-        self._timeseries[DEFAULT_TIMESERIES_KEY][
+        self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
             measure_name
         ].meta = self.measurement_attribute_template()
         if hasattr(data, "meta"):
-            self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name].meta.update(
-                data.meta
-            )
+            self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
+                measure_name
+            ].meta.update(data.meta)
         if meta:
-            self._timeseries[DEFAULT_TIMESERIES_KEY][measure_name].meta.update(meta)
+            self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
+                measure_name
+            ].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()

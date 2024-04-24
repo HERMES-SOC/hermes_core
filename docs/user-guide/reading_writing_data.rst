@@ -83,7 +83,7 @@ array directly
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> times = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
-    >>> ts = TimeSeries(
+    >>> ts_2 = TimeSeries(
     ...     time=times, 
     ...     data={'diff_e_flux': u.Quantity(
     ...         value=np.arange(100) * 1e-3, 
@@ -147,9 +147,13 @@ data. A guide to the `~astropy.nddata` package is available in the
 
 
     >>> from astropy.nddata import NDData
+    >>> const_param = u.Quantity(value=[1e-3], unit="keV", dtype=np.uint16)
+    >>> const_param.meta = {"CATDESC": "Constant Parameter", "VAR_TYPE": "support_data"}
+    >>> data_mask = NDData(data=np.eye(100, 100, dtype=np.uint16))
+    >>> data_mask.meta = {"CATDESC": "Data Mask", "VAR_TYPE": "support_data"}
     >>> support_data = {
-    ...     "const_param": u.Quantity(value=[1e-3], unit="keV", dtype=np.uint16),
-    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ...     "const_param": const_param,
+    ...     "data_mask": data_mask
     ... }
 
 Metadata passed in through the :py:class:`~astropy.nddata.NDData` object is used by 
@@ -246,7 +250,7 @@ For a complete example with instantiation of all objects in one code example:
     ... )
     >>> # Create a Support Structure
     >>> support_data = {
-    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16), meta={"CATDESC": "Data Mask", "VAR_TYPE": "support_data"}),
     ... }
     >>> # Create Global Metadata Attributes
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")

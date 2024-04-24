@@ -639,7 +639,10 @@ class HermesDataSchema:
         return (inf.min, inf.max)
 
     def derive_measurement_attributes(
-        self, data, var_name: str, guess_types: Optional[list[int]] = None
+        self,
+        data,
+        var_name: str,
+        guess_types: Optional[list[int]] = None,
     ) -> OrderedDict:
         """
         Function to derive metadata for the given measurement.
@@ -674,26 +677,28 @@ class HermesDataSchema:
                 (guess_dims, guess_types, guess_elements) = self._types(var_data.data)
 
         # Check the Attributes that can be derived
-        var_type = self._get_var_type(data, var_name)
+        var_type = self._get_var_type(var_data, var_name)
 
         if var_type == "data":
             # Derive Attributes Specific to `data` VAR_TYPE
             if not var_name == "time":
-                measurement_attributes["DEPEND_0"] = self._get_depend()
+                measurement_attributes["DEPEND_0"] = self._get_depend(
+                    var_name, var_data, data.timeseries_dict
+                )
             measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
             measurement_attributes["FILLVAL"] = self._get_fillval(guess_types[0])
             measurement_attributes["FORMAT"] = self._get_format(
                 var_data, guess_types[0]
             )
-            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(var_data, var_name)
             measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-                data, var_name
+                var_data, var_name
             )
-            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["UNITS"] = self._get_units(var_data, var_name)
             measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
             measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
-            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(var_data, var_name)
         elif var_type == "support_data":
             # Derive Attributes Specific to `support_data` VAR_TYPE
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
@@ -701,14 +706,14 @@ class HermesDataSchema:
             measurement_attributes["FORMAT"] = self._get_format(
                 var_data, guess_types[0]
             )
-            measurement_attributes["LABLAXIS"] = self._get_lablaxis(data, var_name)
+            measurement_attributes["LABLAXIS"] = self._get_lablaxis(var_data, var_name)
             measurement_attributes["SI_CONVERSION"] = self._get_si_conversion(
-                data, var_name
+                var_data, var_name
             )
-            measurement_attributes["UNITS"] = self._get_units(data, var_name)
+            measurement_attributes["UNITS"] = self._get_units(var_data, var_name)
             measurement_attributes["VALIDMIN"] = self._get_validmin(guess_types[0])
             measurement_attributes["VALIDMAX"] = self._get_validmax(guess_types[0])
-            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(var_data, var_name)
         elif var_type == "metadata":
             # Derive Attributes Specific to `metadata` VAR_TYPE
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
@@ -716,7 +721,7 @@ class HermesDataSchema:
             measurement_attributes["FORMAT"] = self._get_format(
                 var_data, guess_types[0]
             )
-            measurement_attributes["VAR_TYPE"] = self._get_var_type(data, var_name)
+            measurement_attributes["VAR_TYPE"] = self._get_var_type(var_data, var_name)
         else:
             warn_user(
                 f"Variable {var_name} has unrecognizable VAR_TYPE ({var_type}). Cannot Derive Metadata for Variable."
@@ -839,8 +844,26 @@ class HermesDataSchema:
     #                             VARIABLE METADATA DERIVATIONS
     # =============================================================================================
 
-    def _get_depend(self):
-        return "Epoch"
+    def _get_depend(self, var_name, var_data, timeseries_dict):
+        # Find the TimeSeries Epoch for this Record-Varying Variable
+        if "DEPEND_0" in var_data.meta:
+            epoch_key = var_data.meta["DEPEND_0"]
+        else:
+            # Check which epoch key to use
+            potential_epoch_keys = []
+            for key, ts in timeseries_dict.items():
+                if len(ts["time"]) == len(var_data.data):
+                    potential_epoch_keys.append(key)
+            if len(potential_epoch_keys) == 0:
+                raise ValueError(
+                    f"No TimeSeries have the same length as measurement {var_name}."
+                )
+            elif len(potential_epoch_keys) > 1:
+                raise ValueError(
+                    f"Multiple TimeSeries have the same length as measurement {var_name}."
+                )
+            epoch_key = potential_epoch_keys[0]
+        return epoch_key
 
     def _get_display_type(self):
         return "time_series"
@@ -1022,8 +1045,8 @@ class HermesDataSchema:
             )
         return fmt
 
-    def _get_lablaxis(self, data, var_name):
-        return f"{var_name} [{self._get_units(data, var_name)}]"
+    def _get_lablaxis(self, var_data, var_name):
+        return f"{var_name} [{self._get_units(var_data, var_name)}]"
 
     def _get_reference_position(self, guess_type):
         if guess_type == const.CDF_TIME_TT2000.value:
@@ -1045,9 +1068,7 @@ class HermesDataSchema:
         delta_seconds = delta.to_value("s")
         return f"{delta_seconds}s"
 
-    def _get_si_conversion(self, data, var_name):
-        # Get the Variable Data
-        var_data = data[var_name]
+    def _get_si_conversion(self, var_data, var_name):
         if var_name == "time":
             conversion_rate = u.ns.to(u.s)
             si_conversion = f"{conversion_rate:e}>{u.s}"
@@ -1081,9 +1102,7 @@ class HermesDataSchema:
         else:
             raise TypeError(f"Time Units for Time type ({guess_type}) not found.")
 
-    def _get_units(self, data, var_name):
-        # Get the Variable Data
-        var_data = data[var_name]
+    def _get_units(self, var_data, var_name):
         unit = ""
         # Get the Unit from the TimeSeries Quantity if it exists
         if hasattr(var_data, "unit") and var_data.unit is not None:
@@ -1103,9 +1122,7 @@ class HermesDataSchema:
         _, maxval = self._get_minmax(guess_type)
         return maxval
 
-    def _get_var_type(self, data, var_name):
-        # Get the Variable Data
-        var_data = data[var_name]
+    def _get_var_type(self, var_data, var_name):
         attr_name = "VAR_TYPE"
         if (attr_name not in var_data.meta) or (not var_data.meta[attr_name]):
             var_type = "data"

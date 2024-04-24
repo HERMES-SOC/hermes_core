@@ -77,7 +77,11 @@ def get_test_hermes_data():
     )
 
     # Support Data / Non-Time Varying Data
-    support = {"support_counts": NDData(data=[1])}
+    support = {
+        "support_counts": NDData(
+            data=[1], meta={"CATDESC": "variable counts", "VAR_TYPE": "support_data"}
+        )
+    }
 
     # Spectra Data
     spectra = NDCollection(
@@ -261,10 +265,14 @@ def test_support_data():
 
     # Support as NDData
     support = {}
-    support["support_nddata"] = NDData(data=[1])
+    support_nddata = NDData(data=[1])
+    support_nddata.meta = {"VAR_TYPE": "support_data"}
+    support["support_nddata"] = support_nddata
 
     # Support as Quantity
-    support["support_quantity"] = Quantity(value=[1], unit="count")
+    support_quantity = Quantity(value=[1], unit="count")
+    support_quantity.meta = {"VAR_TYPE": "support_data"}
+    support["support_quantity"] = support_quantity
 
     # Create HermesData
     test_data = HermesData(ts, support=support, meta=input_attrs)
@@ -960,7 +968,9 @@ def test_hermes_data_idempotency():
 
     # Induce an Non-Record-Varying Variable
     test_data.add_support(
-        name="NRV_var", data=NDData(["Test NRV Data"]), meta={"CATDESC": "NRV Variable"}
+        name="NRV_var",
+        data=NDData(["Test NRV Data"]),
+        meta={"CATDESC": "NRV Variable", "VAR_TYPE": "metadata"},
     )
 
     # Induce a Variable with Bad UNITS
@@ -971,6 +981,7 @@ def test_hermes_data_idempotency():
             meta={
                 "UNITS": "Not A Unit",
                 "CATDESC": "Test Variable with Incoherent UNITS",
+                "VAR_TYPE": "support_data",
             },
         ),
     )

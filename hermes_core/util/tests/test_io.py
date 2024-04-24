@@ -54,7 +54,11 @@ def get_test_hermes_data():
     )
 
     # Support Data / Non-Time Varying Data
-    support = {"support_counts": NDData(data=[1])}
+    support = {
+        "support_counts": NDData(
+            data=[1], meta={"CATDESC": "variable counts", "VAR_TYPE": "support_data"}
+        )
+    }
 
     # Spectra Data
     spectra = NDCollection(
@@ -121,10 +125,12 @@ def test_cdf_nrv_support_data():
             cdf_file.new(
                 name="Test_NRV_Var", data=[1, 2, 3], type=const.CDF_INT4, recVary=False
             )
+            cdf_file["Test_NRV_Var"].meta["VAR_TYPE"] = "support_data"
 
             # Add Support Data Variable
             cdf_file["Test_Support_Var"] = np.arange(10)
             cdf_file["Test_Support_Var"].meta["UNITS"] = "counts"
+            cdf_file["Test_Support_Var"].meta["VAR_TYPE"] = "support_data"
 
         # Make sure we can load the modified JSON
         td_loaded = HermesData.load(test_file_output_path)
