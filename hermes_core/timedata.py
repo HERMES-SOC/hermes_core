@@ -162,23 +162,19 @@ class HermesData:
         #         CREATE HERMES DATA STRUCTURES
         # ================================================
 
-        # Copy the TimeSeries
         if isinstance(timeseries, dict):
             self._timeseries = {}
             for key, value in timeseries.items():
+                # Copy the TimeSeries
                 self._timeseries[key] = TimeSeries(value, copy=True)
+                # Add any Metadata from the original TimeSeries
+                self._update_timeseries_measurement_meta(
+                    timeseries=value, epoch_key=key
+                )
         elif isinstance(timeseries, TimeSeries):
             self._timeseries = {
                 hermes_core.DEFAULT_TIMESERIES_KEY: TimeSeries(timeseries, copy=True)
             }
-
-        # Add any Metadata from the original TimeSeries
-        if isinstance(timeseries, dict):
-            for key, value in timeseries.items():
-                self._update_timeseries_measurement_meta(
-                    timeseries=value, epoch_key=key
-                )
-        else:
             self._update_timeseries_measurement_meta(
                 timeseries=timeseries, epoch_key=hermes_core.DEFAULT_TIMESERIES_KEY
             )
@@ -221,18 +217,6 @@ class HermesData:
             return self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY]
 
     @property
-    def timeseries_dict(self):
-        """
-        Returns the dictionary of time-series data.
-
-        Returns
-        -------
-        dict
-            A dictionary of time-series data, where the keys are the names of the time-series variables and the values are `astropy.timeseries.TimeSeries` objects.
-        """
-        return self._timeseries
-
-    @property
     def support(self):
         """
         (`dict[Union[astropy.units.Quantity, astropy.nddata.NDData]]`) A `dict` containing one or more non-time-varying support variables.
@@ -249,12 +233,12 @@ class HermesData:
     @property
     def data(self):
         """
-        (`dict`) A `dict` containing each of `timeseries` and `support`.
+        (`dict`) A `dict` containing each of `timeseries`, `spectra` and `support`.
         """
         return {
-            "timeseries": self.timeseries,
-            "spectra": self.spectra,
-            "support": self.support,
+            "timeseries": self._timeseries,
+            "spectra": self._spectra,
+            "support": self._support,
         }
 
     @property
@@ -636,19 +620,33 @@ class HermesData:
                 f"Column '{measure_name}' must be a one-dimensional measurement. Split additional dimensions into unique measurenents."
             )
 
-        self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][measure_name] = data
+        # Find the TimeSeries Epoch for this Record-Varying Variable
+        if meta is not None and "DEPEND_0" in meta:
+            epoch_key = meta["DEPEND_0"]
+        else:
+            # Check which epoch key to use
+            potential_epoch_keys = []
+            for key, ts in self._timeseries.items():
+                if len(ts.time) == len(data):
+                    potential_epoch_keys.append(key)
+            if len(potential_epoch_keys) == 0:
+                raise ValueError("No TimeSeries have the same length as the new data.")
+            elif len(potential_epoch_keys) > 1:
+                raise ValueError(
+                    "Multiple TimeSeries have the same length as the new data."
+                )
+            epoch_key = potential_epoch_keys[0]
+
+        # Add the new measurement
+        self._timeseries[epoch_key][measure_name] = data
         # Add any Metadata from the original Quantity
-        self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
+        self._timeseries[epoch_key][
             measure_name
         ].meta = self.measurement_attribute_template()
         if hasattr(data, "meta"):
-            self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
-                measure_name
-            ].meta.update(data.meta)
+            self._timeseries[epoch_key][measure_name].meta.update(data.meta)
         if meta:
-            self._timeseries[hermes_core.DEFAULT_TIMESERIES_KEY][
-                measure_name
-            ].meta.update(meta)
+            self._timeseries[epoch_key][measure_name].meta.update(meta)
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()

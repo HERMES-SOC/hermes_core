@@ -393,7 +393,7 @@ def test_default_properties():
     # data
     assert isinstance(test_data.data, dict)
     assert "timeseries" in test_data.data
-    assert isinstance(test_data.data["timeseries"], TimeSeries)
+    assert isinstance(test_data.data["timeseries"], dict)
     assert "support" in test_data.data
     assert isinstance(test_data.data["support"], dict)
     assert "spectra" in test_data.data

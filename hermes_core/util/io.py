@@ -376,7 +376,7 @@ class CDFHandler(HermesDataIOHandler):
 
     def _convert_variables_to_cdf(self, data, cdf_file):
 
-        for epoch_key, ts in data.timeseries_dict.items():
+        for epoch_key, ts in data.data["timeseries"].items():
             # Loop through Scalar TimeSeries Variables
             for var_name in ts.colnames:
                 var_data = ts[var_name]

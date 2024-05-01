@@ -683,7 +683,7 @@ class HermesDataSchema:
             # Derive Attributes Specific to `data` VAR_TYPE
             if not var_name == "time":
                 measurement_attributes["DEPEND_0"] = self._get_depend(
-                    var_name, var_data, data.timeseries_dict
+                    var_name, var_data, data.data["timeseries"]
                 )
             measurement_attributes["DISPLAY_TYPE"] = self._get_display_type()
             measurement_attributes["FIELDNAM"] = self._get_fieldnam(var_name)
