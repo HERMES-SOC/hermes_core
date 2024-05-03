@@ -12,7 +12,6 @@
 		"vscode": {
 			// Set *default* container specific settings.json values on container create.
 			"settings": {
-				"extensions.verifySignature": false,
 				"python.pythonPath": "/usr/bin/python3",
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestEnabled": true,
