@@ -846,23 +846,11 @@ class HermesDataSchema:
 
     def _get_depend(self, var_name, var_data, timeseries_dict):
         # Find the TimeSeries Epoch for this Record-Varying Variable
-        if "DEPEND_0" in var_data.meta:
-            epoch_key = var_data.meta["DEPEND_0"]
-        else:
-            # Check which epoch key to use
-            potential_epoch_keys = []
-            for key, ts in timeseries_dict.items():
-                if len(ts["time"]) == len(var_data.data):
-                    potential_epoch_keys.append(key)
-            if len(potential_epoch_keys) == 0:
-                raise ValueError(
-                    f"No TimeSeries have the same length as measurement {var_name}."
-                )
-            elif len(potential_epoch_keys) > 1:
-                raise ValueError(
-                    f"Multiple TimeSeries have the same length as measurement {var_name}."
-                )
-            epoch_key = potential_epoch_keys[0]
+        from hermes_core.timedata import HermesData
+
+        epoch_key = HermesData.get_timeseres_epoch_key(
+            timeseries_dict, var_data, var_data.meta
+        )
         return epoch_key
 
     def _get_display_type(self):

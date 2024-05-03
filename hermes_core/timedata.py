@@ -16,7 +16,6 @@ from astropy import units as u
 import ndcube
 from ndcube import NDCube, NDCollection
 import hermes_core
-from hermes_core.util.io import CDFHandler
 from hermes_core.util.schema import HermesDataSchema
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.util import VALID_DATA_LEVELS
@@ -388,6 +387,31 @@ class HermesData:
         """
         return HermesDataSchema.measurement_attribute_template()
 
+    @staticmethod
+    def get_timeseres_epoch_key(timeseries, var_data, var_meta: dict = None):
+
+        # Find the TimeSeries Epoch for this Record-Varying Variable
+        if var_meta is not None and "DEPEND_0" in var_meta:
+            epoch_key = var_meta["DEPEND_0"]
+        else:
+            # Check which epoch key to use
+            potential_epoch_keys = []
+            for key, ts in timeseries.items():
+                if hasattr(var_data, "shape"):
+                    if len(ts.time) == var_data.shape[0]:
+                        potential_epoch_keys.append(key)
+                elif hasattr(var_data, "data"):
+                    if len(ts.time) == len(var_data.data):
+                        potential_epoch_keys.append(key)
+            if len(potential_epoch_keys) == 0:
+                raise ValueError("No TimeSeries have the same length as the new data.")
+            elif len(potential_epoch_keys) > 1:
+                raise ValueError(
+                    "Multiple TimeSeries have the same length as the new data."
+                )
+            epoch_key = potential_epoch_keys[0]
+        return epoch_key
+
     def _validate_timeseries(self, timeseries: astropy.timeseries.TimeSeries):
         """
         Validate a timeseries.
@@ -621,21 +645,7 @@ class HermesData:
             )
 
         # Find the TimeSeries Epoch for this Record-Varying Variable
-        if meta is not None and "DEPEND_0" in meta:
-            epoch_key = meta["DEPEND_0"]
-        else:
-            # Check which epoch key to use
-            potential_epoch_keys = []
-            for key, ts in self._timeseries.items():
-                if len(ts.time) == len(data):
-                    potential_epoch_keys.append(key)
-            if len(potential_epoch_keys) == 0:
-                raise ValueError("No TimeSeries have the same length as the new data.")
-            elif len(potential_epoch_keys) > 1:
-                raise ValueError(
-                    "Multiple TimeSeries have the same length as the new data."
-                )
-            epoch_key = potential_epoch_keys[0]
+        epoch_key = HermesData.get_timeseres_epoch_key(self._timeseries, data, meta)
 
         # Add the new measurement
         self._timeseries[epoch_key][measure_name] = data
@@ -650,6 +660,30 @@ class HermesData:
 
         # Derive Metadata Attributes for the Measurement
         self._derive_metadata()
+
+    def add_timeseries(self, epoch_key: str, timeseries: TimeSeries):
+        """
+        Add a new TimeSeries object to the collection of epochs.
+
+        Parameters
+        ----------
+        epoch_key: `str`
+            The key to identify the new TimeSeries.
+        timeseries: `astropy.timeseries.TimeSeries`
+            The time-series data to add.
+        """
+        self._validate_timeseries(timeseries)
+
+        # Check the epoch is not already used
+        if epoch_key in self._timeseries:
+            raise ValueError(f"Epoch key {epoch_key} is already in use.")
+        else:
+            # Add the TimeSeries
+            self._timeseries[epoch_key] = TimeSeries(timeseries, copy=True)
+            # Updata the Metadata
+            self._update_timeseries_measurement_meta(
+                timeseries=timeseries, epoch_key=epoch_key
+            )
 
     def add_support(
         self,
@@ -872,19 +906,9 @@ class HermesData:
         self._validate_timeseries(timeseries)
 
         # Check which epoch key to use
-        potential_epoch_keys = []
-        for epoch_key, ts in self._timeseries.items():
-            if len(ts.columns) == len(timeseries.columns):
-                potential_epoch_keys.append(epoch_key)
-        if len(potential_epoch_keys) == 0:
-            raise ValueError(
-                "No TimeSeries have the same length as the new data. Please specify which TimeSeries to append to."
-            )
-        elif len(potential_epoch_keys) > 1:
-            raise ValueError(
-                "Multiple TimeSeries have the same length as the new data. Please specify which TimeSeries to append to."
-            )
-        selected_epoch_key = potential_epoch_keys[0]
+        selected_epoch_key = HermesData.get_timeseres_epoch_key(
+            self._timeseries, timeseries.time
+        )
 
         # Save Metadata since it is not carried over with vstack
         metadata_holder = {
@@ -920,6 +944,8 @@ class HermesData:
         path : `str`
             A path to the saved file.
         """
+        from hermes_core.util.io import CDFHandler
+
         handler = CDFHandler()
         if not output_path:
             output_path = str(Path.cwd())
@@ -949,6 +975,8 @@ class HermesData:
         ValueError: If the file type is not recognized as a file type that can be loaded.
 
         """
+        from hermes_core.util.io import CDFHandler
+
         # Determine the file type
         file_extension = Path(file_path).suffix
 

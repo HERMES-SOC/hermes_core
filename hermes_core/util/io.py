@@ -10,6 +10,7 @@ from astropy.wcs import WCS
 import astropy.units as u
 from ndcube import NDCollection
 from ndcube import NDCube
+from hermes_core.timedata import HermesData
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HermesDataSchema
 
@@ -158,23 +159,9 @@ class CDFHandler(HermesDataIOHandler):
                 if input_file[var_name].rv():
 
                     # Find the TimeSeries Epoch for this Record-Varying Variable
-                    if "DEPEND_0" in var_attrs:
-                        epoch_key = var_attrs["DEPEND_0"]
-                    else:
-                        # Check which epoch key to use
-                        potential_epoch_keys = []
-                        for key, ts in timeseries.items():
-                            if len(ts.time) == len(var_data):
-                                potential_epoch_keys.append(key)
-                        if len(potential_epoch_keys) == 0:
-                            raise ValueError(
-                                "No TimeSeries have the same length as the new data."
-                            )
-                        elif len(potential_epoch_keys) > 1:
-                            raise ValueError(
-                                "Multiple TimeSeries have the same length as the new data."
-                            )
-                        epoch_key = potential_epoch_keys[0]
+                    epoch_key = HermesData.get_timeseres_epoch_key(
+                        timeseries, var_data, var_attrs
+                    )
                     ts = timeseries[epoch_key]
 
                     # See if it is record-varying data with UNITS
