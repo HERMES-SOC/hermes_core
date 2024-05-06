@@ -389,6 +389,18 @@ class HermesData:
 
     @staticmethod
     def get_timeseres_epoch_key(timeseries, var_data, var_meta: dict = None):
+        """
+        Function to determine the TimeSeries Epoch for a Record-Varying Variable.
+
+        Parameters
+        ----------
+        timeseries : `dict[str, astropy.timeseries.TimeSeries]`
+            A dictionary of `str` to `astropy.timeseries.TimeSeries` objects. Each `TimeSeries` object represents a different epoch.
+        var_data : `astropy.units.Quantity`
+            The variable data that we want to find the epoch for.
+        var_meta : `dict`, optional
+            The metadata associated with the variable data.
+        """
 
         # Find the TimeSeries Epoch for this Record-Varying Variable
         if var_meta is not None and "DEPEND_0" in var_meta:

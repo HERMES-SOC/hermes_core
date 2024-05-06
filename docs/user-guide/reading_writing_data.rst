@@ -37,9 +37,10 @@ Creating a ``HermesData`` object
 Creating a :py:class:`~hermes_core.timedata.HermesData` data container from scratch involves four 
 pieces of data:
 
-- `timeseries` (required) - an `~astropy.timeseries.TimeSeries` containing the time dimension of 
-    the data as well as at least one other measurement. This data structure must be used for all 
-    scalar time-varying measurement data. 
+- `timeseries` (required) - an `~astropy.timeseries.TimeSeries` or 
+    `dict[str : ~astropy.timeseries.TimeSeries]` containing one or more time variables, and any other 
+    time-varying scalar measurements. Time-varying measurements should appear in the table as columns with 
+    their associates time variable as the first column.
 - `spectra` (optional) - an `~ndcube.NDCollection` containing one or more `~ndcube.NDCube` objects
     representing higher-dimensional measurements and spectral data. This data must should be used
     for all vector or tensor-based measurement data. 
@@ -53,17 +54,16 @@ pieces of data:
 Alternatively, a :py:class:`~hermes_core.timedata.HermesData` data container can be loaded from 
 an existing CDF file using the :py:func:`~hermes_core.timedata.HermesData.load` function. 
 
-Creating a ``TimeSeries`` for ``HermesData`` `timeseries`
+Creating ``TimeSeries`` for ``HermesData`` `timeseries`
 ---------------------------------------------------------
 
-A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing a 
-`~astropy.timeseries.TimeSeries` object with at least one measurement. There are many ways to 
-initialize one but here is one example:
+A :py:class:`~hermes_core.timedata.HermesData` must be initialized by providing one or more `~astropy.timeseries.TimeSeries` object with at least one measurement. 
+There are many ways to initialize one but here is one example:
 
     >>> import numpy as np
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
-    >>> ts = TimeSeries(
+    >>> example_ts = TimeSeries(
     ...     time_start='2016-03-22T12:30:31',
     ...     time_delta=3 * u.s,
     ...     data={'Bx': u.Quantity(
@@ -92,8 +92,39 @@ array directly
     ...     )}
     ... )
 
-Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using 
-arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
+Note the use of `~astropy.time` and `astropy.units` which provide several advantages over using arrays of numbers and are required by :py:class:`~hermes_core.timedata.HermesData`.
+
+For collections that have multiple Epochs, you can create a dictionary of `~astropy.timeseries.TimeSeries` objects. 
+
+    >>> from astropy.time import Time, TimeDelta
+    >>> import astropy.units as u
+    >>> from astropy.timeseries import TimeSeries
+    >>> import numpy as np
+    >>> # Collected at one-second cadence
+    >>> primary_epoch = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
+    >>> # Collected at 10-second cadence
+    >>> secondary_epoch = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(10) * (10*u.s))
+    >>> ts_3 = {
+    ...     'Epoch': TimeSeries(
+    ...         time=primary_epoch,
+    ...         data={'diff_e_flux': u.Quantity(
+    ...             value=np.arange(100) * 1e-3,
+    ...             unit='1/(cm**2 * s * eV * steradian)',
+    ...             dtype=np.float32
+    ...         )}
+    ...     ),
+    ...     'Epoch_state': TimeSeries(
+    ...         time=secondary_epoch,
+    ...         data={'counts': u.Quantity( 
+    ...             value=np.arange(10),
+    ...             unit='Celsius',
+    ...             dtype=np.float32
+    ...         )}
+    ...     )
+    ... }
+
+This allows  you to have multiple time series in one `~hermes_core.timedata.HermesData` object.
+
 
 Creating a ``NDCollection`` for ``HermesData`` `spectra`
 --------------------------------------------------------
@@ -110,7 +141,7 @@ You can create a `~ndcube.NDCollection` object using an approach similar to the 
     >>> import numpy as np
     >>> from astropy.wcs import WCS
     >>> from ndcube import NDCube, NDCollection
-    >>> spectra = NDCollection(
+    >>> example_spectra = NDCollection(
     ...     [
     ...         (
     ...             "example_spectra",
@@ -151,7 +182,7 @@ data. A guide to the `~astropy.nddata` package is available in the
     >>> const_param.meta = {"CATDESC": "Constant Parameter", "VAR_TYPE": "support_data"}
     >>> data_mask = NDData(data=np.eye(100, 100, dtype=np.uint16))
     >>> data_mask.meta = {"CATDESC": "Data Mask", "VAR_TYPE": "support_data"}
-    >>> support_data = {
+    >>> example_support_data = {
     ...     "const_param": const_param,
     ...     "data_mask": data_mask
     ... }
@@ -216,31 +247,59 @@ Putting it all together here is instantiation of a :py:class:`~hermes_core.timed
 object: 
 
     >>> from hermes_core.timedata import HermesData
-    >>> hermes_data = HermesData(
-    ...     timeseries=ts, 
-    ...     support=support_data, 
-    ...     spectra=spectra, 
+    >>> example_hermes_data = HermesData(
+    ...     timeseries=example_ts, 
+    ...     support=example_support_data, 
+    ...     spectra=example_spectra, 
     ...     meta=input_attrs
     ... )
 
 For a complete example with instantiation of all objects in one code example: 
 
     >>> import numpy as np
+    >>> from astropy.time import Time, TimeDelta
     >>> import astropy.units as u
     >>> from astropy.timeseries import TimeSeries
     >>> from ndcube import NDCube, NDCollection
     >>> from astropy.nddata import NDData
     >>> from hermes_core.timedata import HermesData
+    >>> # Collected at one-second cadence
+    >>> primary_epoch = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(100) * u.s)
+    >>> # Collected at 10-second cadence
+    >>> secondary_epoch = Time('2010-01-01 00:00:00', scale='utc') + TimeDelta(np.arange(10) * (10*u.s))
     >>> # Create a TimeSeries structure
-    >>> data = u.Quantity([1, 2, 3, 4], "gauss", dtype=np.uint16)
-    >>> ts = TimeSeries(time_start="2016-03-22T12:30:31", time_delta=3 * u.s, data={"Bx": data})
-    >>> # Create a Spectra structure
+    >>> ts = {
+    ...     'Epoch': TimeSeries(
+    ...         time=primary_epoch,
+    ...         data={'diff_e_flux': u.Quantity(
+    ...             value=np.arange(100) * 1e-3,
+    ...             unit='1/(cm**2 * s * eV * steradian)',
+    ...             dtype=np.float32
+    ...         )}
+    ...     ),
+    ...     'Epoch_state': TimeSeries(
+    ...         time=secondary_epoch,
+    ...         data={'counts': u.Quantity( 
+    ...             value=np.arange(10),
+    ...             unit='Celsius',
+    ...             dtype=np.float32
+    ...         )}
+    ...     )
+    ... }
+    >>> # Create a Support Structure
+    >>> support_data = {
+    ...     "data_mask": NDData(
+    ...         data=np.eye(10, 10, dtype=np.uint16), 
+    ...         meta={"CATDESC": "Data Mask", "VAR_TYPE": "support_data"}
+    ...     ),
+    ... }
+    >>> # Create a Spectra Structure
     >>> spectra = NDCollection(
     ...     [
     ...         (
     ...             "example_spectra",
     ...             NDCube(
-    ...                 data=np.random.random(size=(4, 10)),
+    ...                 data=np.random.random(size=(10, 10)),
     ...                 wcs=WCS(naxis=2),
     ...                 meta={"CATDESC": "Example Spectra Variable"},
     ...                 unit="eV",
@@ -248,10 +307,6 @@ For a complete example with instantiation of all objects in one code example:
     ...         )
     ...     ]
     ... )
-    >>> # Create a Support Structure
-    >>> support_data = {
-    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16), meta={"CATDESC": "Data Mask", "VAR_TYPE": "support_data"}),
-    ... }
     >>> # Create Global Metadata Attributes
     >>> input_attrs = HermesData.global_attribute_template("eea", "l1", "1.0.0")
     >>> # Create HermesData Object
@@ -266,10 +321,10 @@ The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, 
 measurement column or edit the metadata after the fact. Your variable metadata can be found 
 by querying the measurement column directly.
 
-    >>> hermes_data.timeseries['Bx'].meta.update(
+    >>> example_hermes_data.timeseries['Bx'].meta.update(
     ...     {"CATDESC": "X component of the Magnetic field measured by HERMES"}
     ... )
-    >>> hermes_data.timeseries['Bx'].meta # doctest: +SKIP
+    >>> example_hermes_data.timeseries['Bx'].meta # doctest: +SKIP
 
 The class does its best to fill in metadata fields if it can and leaves others blank that it 
 cannot. Those should be filled in manually. Be careful when editing metadata that was 
@@ -296,8 +351,12 @@ You can add the new measurements in one of two ways.
 
 The more explicit approach is to use :py:func:`~hermes_core.timedata.HermesData.add_measurement` function::
 
-    >>> data = u.Quantity(np.arange(len(hermes_data.timeseries['Bx'])), 'Gauss', dtype=np.uint16)
-    >>> hermes_data.add_measurement(measure_name="By", data=data, meta={"CATDESC": "Test Metadata"})
+    >>> data = u.Quantity(np.arange(len(example_hermes_data.timeseries['Bx'])), 'Gauss', dtype=np.uint16)
+    >>> example_hermes_data.add_measurement(
+    ...     measure_name="By", 
+    ...     data=data, 
+    ...     meta={"CATDESC": "Y component of the Magnetic field measured by HERMES"}
+    ... )
     
 To add non-time-varying support data use the :py:func:`~hermes_core.timedata.HermesData.add_support` function::
 

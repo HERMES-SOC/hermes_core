@@ -10,6 +10,7 @@ from astropy.wcs import WCS
 import astropy.units as u
 from ndcube import NDCollection
 from ndcube import NDCube
+import hermes_core
 from hermes_core.timedata import HermesData
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HermesDataSchema
@@ -132,6 +133,11 @@ class CDFHandler(HermesDataIOHandler):
             epoch_variables = [
                 var_name for var_name in input_file.keys() if "Epoch" in var_name
             ]
+            # Make sure the Default "Epoch" is present in the CDF
+            if hermes_core.DEFAULT_TIMESERIES_KEY not in epoch_variables:
+                warn_user(
+                    f"Epoch Variable {hermes_core.DEFAULT_TIMESERIES_KEY} not found in CDF file: {file_path}"
+                )
             # Loop for each Epoch Variable
             for epoch_var in epoch_variables:
                 time_data = Time(input_file[epoch_var][:].copy())
@@ -362,6 +368,12 @@ class CDFHandler(HermesDataIOHandler):
                 cdf_file.attrs[attr_name] = attr_value
 
     def _convert_variables_to_cdf(self, data, cdf_file):
+
+        # Make sure the Default "Epoch" is present in the CDF
+        if hermes_core.DEFAULT_TIMESERIES_KEY not in data.data["timeseries"]:
+            warn_user(
+                f"Epoch Variable {hermes_core.DEFAULT_TIMESERIES_KEY} not found in CDF file: {cdf_file}"
+            )
 
         for epoch_key, ts in data.data["timeseries"].items():
             # Loop through Scalar TimeSeries Variables
