@@ -28,8 +28,8 @@ jobs:
         container_id=$(docker ps -qf "ancestor=processing_function:latest")
         echo "Container ID: $container_id"
 
-    - name: Wait for Container to Initialize
-      run: sleep 5
+    # - name: Wait for Container to Initialize
+    #   run: sleep 5
 
     # - name: Test Lambda Function with curl
     #   id: test-lambda
