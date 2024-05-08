@@ -92,4 +92,4 @@ jobs:
       # Only comment if triggered by a pull request target event
       with:
         message: |
-            The processed files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
+            The processed EEA test files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
