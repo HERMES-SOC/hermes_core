@@ -20,9 +20,17 @@ jobs:
         BRANCH_URL="git+https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git@${{ github.event.pull_request.head.ref }}"
         echo "Branch URL: $BRANCH_URL"
         # Create a temporary requirements.txt file with hermes_core at the top
-        echo "$BRANCH_URL" >> requirements.txt
+        # echo "$BRANCH_URL" >> requirements.txt
+        # Define the Dockerfile path
+        DOCKERFILE="Dockerfile"
 
+        # Define the line to insert
+        LINE_TO_INSERT='# Repo where this image'"'"'s Dockerfile is maintained: https://github.com/HERMES-SOC/docker-lambda-base'
+
+        # Insert the line after the 'RUN pip install -r requirements.txt' line
+        sed -i '/RUN pip install -r requirements.txt/a\'"$LINE_TO_INSERT" "$DOCKERFILE"
         cat requirements.txt
+        cat Dockerfile
         docker build -t processing_function:latest . --network host
         
     - name: Run Lambda Docker Container
