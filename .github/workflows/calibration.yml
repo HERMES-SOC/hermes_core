@@ -39,48 +39,48 @@ jobs:
         container_id=$(docker ps -qf "ancestor=processing_function:latest")
         echo "Container ID: $container_id"
 
-    # - name: Wait for Container to Initialize
-    #   run: sleep 5
+    - name: Wait for Container to Initialize
+      run: sleep 5
 
-    # - name: Test Lambda Function with curl
-    #   id: test-lambda
-    #   run: |
-    #     cd ../sdc_aws_processing_lambda/
-    #     # Run curl and write the HTTP status code to a variable
-    #     HTTP_STATUS=$(curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json)
-    #     echo "HTTP Status: $HTTP_STATUS"
+    - name: Test Lambda Function with curl
+      id: test-lambda
+      run: |
+        cd ../sdc_aws_processing_lambda/
+        # Run curl and write the HTTP status code to a variable
+        HTTP_STATUS=$(curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json)
+        echo "HTTP Status: $HTTP_STATUS"
 
-    #     # Grep the HTTP status code from the curl output for 200 (success)
-    #     STATUS_CODE=$(echo $HTTP_STATUS | grep -oP '200')
-    #     echo "Status Code: $STATUS_CODE"
+        # Grep the HTTP status code from the curl output for 200 (success)
+        STATUS_CODE=$(echo $HTTP_STATUS | grep -oP '200')
+        echo "Status Code: $STATUS_CODE"
 
-    #     # If the HTTP status code is 200, then the test is successful
-    #     if [ "$STATUS_CODE" == "200" ]; then
-    #       echo "Success: HTTP status is 200"
-    #       echo "test_success=true" >> $GITHUB_OUTPUT
-    #       exit 0  # Exit with success
-    #     else
-    #       echo "Error or unexpected HTTP status: $HTTP_STATUS"
-    #       echo "test_success=false" >> $GITHUB_OUTPUT
-    #       exit 1  # Exit with failure
-    #     fi
+        # If the HTTP status code is 200, then the test is successful
+        if [ "$STATUS_CODE" == "200" ]; then
+          echo "Success: HTTP status is 200"
+          echo "test_success=true" >> $GITHUB_OUTPUT
+          exit 0  # Exit with success
+        else
+          echo "Error or unexpected HTTP status: $HTTP_STATUS"
+          echo "test_success=false" >> $GITHUB_OUTPUT
+          exit 1  # Exit with failure
+        fi
 
-    # - name: Copy Processed Files from Container
-    #   if: steps.test-lambda.outputs.test_success == 'true'
-    #   run: |
-    #     container_id=$(docker ps -qf "ancestor=processing_function:latest")
-    #     # Create a directory for processed files
-    #     mkdir processed_files
-    #     # Copy the files from the container to the host
-    #     docker cp $container_id:/test_data/. processed_files/
+    - name: Copy Processed Files from Container
+      if: steps.test-lambda.outputs.test_success == 'true'
+      run: |
+        container_id=$(docker ps -qf "ancestor=processing_function:latest")
+        # Create a directory for processed files
+        mkdir processed_files
+        # Copy the files from the container to the host
+        docker cp $container_id:/test_data/. processed_files/
 
-    # - name: Upload Processed Files as Artifact
-    #   id: artifact-upload-step
-    #   if: steps.test-lambda.outputs.test_success == 'true'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #       name: processed-files
-    #       path: processed_files/
+    - name: Upload Processed Files as Artifact
+      id: artifact-upload-step
+      if: steps.test-lambda.outputs.test_success == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+          name: processed-files
+          path: processed_files/
 
     # - name: Echo Artifact URL
     #   if: steps.test-lambda.outputs.test_success == 'true'
