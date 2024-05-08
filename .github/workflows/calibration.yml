@@ -20,11 +20,8 @@ jobs:
         BRANCH_URL="git+https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git@${{ github.event.pull_request.head.ref }}"
         echo "Branch URL: $BRANCH_URL"
         # Create a temporary requirements.txt file with hermes_core at the top
-        echo "$BRANCH_URL" > requirements_tmp.txt
-        cat requirements.txt >> requirements_tmp.txt
+        echo "$BRANCH_URL" >> requirements.txt
 
-        # Overwrite the original requirements.txt file with the temporary one
-        mv requirements_tmp.txt requirements.txt
         cat requirements.txt
         docker build -t processing_function:latest . --network host
         
