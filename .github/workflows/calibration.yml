@@ -1,15 +1,6 @@
 name: Test Lambda Function Locally and Upload Artifacts
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch: # For on demand runs
-  schedule:
-    - cron: 0 0 * * * # Scheduled run every day at midnight
+on: [pull_request_target]
     
 jobs:
   test-and-upload:
@@ -83,10 +74,10 @@ jobs:
       if: steps.test-lambda.outputs.test_success == 'true'
       run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
     
-    # - name: Comment PR
-    #   if: steps.test-lambda.outputs.test_success == 'true'
-    #   uses: thollander/actions-comment-pull-request@v2
-    #   # Only comment if triggered by a pull request target event
-    #   with:
-    #     message: |
-    #         The processed EEA test files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
+    - name: Comment PR
+      if: steps.test-lambda.outputs.test_success == 'true'
+      uses: thollander/actions-comment-pull-request@v2
+      # Only comment if triggered by a pull request target event
+      with:
+        message: |
+            The processed EEA test files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
