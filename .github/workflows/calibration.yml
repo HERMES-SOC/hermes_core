@@ -34,7 +34,7 @@ jobs:
         DOCKERFILE="Dockerfile"
 
         # Define the line to insert
-        LINE_TO_INSERT='RUN pip install hermes_core@git+https://github.com/alrobbertz/hermes_core.git@113-multiple-timeseries'
+        LINE_TO_INSERT='RUN pip install hermes_core@git+$BRANCH_URL'
 
         # Insert the line after the 'RUN pip install -r requirements.txt' line
         sed -i '/RUN pip install -r requirements.txt/a\'"$LINE_TO_INSERT" "$DOCKERFILE"
@@ -95,10 +95,10 @@ jobs:
       if: steps.test-lambda.outputs.test_success == 'true'
       run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
     
-    - name: Comment PR
-      if: steps.test-lambda.outputs.test_success == 'true'
-      uses: thollander/actions-comment-pull-request@v2
-      # Only comment if triggered by a pull request target event
-      with:
-        message: |
-            The processed EEA test files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
+    # - name: Comment PR
+    #   if: steps.test-lambda.outputs.test_success == 'true'
+    #   uses: thollander/actions-comment-pull-request@v2
+    #   # Only comment if triggered by a pull request target event
+    #   with:
+    #     message: |
+    #         The processed EEA test files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
