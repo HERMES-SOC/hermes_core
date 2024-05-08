@@ -82,14 +82,14 @@ jobs:
           name: processed-files
           path: processed_files/
 
-    # - name: Echo Artifact URL
-    #   if: steps.test-lambda.outputs.test_success == 'true'
-    #   run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
+    - name: Echo Artifact URL
+      if: steps.test-lambda.outputs.test_success == 'true'
+      run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
     
-    # - name: Comment PR
-    #   if: steps.test-lambda.outputs.test_success == 'true'
-    #   uses: thollander/actions-comment-pull-request@v2
-    #   # Only comment if triggered by a pull request target event
-    #   with:
-    #     message: |
-    #         The processed files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
+    - name: Comment PR
+      if: steps.test-lambda.outputs.test_success == 'true'
+      uses: thollander/actions-comment-pull-request@v2
+      # Only comment if triggered by a pull request target event
+      with:
+        message: |
+            The processed files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
