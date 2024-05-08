@@ -26,7 +26,7 @@ jobs:
         cd ..
         git clone https://github.com/HERMES-SOC/sdc_aws_processing_lambda.git
         cd sdc_aws_processing_lambda/lambda_function
-        LINE_TO_INSERT="RUN pip install hermes_coregit+https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git@${{ github.event.pull_request.head.ref }}"
+        LINE_TO_INSERT="RUN pip install hermes_core@git+https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git@${{ github.event.pull_request.head.ref }}"
         sed -i '/RUN pip install -r requirements.txt/a\'"$LINE_TO_INSERT" Dockerfile
         docker build -t processing_function:latest . --network host
         
