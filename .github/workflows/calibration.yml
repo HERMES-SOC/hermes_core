@@ -25,7 +25,7 @@ jobs:
         DOCKERFILE="Dockerfile"
 
         # Define the line to insert
-        LINE_TO_INSERT='# Repo where this image'"'"'s Dockerfile is maintained: https://github.com/HERMES-SOC/docker-lambda-base'
+        LINE_TO_INSERT='pip install hermes_core@git+https://github.com/alrobbertz/hermes_core.git@113-multiple-timeseries'
 
         # Insert the line after the 'RUN pip install -r requirements.txt' line
         sed -i '/RUN pip install -r requirements.txt/a\'"$LINE_TO_INSERT" "$DOCKERFILE"
