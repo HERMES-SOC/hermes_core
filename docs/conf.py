@@ -54,11 +54,11 @@ if not os.path.exists("generated"):
     os.mkdir("generated")  # generate the directory before putting things in it
 # Global Attributes to CSV
 
-global_info = HermesDataSchema.global_attribute_info()
+global_info = HermesDataSchema().global_attribute_info()
 global_info.write("./generated/global_attributes.csv", overwrite=True)
 
 # Variable Attributes to CSV
-variable_info = HermesDataSchema.measurement_attribute_info()
+variable_info = HermesDataSchema().measurement_attribute_info()
 variable_info.write("./generated/variable_attributes.csv", overwrite=True)
 
 # Add any paths that contain templates here, relative to this directory.

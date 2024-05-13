@@ -13,6 +13,26 @@
 ; note that the extra '%'s are escape characters
 time_format = %Y-%m-%d %H:%M:%S
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Mission-Specific Configuration ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[mission]
+; This should be overwritten by each SWxSOC affiliated Mission to incliude their
+; own mission-specific project name and instrument names
+
+; used for Project Name Global Attribute and data file naming conventions
+mission_name = hermes
+
+inst_names = ["eea", "nemisis", "merit", "spani"]
+inst_shortnames = ["eea", "nms", "mrt", "spn"]
+inst_fullnames = [
+        "Electron Electrostatic Analyzer",
+        "Noise Eliminating Magnetometer Instrument in a Small Integrated System",
+        "Miniaturized Electron pRoton Telescope",
+        "Solar Probe Analyzer for Ions"
+    ]
+inst_targetnames = ["EEA", "MAG", "MERIT", "SPANI"]
+
 ;;;;;;;;;;;;;
 ; Downloads ;
 ;;;;;;;;;;;;;
