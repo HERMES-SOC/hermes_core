@@ -81,7 +81,7 @@ class CDFHandler(HermesDataIOHandler):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
+    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict, NDCollection, dict]:
         """
         Load heliophysics data from a CDF file.
 
@@ -98,6 +98,8 @@ class CDFHandler(HermesDataIOHandler):
             Non-record-varying data contained in the file
         spectra : `ndcube.NDCollection`
             Spectral or High-dimensional measurements in the loaded data.
+        meta: `dict`
+            Global metadata attributes.
         """
         from spacepy.pycdf import CDF
 
