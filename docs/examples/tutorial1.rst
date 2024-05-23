@@ -7,6 +7,7 @@ This module provides an example for creating a CDF File using the `~hermes_core.
 class. This class is an abstraction of underlying data structures to make the handling of
 measurement data easier when reading and writing CDF data.
 
+    >>> from pathlib import Path
     >>> from collections import OrderedDict
     >>> import numpy as np
     >>> import astropy.units as u
@@ -140,7 +141,8 @@ measurement data easier when reading and writing CDF data.
     >>> DRYRUN=True
     >>> if DRYRUN:
     ...     with tempfile.TemporaryDirectory() as tmpdirname:
-    ...         cdf_file_path = example_data.save(output_path=tmpdirname)
+    ...         tmp_path = Path(tmpdirname)
+    ...         cdf_file_path = example_data.save(output_path=tmp_path)
     ... else:
     ...     cdf_file_path = example_data.save(output_path="./", overwrite=True)
 
