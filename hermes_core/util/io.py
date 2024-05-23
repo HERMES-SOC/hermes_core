@@ -26,14 +26,14 @@ class HermesDataIOHandler(ABC):
     """
 
     @abstractmethod
-    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
+    def load_data(self, file_path: Path) -> Tuple[TimeSeries, dict]:
         """
         Load data from a file.
 
         Parameters
         ----------
-        file_path : `str`
-            A fully specified file path.
+        file_path : `pathlib.Path`
+            A fully specified file path of the data file to load.
 
         Returns
         -------
@@ -47,7 +47,7 @@ class HermesDataIOHandler(ABC):
         pass
 
     @abstractmethod
-    def save_data(self, data, file_path: str):
+    def save_data(self, data, file_path: Path):
         """
         Save data to a file.
 
@@ -55,8 +55,8 @@ class HermesDataIOHandler(ABC):
         ----------
         data : `hermes_core.timedata.HermesData`
             An instance of `HermesData` containing the data to be saved.
-        file_path : `str`
-            The fully specified file path to save into.
+        file_path : `pathlib.Path`
+            A fully specified path to the directory where the file is to be saved.
         """
         pass
 
@@ -79,14 +79,14 @@ class CDFHandler(HermesDataIOHandler):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def load_data(self, file_path: str) -> Tuple[TimeSeries, dict]:
+    def load_data(self, file_path: Path) -> Tuple[TimeSeries, dict]:
         """
         Load heliophysics data from a CDF file.
 
         Parameters
         ----------
-        file_path : `str`
-            The path to the CDF file.
+        file_path : `pathlib.Path`
+            A fully specified file path to the CDF file to load.
 
         Returns
         -------
@@ -99,7 +99,7 @@ class CDFHandler(HermesDataIOHandler):
         """
         from spacepy.pycdf import CDF
 
-        if not Path(file_path).exists():
+        if not file_path.exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
 
         # Create a new TimeSeries
@@ -110,7 +110,7 @@ class CDFHandler(HermesDataIOHandler):
         spectra = []
 
         # Open CDF file with context manager
-        with CDF(file_path) as input_file:
+        with CDF(str(file_path)) as input_file:
             # Add Global Attributes from the CDF file to TimeSeries
             input_global_attrs = {}
             for attr_name in input_file.attrs:
@@ -309,7 +309,7 @@ class CDFHandler(HermesDataIOHandler):
         # Add to Spectra
         spectra.append((var_name, var_cube))
 
-    def save_data(self, data, file_path: str):
+    def save_data(self, data, file_path: Path):
         """
         Save heliophysics data to a CDF file.
 
@@ -317,12 +317,12 @@ class CDFHandler(HermesDataIOHandler):
         ----------
         data : `hermes_core.timedata.HermesData`
             An instance of `HermesData` containing the data to be saved.
-        file_path : `str`
-            The path to save the CDF file.
+        file_path : `pathlib.Path`
+            A fully specified path to the directory where the CDF file is to be saved.
 
         Returns
         -------
-        path : `str`
+        path : `pathlib.Path`
             A path to the saved file.
         """
         from spacepy.pycdf import CDF
@@ -336,7 +336,7 @@ class CDFHandler(HermesDataIOHandler):
 
             # Add zAttributes
             self._convert_variables_to_cdf(data, cdf_file)
-        return output_cdf_filepath
+        return Path(output_cdf_filepath)
 
     def _convert_global_attributes_to_cdf(self, data, cdf_file):
         # Loop though Global Attributes in target_dict

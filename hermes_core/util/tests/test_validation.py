@@ -41,14 +41,14 @@ def get_test_timeseries():
 
 def test_non_cdf_file():
     """Function to Test a file using the CDFValidator that is not a CDF File"""
-    invlid_path = str(Path(hermes_core.__file__).parent / "data" / "README.rst")
+    invlid_path = Path(hermes_core.__file__).parent / "data" / "README.rst"
     with pytest.raises(ValueError):
         _ = validate(invlid_path)
 
 
 def test_non_existant_file():
     """Function to Test a file using the CDFValidator that does not exist"""
-    invlid_path = str(Path(hermes_core.__file__).parent / "data" / "test.cdf")
+    invlid_path = Path(hermes_core.__file__).parent / "data" / "test.cdf"
     result = validate(invlid_path)
     assert len(result) == 1
     assert "Could not open CDF File at path:" in result[0]
@@ -64,9 +64,10 @@ def test_missing_global_attrs():
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
-        out_file = td.save(tmpdirname)
+        tmp_path = Path(tmpdirname)
+        out_file = td.save(tmp_path)
 
-        with CDF(out_file, readonly=False) as cdf:
+        with CDF(str(out_file), readonly=False) as cdf:
             del cdf.meta["Descriptor"]
 
         # Validate
@@ -88,9 +89,10 @@ def test_missing_var_type():
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
-        out_file = td.save(tmpdirname)
+        tmp_path = Path(tmpdirname)
+        out_file = td.save(tmp_path)
 
-        with CDF(out_file, readonly=False) as cdf:
+        with CDF(str(out_file), readonly=False) as cdf:
             del cdf["measurement"].meta["VAR_TYPE"]
 
         # Validate
@@ -111,9 +113,10 @@ def test_missing_variable_attrs():
 
     # Convert to a CDF File and Validate
     with tempfile.TemporaryDirectory() as tmpdirname:
-        out_file = td.save(tmpdirname)
+        tmp_path = Path(tmpdirname)
+        out_file = td.save(tmp_path)
 
-        with CDF(out_file, readonly=False) as cdf:
+        with CDF(str(out_file), readonly=False) as cdf:
             del cdf["measurement"].meta["CATDESC"]
             del cdf["measurement"].meta["UNITS"]
             cdf["measurement"].meta["DISPLAY_TYPE"] = "bad_type"
