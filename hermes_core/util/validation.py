@@ -9,14 +9,14 @@ from hermes_core.util.schema import HermesDataSchema
 __all__ = ["validate", "CDFValidator"]
 
 
-def validate(filepath: str) -> list[str]:
+def validate(file_path: Path) -> list[str]:
     """
     Validate a data file such as a CDF.
 
     Parameters
     ----------
-    filepath : `str`
-        A fully specificed file path.
+    file_path : `pathlib.Path`
+        A fully specified file path of the data file to validate.
 
     Returns
     -------
@@ -24,7 +24,7 @@ def validate(filepath: str) -> list[str]:
         A list of validation errors returned. A valid file will result in an emppty list being returned.
     """
     # Determine the file type
-    file_extension = Path(filepath).suffix
+    file_extension = file_path.suffix
 
     # Create the appropriate validator object based on file type
     if file_extension == ".cdf":
@@ -33,7 +33,7 @@ def validate(filepath: str) -> list[str]:
         raise ValueError(f"Unsupported file type: {file_extension}")
 
     # Call the validate method of the validator object
-    return validator.validate(filepath)
+    return validator.validate(file_path)
 
 
 class HermesDataValidator(ABC):
@@ -42,14 +42,14 @@ class HermesDataValidator(ABC):
     """
 
     @abstractmethod
-    def validate(self, file_path: str) -> list[str]:
+    def validate(self, file_path: Path) -> list[str]:
         """
         Validate the heliophysics data file.
 
         Parameters
         ----------
-        file_path : `str`
-            The path to the data file.
+        file_path : `pathlib.Path`
+            A fully specified file path of the data file to validate.
 
         Returns
         -------
@@ -70,14 +70,14 @@ class CDFValidator(HermesDataValidator):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def validate(self, file_path: str) -> list[str]:
+    def validate(self, file_path: Path) -> list[str]:
         """
         Validate the CDF file.
 
         Parameters
         ----------
-        file_path : `str`
-            The path to the CDF file.
+        file_path : `pathlib.Path`
+            A fully specified file path of the CDF data file to validate.
 
         Returns
         -------
@@ -89,7 +89,7 @@ class CDFValidator(HermesDataValidator):
 
         try:
             # Open CDF file with context manager
-            with CDF(file_path, readonly=True) as cdf_file:
+            with CDF(str(file_path), readonly=True) as cdf_file:
                 # Verify that all `required` global attributes in the schema are present
                 global_attr_validation_errors = self._validate_global_attr_schema(
                     cdf_file=cdf_file
