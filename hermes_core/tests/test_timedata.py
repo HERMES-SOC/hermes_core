@@ -230,7 +230,8 @@ def test_none_attributes():
     with tempfile.TemporaryDirectory() as tmpdirname:
         with pytest.raises(ValueError):
             # Throws an error that we cannot have None attribute values
-            test_data.save(output_path=tmpdirname)
+            tmp_path = Path(tmpdirname)
+            test_data.save(output_path=tmp_path)
 
 
 def test_multidimensional_timeseries():
@@ -342,10 +343,10 @@ def test_hermes_data_valid_attrs():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = test_data.save(output_path=tmpdirname)
-        test_file_cache_path = Path(test_file_output_path)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = test_data.save(output_path=tmp_path)
         # Test the File Exists
-        assert test_file_cache_path.exists()
+        assert test_file_output_path.exists()
 
 
 def test_global_attribute_template():
@@ -490,11 +491,10 @@ def test_hermes_data_single_measurement():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = test_data.save(output_path=tmpdirname)
-
-        test_file_cache_path = Path(test_file_output_path)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = test_data.save(output_path=tmp_path)
         # Test the File Exists
-        assert test_file_cache_path.exists()
+        assert test_file_output_path.exists()
 
 
 def test_hermes_data_add_measurement():
@@ -876,16 +876,15 @@ def test_hermes_data_generate_valid_cdf():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-        # print out rights
-        test_file_output_path = test_data.save(output_path=tmpdirname, overwrite=True)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = test_data.save(output_path=tmp_path, overwrite=True)
 
         # Validate the generated CDF File
-        result = validate(filepath=test_file_output_path)
+        result = validate(file_path=test_file_output_path)
         assert len(result) <= 1  # Logical Source and File ID Do not Agree
 
         # Remove the File
-        test_file_cache_path = Path(test_file_output_path)
-        test_file_cache_path.unlink()
+        test_file_output_path.unlink()
 
 
 def test_hermes_data_from_cdf():
@@ -987,7 +986,8 @@ def test_hermes_data_from_cdf():
 
     # Convert the Wrapper to a CDF File
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = test_data.save(output_path=tmpdirname)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = test_data.save(output_path=tmp_path)
 
         # Validate the generated CDF File
         result = validate(test_file_output_path)
@@ -997,10 +997,10 @@ def test_hermes_data_from_cdf():
         new_writer = HermesData.load(test_file_output_path)
 
         # Remove the Original File
-        test_file_cache_path = Path(test_file_output_path)
+        test_file_cache_path = test_file_output_path
         test_file_cache_path.unlink()
 
-        test_file_output_path2 = new_writer.save(output_path=tmpdirname)
+        test_file_output_path2 = new_writer.save(output_path=tmp_path)
         assert test_file_output_path == test_file_output_path2
 
         # Validate the generated CDF File
@@ -1078,7 +1078,8 @@ def test_hermes_data_idempotency():
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = test_data.save(output_path=tmpdirname)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = test_data.save(output_path=tmp_path)
 
         # Try loading the *Invalid* CDF File
         loaded_data = HermesData.load(test_file_output_path)
@@ -1193,11 +1194,10 @@ def test_bitlength_save_cdf(bitlength):
     hermes_data = HermesData(timeseries=ts, meta=input_attrs)
     hermes_data.timeseries["Bx"].meta.update({"CATDESC": "Test"})
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = hermes_data.save(output_path=tmpdirname)
-
-        test_file_cache_path = Path(test_file_output_path)
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = hermes_data.save(output_path=tmp_path)
         # Test the File Exists
-        assert test_file_cache_path.exists()
+        assert test_file_output_path.exists()
 
 
 def test_overwrite_save():
@@ -1241,15 +1241,16 @@ def test_overwrite_save():
     td = get_test_hermes_data()
     td.meta.update(input_attrs)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_file_output_path = Path(td.save(output_path=tmpdirname))
+        tmp_path = Path(tmpdirname)
+        test_file_output_path = td.save(output_path=tmp_path)
         # Test the File Exists
         assert test_file_output_path.exists()
         # without overwrite set trying to create the file again should lead to an error
         with pytest.raises(CDFError):
-            test_file_output_path = td.save(output_path=tmpdirname, overwrite=False)
+            test_file_output_path = td.save(output_path=tmp_path, overwrite=False)
 
         # with overwrite set there should be no error
-        assert Path(td.save(output_path=tmpdirname, overwrite=True)).exists()
+        assert td.save(output_path=tmp_path, overwrite=True).exists()
 
 
 def test_without_cdf_lib():
