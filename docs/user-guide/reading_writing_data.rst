@@ -317,14 +317,21 @@ For a complete example with instantiation of all objects in one code example:
     ...     meta=input_attrs
     ... )
 
-The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another 
-measurement column or edit the metadata after the fact. Your variable metadata can be found 
-by querying the measurement column directly.
+The :py:class:`~hermes_core.timedata.HermesData` is mutable so you can edit it, add another measurement column or edit the metadata after the fact. 
+Your variable metadata can be found by querying the measurement column directly. 
+For a single Epoch variable you can access measurements directly throuth the `.timeseries` member: 
 
     >>> example_hermes_data.timeseries['Bx'].meta.update(
     ...     {"CATDESC": "X component of the Magnetic field measured by HERMES"}
     ... )
     >>> example_hermes_data.timeseries['Bx'].meta # doctest: +SKIP
+
+For multiple epoch variables, you have to addess measurements through the `.timeseries` dictionary, keyed by the epoch name: 
+
+    >>> hermes_data.timeseries['Epoch']['diff_e_flux'].meta.update(
+    ...     {"CATDESC": "Differential Electron Flux measured by HERMES"}
+    ... )
+    >>> hermes_data.timeseries['Epoch']['diff_e_flux'].meta # doctest: +SKIP
 
 The class does its best to fill in metadata fields if it can and leaves others blank that it 
 cannot. Those should be filled in manually. Be careful when editing metadata that was 
