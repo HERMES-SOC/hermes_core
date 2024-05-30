@@ -98,9 +98,10 @@ def test_cdf_io():
 def test_cdf_bad_file_path():
     """Test Loading CDF from a non-existant file"""
     with tempfile.TemporaryDirectory() as tmpdirname:
+        tmp_path = Path(tmpdirname)
         # Try loading from non-existant_path
         with pytest.raises(FileNotFoundError):
-            _ = HermesData.load(tmpdirname + "non_existant_file.cdf")
+            _ = HermesData.load(tmp_path / "non_existant_file.cdf")
 
 
 def test_cdf_nrv_support_data():
@@ -111,11 +112,12 @@ def test_cdf_nrv_support_data():
     td = get_test_hermes_data()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
+        tmp_path = Path(tmpdirname)
         # Convert HermesData the to a CDF File
-        test_file_output_path = td.save(output_path=tmpdirname)
+        test_file_output_path = td.save(output_path=tmp_path)
 
         # Load the JSON file as JSON
-        with CDF(test_file_output_path, readonly=False) as cdf_file:
+        with CDF(str(test_file_output_path), readonly=False) as cdf_file:
             # Add Non-Record-Varying Variable
             cdf_file["Test_NRV_Var"] = [1, 2, 3]
 
@@ -138,11 +140,12 @@ def test_cdf_spectra_data():
     td = get_test_hermes_data()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
+        tmp_path = Path(tmpdirname)
         # Convert HermesData the to a CDF File
-        test_file_output_path = td.save(output_path=tmpdirname)
+        test_file_output_path = td.save(output_path=tmp_path)
 
         # Load the JSON file as JSON
-        with CDF(test_file_output_path, readonly=False) as cdf_file:
+        with CDF(str(test_file_output_path), readonly=False) as cdf_file:
             # Add Spectra Data Variable
             cdf_file["Test_Spectra_Var"] = np.random.random(size=(10, 10))
             cdf_file["Test_Spectra_Var"].meta["UNITS"] = "counts"

@@ -788,40 +788,40 @@ class HermesData:
         # Re-Derive Metadata
         self._derive_metadata()
 
-    def save(self, output_path: str = None, overwrite: bool = False):
+    def save(self, output_path: Path = None, overwrite: bool = False):
         """
         Save the data to a HERMES CDF file.
 
         Parameters
         ----------
-        output_path : `str`, optional
-            A string path to the directory where file is to be saved.
+        output_path : `pathlib.Path`, optional
+            A fully specified path to the directory where the file is to be saved.
             If not provided, saves to the current directory.
         overwrite : `bool`
             If set, overwrites existing file of the same name.
         Returns
         -------
-        path : `str`
+        path : `pathlib.Path`
             A path to the saved file.
         """
         handler = CDFHandler()
         if not output_path:
-            output_path = str(Path.cwd())
+            output_path = Path.cwd()
         if overwrite:
-            cdf_file_path = Path(output_path) / (self.meta["Logical_file_id"] + ".cdf")
+            cdf_file_path = output_path / (self.meta["Logical_file_id"] + ".cdf")
             if cdf_file_path.exists():
                 cdf_file_path.unlink()
         return handler.save_data(data=self, file_path=output_path)
 
     @classmethod
-    def load(cls, file_path: str):
+    def load(cls, file_path: Path):
         """
         Load data from a file.
 
         Parameters
         ----------
-        file_path : `str`
-            A fully specificed file path.
+        file_path : `pathlib.Path`
+            A fully specified file path of the data file to load.
 
         Returns
         -------
@@ -834,7 +834,7 @@ class HermesData:
 
         """
         # Determine the file type
-        file_extension = Path(file_path).suffix
+        file_extension = file_path.suffix
 
         # Create the appropriate handler object based on file type
         if file_extension == ".cdf":
