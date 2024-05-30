@@ -144,7 +144,7 @@ measurement data easier when reading and writing CDF data.
     ...         tmp_path = Path(tmpdirname)
     ...         cdf_file_path = example_data.save(output_path=tmp_path)
     ... else:
-    ...     cdf_file_path = example_data.save(output_path="./", overwrite=True)
+    ...     cdf_file_path = example_data.save(output_path=Path("./"), overwrite=True)
 
 The file that this code generates is made available as a sample file in this
 repository in :file:`hermes_core/data/sample/hermes_nem_default_l1_20160322T123031_v0.0.1.cdf`.
