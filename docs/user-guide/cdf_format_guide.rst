@@ -123,7 +123,7 @@ Section 4 of this document.
      - `hermes`
    * - instrumentId
      - Instrument or investigation identifier shortened to three letter acronym.
-     - `eea`, `mrt`, `nms`, `spn`
+     - `eea`, `mrt`, `nem`, `spn`
    * - mode
      - *TBS*
      - *TBS*

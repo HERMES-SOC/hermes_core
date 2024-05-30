@@ -147,4 +147,4 @@ measurement data easier when reading and writing CDF data.
     ...     cdf_file_path = example_data.save(output_path="./", overwrite=True)
 
 The file that this code generates is made available as a sample file in this
-repository in :file:`hermes_core/data/sample/hermes_nms_default_l1_20160322T123031_v0.0.1.cdf`.
+repository in :file:`hermes_core/data/sample/hermes_nem_default_l1_20160322T123031_v0.0.1.cdf`.
