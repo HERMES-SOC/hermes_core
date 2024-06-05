@@ -947,25 +947,32 @@ class HermesData:
         Parameters
         ----------
         output_path : `pathlib.Path`, optional
-            A fully specified path to the directory where the file is to be saved.
-            If not provided, saves to the current directory.
+            This can take two forms:
+
+            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended apprach to saving files.
+
+            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the reccomended approach, although it can be used for local development and testing.
+
+            If not provided, saves to the current directory, using the file name of the Logical_file_id metadata attribute.
         overwrite : `bool`
-            If set, overwrites existing file of the same name.
+            If set, overwrites existing file of the same name. This parameter should be used for development and testing purposes only. This parameter should not be set to `True` when saving data for archiving as a part of the production data processing pipeline.
+        
         Returns
         -------
         path : `pathlib.Path`
             A path to the saved file.
+            
+        Raises
+        ------
+        FileNotFoundError: If the output_path points to a directory that does not exist.
+        ValueError: If the output_path is a file and does not have a recognized extension.
         """
         from hermes_core.util.io import CDFHandler
 
         handler = CDFHandler()
         if not output_path:
             output_path = Path.cwd()
-        if overwrite:
-            cdf_file_path = output_path / (self.meta["Logical_file_id"] + ".cdf")
-            if cdf_file_path.exists():
-                cdf_file_path.unlink()
-        return handler.save_data(data=self, file_path=output_path)
+        return handler.save_data(data=self, file_path=output_path, overwrite=overwrite)
 
     @classmethod
     def load(cls, file_path: Path):

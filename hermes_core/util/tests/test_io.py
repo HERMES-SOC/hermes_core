@@ -109,6 +109,35 @@ def test_cdf_bad_file_path():
             _ = HermesData.load(tmp_path / "non_existant_file.cdf")
 
 
+def test_cdf_save():
+    """Functions to test all the parameters of saving a CDF file"""
+    td = get_test_hermes_data()
+
+    # Save to a File that is not a CDF
+    with pytest.raises(ValueError):
+        td.save(output_path=Path("test_file.txt"))
+
+    # Save to a File that's Parent Directory does not exist
+    with pytest.raises(FileNotFoundError):
+        td.save(output_path=Path("non_existant_directory/test_file.cdf"))
+
+    # Save to a File that's parent Directory does exist
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = td.save(output_path=Path(tmpdirname) / "test_file.cdf")
+        assert test_file_output_path.is_file()
+        assert test_file_output_path.name == "test_file.cdf"
+
+    # Save to a Diectory that does not exist
+    with pytest.raises(FileNotFoundError):
+        td.save(output_path=Path("./non_existant_directory"))
+
+    # Save to a Directory that does exist
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        test_file_output_path = td.save(output_path=Path(tmpdirname))
+        assert test_file_output_path.is_file()
+        assert test_file_output_path.name == f"{td.meta['Logical_file_id']}.cdf"
+
+
 def test_cdf_nrv_support_data():
     """
     Test Loading Non-Record-Varying data with CDF IO Handler

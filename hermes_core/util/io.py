@@ -51,16 +51,28 @@ class HermesDataIOHandler(ABC):
         pass
 
     @abstractmethod
-    def save_data(self, data, file_path: Path):
+    def save_data(self, data, file_path: Path, overwrite: bool = False):
         """
-        Save data to a file.
-
-        Parameters
-        ----------
         data : `hermes_core.timedata.HermesData`
             An instance of `HermesData` containing the data to be saved.
         file_path : `pathlib.Path`
-            A fully specified path to the directory where the file is to be saved.
+            This can take two forms:
+
+            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended apprach to saving files.
+
+            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the reccomended approach, although it can be used for local development and testing.
+        overwrite : `bool`
+            If set, overwrites existing file of the same name. This parameter should be used for development and testing purposes only. This parameter should not be set to `True` when saving data for archiving as a part of the production data processing pipeline.
+
+        Returns
+        -------
+        path : `pathlib.Path`
+            A path to the saved file.
+
+        Raises
+        ------
+        FileNotFoundError: If the file_path points to a directory that does not exist.
+        ValueError: If the file_path is a file and does not have a recognized extension.
         """
         pass
 
@@ -331,7 +343,7 @@ class CDFHandler(HermesDataIOHandler):
             var_attrs["UNITS"] = u.dimensionless_unscaled.to_string()
             _load_data(spectra, var_name, var_data, var_attrs, time)
 
-    def save_data(self, data, file_path: Path):
+    def save_data(self, data, file_path: Path, overwrite: bool = False):
         """
         Save heliophysics data to a CDF file.
 
@@ -340,19 +352,59 @@ class CDFHandler(HermesDataIOHandler):
         data : `hermes_core.timedata.HermesData`
             An instance of `HermesData` containing the data to be saved.
         file_path : `pathlib.Path`
-            A fully specified path to the directory where the CDF file is to be saved.
+            This can take two forms:
+
+            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended apprach to saving files.
+
+            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the reccomended approach, although it can be used for local development and testing.
+        overwrite : `bool`
+            If set, overwrites existing file of the same name. This parameter should be used for development and testing purposes only. This parameter should not be set to `True` when saving data for archiving as a part of the production data processing pipeline.
 
         Returns
         -------
         path : `pathlib.Path`
             A path to the saved file.
+
+        Raises
+        ------
+        FileNotFoundError: If the file_path points to a directory that does not exist.
+        ValueError: If the file_path is a file and does not have the .cdf extension.
         """
         from spacepy.pycdf import CDF
 
-        # Initialize a new CDF
-        cdf_filename = f"{data.meta['Logical_file_id']}.cdf"
-        output_cdf_filepath = str(Path(file_path) / cdf_filename)
-        with CDF(output_cdf_filepath, masterpath="") as cdf_file:
+        # Check that the file_path directory exists
+        # Set the Output CDF File Path
+        if file_path.suffix:
+            # (file_path is a file)
+
+            # Check that the file is a CDF File
+            if file_path.suffix != ".cdf":
+                raise ValueError(f"File must have the .cdf extension: {file_path}")
+
+            # Check that the parent directory exists
+            if not file_path.parent.exists():
+                raise FileNotFoundError(f"Directory does not exist: {file_path.parent}")
+
+            # Save the CDF File with the provided filename
+            output_cdf_filepath = Path(file_path)
+
+        else:
+            # (file_path is a directory)
+
+            # Check that the directory exists
+            if not file_path.exists():
+                raise FileNotFoundError(f"Directory does not exist: {file_path}")
+
+            # Save the CDF File with the Logical_file_id as the filename
+            cdf_filename = f"{data.meta['Logical_file_id']}.cdf"
+            output_cdf_filepath = Path(file_path) / cdf_filename
+
+        # Check for Overwrite
+        if overwrite:
+            if output_cdf_filepath.exists():
+                output_cdf_filepath.unlink()
+
+        with CDF(str(output_cdf_filepath), masterpath="") as cdf_file:
             # Add Global Attriubtes to the CDF File
             self._convert_global_attributes_to_cdf(data, cdf_file)
 
