@@ -58,9 +58,9 @@ class HermesDataIOHandler(ABC):
         file_path : `pathlib.Path`
             This can take two forms:
 
-            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended apprach to saving files.
+            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended approach to saving files.
 
-            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the reccomended approach, although it can be used for local development and testing.
+            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the recommended approach, although it can be used for local development and testing.
         overwrite : `bool`
             If set, overwrites existing file of the same name. This parameter should be used for development and testing purposes only. This parameter should not be set to `True` when saving data for archiving as a part of the production data processing pipeline.
 
@@ -354,9 +354,9 @@ class CDFHandler(HermesDataIOHandler):
         file_path : `pathlib.Path`
             This can take two forms:
 
-            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended apprach to saving files.
+            1. A fully specified path to the directory where the file is to be saved. This will save the file with the default name of the Logical_file_id metadata attribute. This is the recommended approach to saving files.
 
-            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the reccomended approach, although it can be used for local development and testing.
+            2. A fully specified path to the file to be saved, including the file name. This will ignore the Logical_file_id metadata attribute and save the file with the provided name. This is not the recommended approach, although it can be used for local development and testing.
         overwrite : `bool`
             If set, overwrites existing file of the same name. This parameter should be used for development and testing purposes only. This parameter should not be set to `True` when saving data for archiving as a part of the production data processing pipeline.
 
