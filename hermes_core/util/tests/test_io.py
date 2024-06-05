@@ -87,8 +87,9 @@ def test_cdf_io():
     td = get_test_hermes_data()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
+        tmp_path = Path(tmpdirname)
         # Convert HermesData the to a CDF File
-        test_file_output_path = td.save(output_path=tmpdirname)
+        test_file_output_path = td.save(output_path=tmp_path)
 
         # Load the CDF to a HermesData Object
         td_loaded = HermesData.load(test_file_output_path)
@@ -97,7 +98,7 @@ def test_cdf_io():
         assert len(td.timeseries.columns) == len(td_loaded.timeseries.columns)
 
         with pytest.raises(CDFError):
-            td_loaded.save(output_path=tmpdirname)
+            td_loaded.save(output_path=tmp_path)
 
 
 def test_cdf_bad_file_path():
