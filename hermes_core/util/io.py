@@ -53,6 +53,10 @@ class HermesDataIOHandler(ABC):
     @abstractmethod
     def save_data(self, data, file_path: Path, overwrite: bool = False):
         """
+        Save data to a file.
+
+        Parameters
+        ----------
         data : `hermes_core.timedata.HermesData`
             An instance of `HermesData` containing the data to be saved.
         file_path : `pathlib.Path`
