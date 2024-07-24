@@ -14,6 +14,7 @@ import astropy.units as u
 from astropy.nddata import NDData
 from hermes_core.timedata import HermesData
 
+
 def get_test_timeseries(n=10):
     """
     Function to get test astropy.timeseries.TimeSeries to re-use in other tests
