@@ -94,6 +94,7 @@ intersphinx_mapping = {
         "https://docs.python.org/3/",
         (None, "http://data.astropy.org/intersphinx/python3.inv"),
     ),
+    "swxsoc": ("https://swxsoc.readthedocs.io/en/latest/", None),
     "numpy": (
         "https://docs.scipy.org/doc/numpy/",
         (None, "http://data.astropy.org/intersphinx/numpy.inv"),

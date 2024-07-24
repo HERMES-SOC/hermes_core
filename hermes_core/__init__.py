@@ -6,18 +6,19 @@ except ImportError:
     __version__ = "unknown version"
     version_tuple = (0, 0, "unknown version")
 
-from hermes_core.util.config import load_config, print_config
-from swxsoc.util.logger import _init_log
+import os
 import swxsoc
 
-# Load user configuration
-config = load_config()
-# Overwrite SWxSOC Config with HERMES Config
-swxsoc.config = config
+# Set the Mission Environment Variable to load the correct configuration
+os.environ["SWXSOC_MISSION"] = "hermes"
+swxsoc._reconfigure()
+# Get the Updated Configuration
+config = swxsoc.config
 
-log = _init_log(config=config)
+# Initialize HERMES Logger
+log = swxsoc.util.logger._init_log(config)
 
 # Then you can be explicit to control what ends up in the namespace,
-__all__ = ["config", "print_config"]
+__all__ = ["config"]
 
 # log.info(f"hermes_core version: {__version__}")

@@ -2,10 +2,15 @@
 Container class for Measurement Data.
 """
 
+from pathlib import Path
+from collections import OrderedDict
 from typing import Optional, Union
 import astropy
 import ndcube
 from swxsoc.swxdata import SWXData
+from swxsoc.util.util import VALID_DATA_LEVELS
+from swxsoc.util.validation import CDFValidator
+import hermes_core
 from hermes_core.util.schema import HermesDataSchema
 
 __all__ = ["HermesData"]
@@ -97,3 +102,90 @@ class HermesData(SWXData):
         # Derive Metadata using custom Schema
         self.schema = HermesDataSchema()
         self._derive_metadata()
+
+    @staticmethod
+    def global_attribute_template(
+        instr_name: str = "", data_level: str = "", version: str = ""
+    ) -> OrderedDict:
+        """
+        Function to generate a template of the required ISTP-compliant global attributes.
+
+        Parameters
+        ----------
+        instr_name : `str`
+            The instrument name. Must be "eea", "nemisis", "merit" or "spani".
+        data_level : `str`
+            The data level of the data. Must be "l0", "l1", "ql", "l2", "l3", "l4"
+        version : `str`
+            Must be of the form X.Y.Z.
+
+        Returns
+        -------
+        template : `collections.OrderedDict`
+            A template for required global attributes.
+        """
+        meta = HermesDataSchema().global_attribute_template()
+
+        # Check the Optional Instrument Name
+        if instr_name:
+            if instr_name not in hermes_core.config["mission"]["inst_names"]:
+                raise ValueError(
+                    f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.config['mission']['inst_names']}."
+                )
+            # Set the Property
+            meta["Descriptor"] = (
+                f"{instr_name.upper()}>{hermes_core.config['mission']['inst_to_fullname'][instr_name]}"
+            )
+
+        # Check the Optional Data Level
+        if data_level:
+            if data_level not in VALID_DATA_LEVELS:
+                raise ValueError(
+                    f"Level, {data_level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
+                )
+            # Set the Property
+            if data_level != "ql":
+                meta["Data_level"] = f"{data_level.upper()}>Level {data_level[1]}"
+            else:
+                meta["Data_level"] = f"{data_level.upper()}>Quicklook"
+
+        # Check the Optional Data Version
+        if version:
+            # check that version is in the right format with three parts
+            if len(version.split(".")) != 3:
+                raise ValueError(
+                    f"Version, {version}, is not formatted correctly. Should be X.Y.Z"
+                )
+            meta["Data_version"] = version
+        return meta
+
+    @staticmethod
+    def measurement_attribute_template() -> OrderedDict:
+        """
+        Function to generate a template of the required measurement attributes.
+
+        Returns
+        -------
+        template : `collections.OrderedDict`
+            A template for required variable attributes that must be provided.
+        """
+        return HermesDataSchema().measurement_attribute_template()
+
+    @staticmethod
+    def validate(file_path: Path) -> list[str]:
+        """
+        Validate the CDF file.
+
+        Parameters
+        ----------
+        file_path : `pathlib.Path`
+            A fully specified file path of the CDF data file to validate.
+
+        Returns
+        -------
+        errors : `list[str]`
+            A list of validation errors returned. A valid file will result in an empty list being returned.
+        """
+        schema = HermesDataSchema()
+        validator = CDFValidator(schema)
+        return validator.validate(file_path)

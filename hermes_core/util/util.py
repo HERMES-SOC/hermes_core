@@ -2,11 +2,7 @@
 This module provides general utility functions.
 """
 
-import os
-
-from astropy.time import Time
 from swxsoc.util import util
-import hermes_core
 
 
 __all__ = ["create_science_filename", "parse_science_filename", "VALID_DATA_LEVELS"]
