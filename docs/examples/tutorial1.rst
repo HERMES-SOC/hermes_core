@@ -39,7 +39,7 @@ measurement data easier when reading and writing CDF data.
     >>>
     >>> # Create support data or non-time-varying (time invariant) data
     >>> support_data = {
-    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16))
+    ...     "data_mask": NDData(data=np.eye(100, 100, dtype=np.uint16), meta={"CATDESC": "Data Mask", "VAR_TYPE": "metadata"})
     ... }
     >>> 
     >>> # Create high-dimensional data leveraging the API of NDCube
@@ -48,7 +48,7 @@ measurement data easier when reading and writing CDF data.
     ...         (
     ...             "example_spectra",
     ...             NDCube(
-    ...                 data=np.random.random(size=(4, 10)),
+    ...                 data=np.random.random(size=(1000, 10)),
     ...                 wcs=WCS(naxis=2),
     ...                 meta={"CATDESC": "Example Spectra Variable"},
     ...                 unit="eV",
@@ -144,7 +144,7 @@ measurement data easier when reading and writing CDF data.
     ...         tmp_path = Path(tmpdirname)
     ...         cdf_file_path = example_data.save(output_path=tmp_path)
     ... else:
-    ...     cdf_file_path = example_data.save(output_path="./", overwrite=True)
+    ...     cdf_file_path = example_data.save(output_path=Path("./"), overwrite=True)
 
 The file that this code generates is made available as a sample file in this
-repository in :file:`hermes_core/data/sample/hermes_nms_default_l1_20160322T123031_v0.0.1.cdf`.
+repository in :file:`hermes_core/data/sample/hermes_nem_default_l1_20160322T123031_v0.0.1.cdf`.

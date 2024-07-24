@@ -14,7 +14,7 @@ from hermes_core.timedata import HermesData
 from hermes_core.util import const
 from hermes_core.util.validation import validate, CDFValidator
 
-SAMPLE_CDF_FILE = "hermes_nms_default_l1_20160322_123031_v0.0.1.cdf"
+SAMPLE_CDF_FILE = "hermes_nem_default_l1_20160322_123031_v0.0.1.cdf"
 
 
 def get_test_timeseries():

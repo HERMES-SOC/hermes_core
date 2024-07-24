@@ -13,7 +13,7 @@ time_formatted = "20240406T120621"
 @pytest.mark.parametrize("instrument,time,level,version,result", [
     ("eea", time, "l1", "1.2.3", f"hermes_eea_l1_{time_formatted}_v1.2.3.cdf"),
     ("merit", time, "l2", "2.4.5", f"hermes_mrt_l2_{time_formatted}_v2.4.5.cdf"),
-    ("nemisis", time, "l2", "1.3.5", f"hermes_nms_l2_{time_formatted}_v1.3.5.cdf"),
+    ("nemisis", time, "l2", "1.3.5", f"hermes_nem_l2_{time_formatted}_v1.3.5.cdf"),
     ("spani", time, "l3", "2.4.5", f"hermes_spn_l3_{time_formatted}_v2.4.5.cdf"),
 ]
 )
@@ -236,7 +236,7 @@ def test_science_filename_errors_l1_b():
 
 # fmt: off
 @pytest.mark.parametrize("filename,instrument,time,level,version,mode", [
-    ("hermes_MAG_l0_2024094-124603_v01.bin", "nemisis", "2024-04-03T12:46:03", "l0", "01", None),
+    ("hermes_NEM_l0_2024094-124603_v01.bin", "nemisis", "2024-04-03T12:46:03", "l0", "01", None),
     ("hermes_EEA_l0_2026337-124603_v11.bin", "eea", "2026-12-03T12:46:03", "l0", "11", None),
     ("hermes_MERIT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21", None),
     ("hermes_SPANI_l0_2026337-065422_v11.bin", "spani", "2026-12-03T06:54:22", "l0", "11", None),

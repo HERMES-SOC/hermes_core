@@ -10,6 +10,8 @@ from astropy.wcs import WCS
 import astropy.units as u
 from ndcube import NDCollection
 from ndcube import NDCube
+import hermes_core
+from hermes_core.timedata import HermesData
 from hermes_core.util.exceptions import warn_user
 from hermes_core.util.schema import HermesDataSchema
 
@@ -26,7 +28,7 @@ class HermesDataIOHandler(ABC):
     """
 
     @abstractmethod
-    def load_data(self, file_path: Path) -> Tuple[TimeSeries, dict]:
+    def load_data(self, file_path: Path) -> Tuple[dict, dict, NDCollection, dict]:
         """
         Load data from a file.
 
@@ -37,12 +39,14 @@ class HermesDataIOHandler(ABC):
 
         Returns
         -------
-        data : `~astropy.time.TimeSeries`
+        timeseries : `dict[~astropy.time.TimeSeries]`
             An instance of `TimeSeries` containing the loaded data.
         support : `dict[astropy.nddata.NDData]`
             Non-record-varying data contained in the file
         spectra : `ndcube.NDCollection`
             Spectral or High-dimensional measurements in the loaded data.
+        meta: `dict`
+            Global metadata attributes.
         """
         pass
 
@@ -79,7 +83,7 @@ class CDFHandler(HermesDataIOHandler):
         # CDF Schema
         self.schema = HermesDataSchema()
 
-    def load_data(self, file_path: Path) -> Tuple[TimeSeries, dict]:
+    def load_data(self, file_path: Path) -> Tuple[dict, dict, NDCollection, dict]:
         """
         Load heliophysics data from a CDF file.
 
@@ -90,20 +94,24 @@ class CDFHandler(HermesDataIOHandler):
 
         Returns
         -------
-        data : `~astropy.time.TimeSeries`
+        timeseries : `dict[~astropy.time.TimeSeries]`
             An instance of `TimeSeries` containing the loaded data.
         support : `dict[astropy.nddata.NDData]`
             Non-record-varying data contained in the file
         spectra : `ndcube.NDCollection`
             Spectral or High-dimensional measurements in the loaded data.
+        meta: `dict`
+            Global metadata attributes.
         """
         from spacepy.pycdf import CDF
 
         if not file_path.exists():
             raise FileNotFoundError(f"CDF Could not be loaded from path: {file_path}")
 
-        # Create a new TimeSeries
-        ts = TimeSeries()
+        # Create a Struct for Global Metadata
+        meta = {}
+        # Create a struct for storing TimeSeries
+        timeseries = {}
         # Create a Data Structure for Non-record Varying Data
         support = {}
         # Intermediate Type
@@ -123,23 +131,35 @@ class CDFHandler(HermesDataIOHandler):
                 else:
                     # gAttr is a single value
                     input_global_attrs[attr_name] = input_file.attrs[attr_name][0]
-            ts.meta.update(input_global_attrs)
+            meta.update(input_global_attrs)
 
-            # First Variable we need to add is time/Epoch
-            if "Epoch" in input_file:
-                time_data = Time(input_file["Epoch"][:].copy())
-                time_attrs = self._load_metadata_attributes(input_file["Epoch"])
+            # First Variables we need to add are time/Epoch
+            epoch_variables = [
+                var_name for var_name in input_file.keys() if "Epoch" in var_name
+            ]
+            # Make sure the Default "Epoch" is present in the CDF
+            if hermes_core.DEFAULT_TIMESERIES_KEY not in epoch_variables:
+                warn_user(
+                    f"Epoch Variable {hermes_core.DEFAULT_TIMESERIES_KEY} not found in CDF file: {file_path}"
+                )
+            # Loop for each Epoch Variable
+            for epoch_var in epoch_variables:
+                time_data = Time(input_file[epoch_var][:].copy())
+                time_attrs = self._load_metadata_attributes(input_file[epoch_var])
+                # Create a new TimeSeries
+                timeseries[epoch_var] = TimeSeries()
                 # Create the Time object
-                ts["time"] = time_data
+                timeseries[epoch_var]["time"] = time_data
                 # Create the Metadata
-                ts["time"].meta = OrderedDict()
-                ts["time"].meta.update(time_attrs)
+                timeseries[epoch_var]["time"].meta = OrderedDict()
+                timeseries[epoch_var]["time"].meta.update(time_attrs)
 
             # Get all the Keys for Measurement Variable Data
             # These are Keys where the underlying object is a `dict` that contains
             # additional data, and is not the `EPOCH` variable
-            variable_keys = filter(lambda key: key != "Epoch", list(input_file.keys()))
-            # Add Variable Attributtes from the CDF file to TimeSeries
+            variable_keys = [
+                var_name for var_name in input_file.keys() if "Epoch" not in var_name
+            ]
             for var_name in variable_keys:
                 # Extract the Variable's Metadata
                 var_attrs = self._load_metadata_attributes(input_file[var_name])
@@ -147,45 +167,26 @@ class CDFHandler(HermesDataIOHandler):
                 # Extract the Variable's Data
                 var_data = input_file[var_name][...]
                 if input_file[var_name].rv():
-                    # See if it is record-varying data with Units
+
+                    # Find the TimeSeries Epoch for this Record-Varying Variable
+                    epoch_key = HermesData.get_timeseres_epoch_key(
+                        timeseries, var_data, var_attrs
+                    )
+                    ts = timeseries[epoch_key]
+
+                    # See if it is record-varying data with UNITS
                     if "UNITS" in var_attrs and len(var_data) == len(ts["time"]):
                         # Check if the variable is multi-dimensional
                         if len(var_data.shape) > 1:
-                            try:
-                                # Create an NDCube Object for the data
-                                self._load_spectra_variable(
-                                    spectra, var_name, var_data, var_attrs, ts.time
-                                )
-                            except ValueError:
-                                warn_user(
-                                    f"Cannot create NDCube for Spectra {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
-                                )
-                                # Swap Units
-                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                                var_attrs["UNITS"] = (
-                                    u.dimensionless_unscaled.to_string()
-                                )
-                                self._load_spectra_variable(
-                                    spectra, var_name, var_data, var_attrs, ts.time
-                                )
+                            # Load as Spectra Data
+                            self._load_spectra_variable(
+                                spectra, var_name, var_data, var_attrs, ts.time
+                            )
                         else:
                             # Load as Record-Varying `data`
-                            try:
-                                self._load_timeseries_variable(
-                                    ts, var_name, var_data, var_attrs
-                                )
-                            except ValueError:
-                                warn_user(
-                                    f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
-                                )
-                                # Swap Units
-                                var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
-                                var_attrs["UNITS"] = (
-                                    u.dimensionless_unscaled.to_string()
-                                )
-                                self._load_timeseries_variable(
-                                    ts, var_name, var_data, var_attrs
-                                )
+                            self._load_timeseries_variable(
+                                ts, var_name, var_data, var_attrs
+                            )
                     else:
                         # Load as `support`
                         self._load_support_variable(
@@ -196,15 +197,10 @@ class CDFHandler(HermesDataIOHandler):
                     self._load_support_variable(support, var_name, var_data, var_attrs)
 
         # Create a NDCollection
-        if len(spectra) > 0:
-            # Implement assertion that all spectra are aligned along time-varying dimension
-            aligned_axes = tuple(0 for _ in spectra)
-            spectra = NDCollection(spectra, aligned_axes=aligned_axes)
-        else:
-            spectra = NDCollection(spectra)
+        spectra = NDCollection(spectra)
 
         # Return the given TimeSeries, NRV Data
-        return ts, support, spectra
+        return timeseries, support, spectra, meta
 
     def _load_metadata_attributes(self, var_data):
         var_attrs = {}
@@ -217,13 +213,26 @@ class CDFHandler(HermesDataIOHandler):
                 var_attrs[attr_name] = var_data.attrs[attr_name]
         return var_attrs
 
-    def _load_timeseries_variable(self, ts, var_name, var_data, var_attrs):
-        # Create the Quantity object
-        var_data = u.Quantity(value=var_data, unit=var_attrs["UNITS"], copy=False)
-        ts[var_name] = var_data
-        # Create the Metadata
-        ts[var_name].meta = OrderedDict()
-        ts[var_name].meta.update(var_attrs)
+    def _load_timeseries_variable(self, timeseries, var_name, var_data, var_attrs):
+        def _load_data(timeseries, var_name, var_data, var_attrs):
+            # Create a Quantity object for the variable
+            timeseries[var_name] = u.Quantity(
+                value=var_data, unit=var_attrs["UNITS"], copy=False
+            )
+            # Create the Metadata
+            timeseries[var_name].meta = OrderedDict()
+            timeseries[var_name].meta.update(var_attrs)
+
+        try:
+            _load_data(timeseries, var_name, var_data, var_attrs)
+        except ValueError:
+            warn_user(
+                f"Cannot create Quantity for Variable {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
+            )
+            # Swap UNITS
+            var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+            var_attrs["UNITS"] = u.dimensionless_unscaled.to_string()
+            _load_data(timeseries, var_name, var_data, var_attrs)
 
     def _load_support_variable(self, support, var_name, var_data, var_attrs):
         # Create a NDData entry for the variable
@@ -300,14 +309,27 @@ class CDFHandler(HermesDataIOHandler):
         return wcs
 
     def _load_spectra_variable(self, spectra, var_name, var_data, var_attrs, time):
-        # Create a World Cordinate System for the Tensor
-        var_wcs = self._get_world_coords(var_data, var_attrs, time)
-        # Create a Cube
-        var_cube = NDCube(
-            data=var_data, wcs=var_wcs, meta=var_attrs, unit=var_attrs["UNITS"]
-        )
-        # Add to Spectra
-        spectra.append((var_name, var_cube))
+        def _load_data(spectra, var_name, var_data, var_attrs, time):
+            # Create a World Cordinate System for the Tensor
+            var_wcs = self._get_world_coords(var_data, var_attrs, time)
+            # Create a Cube
+            var_cube = NDCube(
+                data=var_data, wcs=var_wcs, meta=var_attrs, unit=var_attrs["UNITS"]
+            )
+            # Add to Spectra
+            spectra.append((var_name, var_cube))
+
+        try:
+            # Create an NDCube Object for the data
+            _load_data(spectra, var_name, var_data, var_attrs, time)
+        except ValueError:
+            warn_user(
+                f"Cannot create NDCube for Spectra {var_name} with UNITS {var_attrs['UNITS']}. Creating Quantity with UNITS 'dimensionless_unscaled'."
+            )
+            # Swap UNITS
+            var_attrs["UNITS_DESC"] = var_attrs["UNITS"]
+            var_attrs["UNITS"] = u.dimensionless_unscaled.to_string()
+            _load_data(spectra, var_name, var_data, var_attrs, time)
 
     def save_data(self, data, file_path: Path):
         """
@@ -350,19 +372,31 @@ class CDFHandler(HermesDataIOHandler):
                 cdf_file.attrs[attr_name] = attr_value
 
     def _convert_variables_to_cdf(self, data, cdf_file):
-        # Loop through Scalar TimeSeries Variables
-        for var_name in data.timeseries.colnames:
-            var_data = data.timeseries[var_name]
-            if var_name == "time":
-                # Add 'time' in the TimeSeries as 'Epoch' within the CDF
-                cdf_file["Epoch"] = var_data.to_datetime()
-                # Add the Variable Attributes
-                self._convert_variable_attributes_to_cdf("Epoch", var_data, cdf_file)
-            else:
-                # Add the Variable to the CDF File
-                cdf_file[var_name] = var_data.value
-                # Add the Variable Attributes
-                self._convert_variable_attributes_to_cdf(var_name, var_data, cdf_file)
+
+        # Make sure the Default "Epoch" is present in the CDF
+        if hermes_core.DEFAULT_TIMESERIES_KEY not in data.data["timeseries"]:
+            warn_user(
+                f"Epoch Variable {hermes_core.DEFAULT_TIMESERIES_KEY} not found in CDF file: {cdf_file}"
+            )
+
+        for epoch_key, ts in data.data["timeseries"].items():
+            # Loop through Scalar TimeSeries Variables
+            for var_name in ts.colnames:
+                var_data = ts[var_name]
+                if var_name == "time":
+                    # Add 'time' in the TimeSeries as 'Epoch' within the CDF
+                    cdf_file[epoch_key] = var_data.to_datetime()
+                    # Add the Variable Attributes
+                    self._convert_variable_attributes_to_cdf(
+                        epoch_key, var_data, cdf_file
+                    )
+                else:
+                    # Add the Variable to the CDF File
+                    cdf_file[var_name] = var_data.value
+                    # Add the Variable Attributes
+                    self._convert_variable_attributes_to_cdf(
+                        var_name, var_data, cdf_file
+                    )
 
         # Loop through Non-Record-Varying Data
         for var_name, var_data in data.support.items():
