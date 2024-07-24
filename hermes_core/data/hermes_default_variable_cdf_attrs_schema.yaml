@@ -7,6 +7,7 @@ attribute_key:
       fixed (0AD, 1900, 1970 (POSIX), J2000 (used by CDF_TIME_TT2000),
       4714 BC (Julian)) or flexible (provider-defined)
     derived: true
+    derivation_fn: _get_time_base
     required: true    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -16,6 +17,7 @@ attribute_key:
       Using ISO8601 relative time format, for example: "1s" = 1 second. 
       Resolution provides the smallest change in time that is measured.
     derived: true
+    derivation_fn: _get_resolution
     required: true    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -25,6 +27,7 @@ attribute_key:
       TT (same as TDT, used by CDF_TIME_TT2000), TAI (same as IAT, TT-32.184s), 
       UTC (includes leap seconds), TDB (same as SPICE ET), EME1950 [default: UTC]
     derived: true
+    derivation_fn: _get_time_scale
     required: true    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -38,6 +41,7 @@ attribute_key:
       UTC-at-STEREO-B, it's cleaner to keep them separate as Time_Scale=UTC and 
       Reference_Position=STEREO-B.
     derived: true
+    derivation_fn: _get_reference_position
     required: true    # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -132,6 +136,7 @@ attribute_key:
       which change with time must have a DEPEND_0 attribute defined. See section 5.2.1
       which specifies the HERMES usage of DEPEND_0.
     derived: true
+    derivation_fn: _get_depend
     required: true
     overwrite: false
     valid_values: null
@@ -154,6 +159,7 @@ attribute_key:
     description: >
       This tells automated software, such as CDAWeb, how the data should be displayed.
     derived: true
+    derivation_fn: _get_display_type
     required: true
     overwrite: false
     valid_values:
@@ -168,6 +174,7 @@ attribute_key:
       A shortened version of CATDESC which can be used to label a plot axis or as a data
       listing heading. This is a string, up to ~30 characters in length.
     derived: true
+    derivation_fn: _get_fieldnam
     required: true
     overwrite: false
     valid_values: null
@@ -178,6 +185,7 @@ attribute_key:
       FILLVAL is required for time-varying variables. Fill data are always non-valid data. The
       ISTP standard fill values are listed in Table 5-4.
     derived: true
+    derivation_fn: _get_fillval
     required: true
     overwrite: false
     valid_values: null
@@ -191,6 +199,7 @@ attribute_key:
       formatting codes see the docs here: 
       https://docs.oracle.com/cd/E19957-01/805-4939/z40007437a2e/index.html
     derived: true
+    derivation_fn: _get_format
     required: true
     overwrite: false
     valid_values: null
@@ -209,6 +218,7 @@ attribute_key:
       Used to label a plot axis or to provide a heading for a data listing. This field is generally
       6-10 characters. Only one of LABLAXIS or LABL_PTR_i should be present.
     derived: true
+    derivation_fn: _get_lablaxis
     required: true
     overwrite: false
     valid_values: null
@@ -238,6 +248,7 @@ attribute_key:
       a blank space and the quotation marks are not included. Units which are not conveniently
       transformed into SI should follow the blank syntax " > " described above.
     derived: true
+    derivation_fn: _get_si_conversion
     required: true  # NOT Required in ISTP Guide
     overwrite: false
     valid_values: null
@@ -252,6 +263,7 @@ attribute_key:
       HERMES Science Working Team pages. Those pages also lay out the rules for
       formatting the UNITS string.
     derived: true
+    derivation_fn: _get_units
     required: true
     overwrite: false
     valid_values: null
@@ -273,6 +285,7 @@ attribute_key:
       mission. Used by application software to filter out values that are out of range. The
       value must match the data type of the variable.
     derived: true
+    derivation_fn: _get_validmin
     required: true
     overwrite: false
     valid_values: null
@@ -283,6 +296,7 @@ attribute_key:
       mission. Used by application software to filter out values that are out of range. The
       value must match the data type of the variable.
     derived: true
+    derivation_fn: _get_validmax
     required: true
     overwrite: false
     valid_values: null
@@ -291,6 +305,7 @@ attribute_key:
     description: >
       Used in CDAWeb to indicate if the data should be used directly by users. 
     derived: true
+    derivation_fn: _get_var_type
     required: true
     overwrite: false
     valid_values:
@@ -354,6 +369,7 @@ attribute_key:
       greater than 999, representing the number of axes in the associated
       data array.
     derived: true
+    derivation_fn: _get_wcs_naxis
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -365,6 +381,7 @@ attribute_key:
       point number representing the reference time position of the time stamps along the 
       0'th axis of the measurement.
     derived: true
+    derivation_fn: _get_wcs_timeref
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -376,6 +393,7 @@ attribute_key:
       string giving the units of the time stamps along the 0'th axis of the measurement. 
       The TIMEUNIT should match the CUNITi along the time axis of the measurement
     derived: true
+    derivation_fn: _get_wcs_timeunit
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -388,6 +406,7 @@ attribute_key:
       the measurement. The TIMEDEL should match the CRDELi along the time axis of the 
       measurement.
     derived: true
+    derivation_fn: _get_wcs_timedel
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -401,6 +420,8 @@ attribute_key:
       The name is used for comment/documentation purposes only and is not used as a part
       of the i'th axis coordinate transformations.
     derived: true
+    derivation_fn: _get_cnamei
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -413,6 +434,8 @@ attribute_key:
       The value field shall contain a character string, giving
       the name of the coordinate represented by axis i.
     derived: true
+    derivation_fn: _get_ctypei
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -425,6 +448,8 @@ attribute_key:
       The value shall be the units along axis i, compatible with CTYPEi to be used for
       scaling and coordinate transformations along the i'th axis. 
     derived: true
+    derivation_fn: _get_cuniti
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -442,6 +467,8 @@ attribute_key:
       data array.  Use comments to indicate the location of the index point
       relative to the pixel.
     derived: true
+    derivation_fn: _get_crpixi
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -455,6 +482,8 @@ attribute_key:
       giving the value of the coordinate specified by the CTYPEn keyword at
       the reference point CRPIXi.
     derived: true
+    derivation_fn: _get_crvali
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -470,6 +499,8 @@ attribute_key:
       point CRPIXi, in units of the coordinate specified by  the CTYPEi 
       keyword.
     derived: true
+    derivation_fn: _get_cdelti
+    iterable: true
     required: false   # NOT Required in HERMES Format Guide
     overwrite: false
     valid_values: null
@@ -504,3 +535,19 @@ metadata:
   - FILLVAL
   - FORMAT
   - VAR_TYPE
+epoch:
+  - REFERENCE_POSITION
+  - RESOLUTION
+  - TIME_BASE
+  - TIME_SCALE
+spectra: 
+  - WCSAXES
+  - MJDREF
+  - TIMEUNIT
+  - TIMEDEL
+  - CNAMEi # Iterable
+  - CTYPEi # Iterable
+  - CUNITi # Iterable
+  - CRPIXi # Iterable
+  - CRVALi # Iterable
+  - CDELTi # Iterable
