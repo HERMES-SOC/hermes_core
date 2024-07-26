@@ -2,8 +2,6 @@
 Overview
 ========
 
-Test Changes. 
-
 .. start-badges
 
 .. list-table::
