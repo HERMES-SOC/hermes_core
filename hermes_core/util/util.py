@@ -5,12 +5,7 @@ This module provides general utility functions.
 from swxsoc.util import util
 
 
-__all__ = ["create_science_filename", "parse_science_filename", "VALID_DATA_LEVELS"]
-
-TIME_FORMAT_L0 = "%Y%j-%H%M%S"
-TIME_FORMAT = "%Y%m%dT%H%M%S"
-VALID_DATA_LEVELS = ["l0", "l1", "ql", "l2", "l3", "l4"]
-FILENAME_EXTENSION = ".cdf"
+__all__ = ["create_science_filename", "parse_science_filename"]
 
 
 def create_science_filename(
