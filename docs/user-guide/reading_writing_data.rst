@@ -437,19 +437,19 @@ A template of the required metadata can be obtained using the
     >>> from collections import OrderedDict
     >>> from hermes_core.timedata import HermesData
     >>> HermesData.global_attribute_template()
-    OrderedDict([('DOI', None),
-             ('Data_level', None),
-             ('Data_version', None),
-             ('Descriptor', None),
-             ('HTTP_LINK', None),
-             ('Instrument_mode', None),
-             ('Instrument_type', None),
-             ('LINK_TEXT', None),
-             ('LINK_TITLE', None),
-             ('MODS', None),
-             ('PI_affiliation', None),
-             ('PI_name', None),
-             ('TEXT', None)])
+    OrderedDict([('Data_level', None), 
+        ('Data_version', None), 
+        ('Descriptor', None), 
+        ('Instrument_type', None), 
+        ('PI_affiliation', None), 
+        ('PI_name', None), 
+        ('TEXT', None), 
+        ('DOI', None), 
+        ('HTTP_LINK', None), 
+        ('Instrument_mode', None), 
+        ('LINK_TEXT', None), 
+        ('LINK_TITLE', None), 
+        ('MODS', None)])
 
 
 You can also pass arguments into the function to get a partially populated template:: 
@@ -461,19 +461,19 @@ You can also pass arguments into the function to get a partially populated templ
     ...     data_level='l1',
     ...     version='0.1.0'
     ... )
-    OrderedDict([('DOI', None),
-             ('Data_level', 'L1>Level 1'),
-             ('Data_version', '0.1.0'),
-             ('Descriptor', 'EEA>Electron Electrostatic Analyzer'),
-             ('HTTP_LINK', None),
-             ('Instrument_mode', None),
-             ('Instrument_type', None),
-             ('LINK_TEXT', None),
-             ('LINK_TITLE', None),
-             ('MODS', None),
-             ('PI_affiliation', None),
-             ('PI_name', None),
-             ('TEXT', None)])
+    OrderedDict([('Data_level', 'L1>Level 1'), 
+        ('Data_version', '0.1.0'), 
+        ('Descriptor', 'EEA>Electron Electrostatic Analyzer'), 
+        ('Instrument_type', None), 
+        ('PI_affiliation', None), 
+        ('PI_name', None), 
+        ('TEXT', None), 
+        ('DOI', None), 
+        ('HTTP_LINK', None), 
+        ('Instrument_mode', None), 
+        ('LINK_TEXT', None), 
+        ('LINK_TITLE', None), 
+        ('MODS', None)])
 
 This can make the definition of global metadata easier since instrument teams or users only need 
 to supply pieces of metadata that are in this template. Additional metadata items can be added 
@@ -573,12 +573,12 @@ From this you can validate and distribute your CDF file.
 Validating a CDF File
 =====================
 
-The :py:class:`~hermes_core.timedata.HermesData` uses the `~spacepy.pycdf.istp` module for CDF validation, in addition to custom
-tests for additional metadata. A CDF file can be validated using the :py:func:`~hermes_core.util.validation.validate` method
-and by passing, as a parameter, the full :py:class:`~pathlib.Path` to the CDF file to be validated::
+HERMES supports validation of CDF files to ensure that they are compliant with the ISTP standards.
+The :py:class:`~hermes_core.timedata.HermesData` delegates to the `~swxsoc.util.validation` module for CDF validation.
+A CDF file can be validated using the  :py:func:`~hermes_core.timedata.HermesData.validate` method and by passing, as a parameter, the full :py:class:`~pathlib.Path` to the CDF file to be validated::
 
-    >>> from hermes_core.util.validation import validate
-    >>> validation_errors = validate(cdf_file_path) # doctest: +SKIP
+    >>> from hermes_core.timedata import HermesData
+    >>> validation_errors = HermesData.validate(cdf_file_path) # doctest: +SKIP
 
 This returns a `list[str]` that contains any validation errors that were encountered when examining the CDF file.
 If no validation errors were found the method will return an empty list.

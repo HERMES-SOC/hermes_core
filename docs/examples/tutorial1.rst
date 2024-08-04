@@ -19,7 +19,6 @@ measurement data easier when reading and writing CDF data.
     >>> 
     >>> # Import the `hermes_core` Package
     >>> from hermes_core.timedata import HermesData
-    >>> from hermes_core.util.validation import validate
     >>> 
     >>> # Create a np.ndarray of example measurement data
     >>> bx = np.random.choice(a=[-1, 0, 1], size=1000).cumsum(0)
