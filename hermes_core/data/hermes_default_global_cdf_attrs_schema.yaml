@@ -3,7 +3,8 @@ CDF_Lib_version:
     Version of the CDF Binaries library used to generate the CDF File
   default: null
   derived: true
-  required: true # NOT Required in ISTP Guide (Derived)
+  derivation_fn: _get_cdf_lib_version
+  required: false
   validate: false
   overwrite: false
 DOI:
@@ -31,7 +32,7 @@ Data_level:
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: true
 Data_product_descriptor:
   description: > 
@@ -50,8 +51,9 @@ Data_type:
     product descriptor.
   default: null
   derived: true
-  required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  derivation_fn: _get_data_type
+  required: true 
+  validate: true
   overwrite: true
 Data_version:
   description: >
@@ -89,6 +91,7 @@ Generation_date:
     Date stamps the creation of the file using the syntax yyyymmdd, e.g., "
   default: null
   derived: true
+  derivation_fn: _get_generation_date
   required: true # NOT Required in ISTP Guide (Recommended)
   validate: true
   overwrite: true
@@ -97,7 +100,8 @@ HERMES_version:
     Version of `hermes_core` originally used to generate the given CDF File
   default: null
   derived: true
-  required: true # NOT Required in ISTP Guide (Derived)
+  derivation_fn: _get_hermes_version
+  required: false # NOT Required in ISTP Guide (Derived)
   validate: false
   overwrite: false
 HTTP_LINK:
@@ -117,7 +121,7 @@ Instrument_mode:
   default: null
   derived: false
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: false
 Instrument_type:
   description: > 
@@ -161,6 +165,7 @@ Logical_file_id:
     in the case of accidental (or intentional) renaming.
   default: null
   derived: true
+  derivation_fn: _get_logical_file_id
   required: true
   validate: true
   overwrite: true
@@ -175,6 +180,7 @@ Logical_source:
     come from 'Data_type' attribute)
   default: null
   derived: true
+  derivation_fn: _get_logical_source
   required: true
   validate: true
   overwrite: true
@@ -185,6 +191,7 @@ Logical_source_description:
     this value on their website.
   default: null
   derived: true
+  derivation_fn: _get_logical_source_description
   required: true
   validate: true
   overwrite: true
@@ -259,8 +266,9 @@ Start_time:
     The start time of the contained data given in YYYYMMDD_hhmmss
   default: null
   derived: true
+  derivation_fn: _get_start_time
   required: true # NOT Required in ISTP Guide (Derived)
-  validate: false
+  validate: true
   overwrite: true
 TEXT:
   description: >
