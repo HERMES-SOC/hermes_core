@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-  'swxsoc @ git+https://github.com/swxsoc/swxsoc.git@main',
+  'swxsoc @ git+https://github.com/alrobbertz/swxsoc.git@sammi_integration',
   'astropy>=5.3.3',
   'numpy>=1.18.0',
   'sunpy>=5.0.1',
