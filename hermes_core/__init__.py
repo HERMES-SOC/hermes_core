@@ -11,7 +11,7 @@ import swxsoc
 
 # Set the Mission Environment Variable to load the correct configuration
 os.environ["SWXSOC_MISSION"] = "hermes"
-swxsoc._reconfigure()
+swxsoc.reconfigure()
 # Get the Updated Configuration
 config = swxsoc.config
 
