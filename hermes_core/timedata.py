@@ -8,7 +8,6 @@ from typing import Optional, Union
 import astropy
 import ndcube
 from swxsoc.swxdata import SWXData
-from swxsoc.util.util import VALID_DATA_LEVELS
 from swxsoc.util.validation import CDFValidator
 import hermes_core
 from hermes_core.util.schema import HermesDataSchema
@@ -125,23 +124,24 @@ class HermesData(SWXData):
             A template for required global attributes.
         """
         meta = HermesDataSchema().global_attribute_template()
+        mission_config = hermes_core.config["mission"]
 
         # Check the Optional Instrument Name
         if instr_name:
             if instr_name not in hermes_core.config["mission"]["inst_names"]:
                 raise ValueError(
-                    f"Instrument, {instr_name}, is not recognized. Must be one of {hermes_core.config['mission']['inst_names']}."
+                    f"Instrument, {instr_name}, is not recognized. Must be one of {mission_config['inst_names']}."
                 )
             # Set the Property
             meta["Descriptor"] = (
-                f"{instr_name.upper()}>{hermes_core.config['mission']['inst_to_fullname'][instr_name]}"
+                f"{instr_name.upper()}>{mission_config['inst_to_fullname'][instr_name]}"
             )
 
         # Check the Optional Data Level
         if data_level:
-            if data_level not in VALID_DATA_LEVELS:
+            if data_level not in mission_config["valid_data_levels"]:
                 raise ValueError(
-                    f"Level, {data_level}, is not recognized. Must be one of {VALID_DATA_LEVELS[1:]}."
+                    f"Level, {data_level}, is not recognized. Must be one of {mission_config['valid_data_levels']}."
                 )
             # Set the Property
             if data_level != "ql":
