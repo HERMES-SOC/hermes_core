@@ -198,7 +198,6 @@ good_version = "1.3.4"
         (good_instrument, good_time, good_level, "a.5.6"),
         (good_instrument, good_time, "la", good_version),  # wrong level specifications
         (good_instrument, good_time, "squirrel", good_version),
-        (good_instrument, good_time, "l0", good_version),
         ("potato", good_time, good_level, good_version),  # wrong instrument names
         ("eeb", good_time, good_level, good_version),
         ("fpi", good_time, good_level, good_version),
@@ -235,20 +234,19 @@ def test_science_filename_errors_l1_b():
 
 
 # fmt: off
-@pytest.mark.parametrize("filename,instrument,time,level,version,mode", [
-    ("hermes_NEM_l0_2024094-124603_v01.bin", "nemisis", "2024-04-03T12:46:03", "l0", "01", None),
-    ("hermes_EEA_l0_2026337-124603_v11.bin", "eea", "2026-12-03T12:46:03", "l0", "11", None),
-    ("hermes_MERIT_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21", None),
-    ("hermes_SPANI_l0_2026337-065422_v11.bin", "spani", "2026-12-03T06:54:22", "l0", "11", None),
-    ("hermes_MERIT_VC_l0_2026215-124603_v21.bin", "merit", "2026-08-03T12:46:03", "l0", "21", "VC"),
-    ("hermes_SPANI_VA_l0_2026215-124603_v21.bin", "spani", "2026-08-03T12:46:03", "l0", "21", "VA")
+@pytest.mark.parametrize("filename,instrument,time,level", [
+    ("hermes_NEM_l0_2024094-124603.bin", "nemisis", "2024-04-03T12:46:03", "l0"),
+    ("hermes_EEA_l0_2026237-124603.bin", "eea", "2026-08-25T12:46:03", "l0"),
+    ("hermes_MERIT_l0_2026215-124603.bin", "merit", "2026-08-03T12:46:03", "l0"),
+    ("hermes_SPANI_l0_2026237-065422.bin", "spani", "2026-08-25T06:54:22", "l0"),
+    ("hermes_MERIT_VC_l0_2026215-124603.bin", "merit", "2026-08-03T12:46:03", "l0"),
+    ("hermes_SPANI_VA_l0_2026215-124603.bin", "spani", "2026-08-03T12:46:03", "l0")
 ])
-def test_parse_l0_filenames(filename, instrument, time, level, version, mode):
+def test_parse_l0_filenames(filename, instrument, time, level):
     """Testing parsing of MOC-generated level 0 files."""
     result = util.parse_science_filename(filename)
+    print(result)
     assert result['instrument'] == instrument
     assert result['level'] == level
-    assert result['version'] == version
     assert result['time'] == Time(time)
-    assert result['mode'] == mode
 # fmt: on

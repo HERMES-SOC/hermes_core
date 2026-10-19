@@ -15,10 +15,9 @@ swxsoc.reconfigure()
 # Get the Updated Configuration
 config = swxsoc.config
 
-# Initialize HERMES Logger
-log = swxsoc.util.logger._init_log(config)
+log = swxsoc.log
 
 # Then you can be explicit to control what ends up in the namespace,
 __all__ = ["config"]
 
-# log.info(f"hermes_core version: {__version__}")
+log.debug(f"hermes_core version: {__version__}")

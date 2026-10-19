@@ -11,9 +11,9 @@ readme = "README.rst"
 dynamic = ["version"]
 authors = [{name = "Steven Christe", email="steven.d.christe@nasa.gov"},
            {name = "Damian Barrous Dumme", email="damianbarrous@gmail.com"},
-           {name = "Andrew Robbertz", email="a.robbertz@gmail.com"}]
+           {name = "Andrew Robbertz", email="andrew.l.robbertz@nasa.gov"}]
 license = {file = "LICENSE.rst"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["hermes", "nasa mission", "space weather"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -21,7 +21,7 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
